@@ -1,7 +1,11 @@
 ﻿#include "pch.h"
 #include "Model.h"
 
+#include "ModelImporter.h"
+
 Model::Model()
+    : mNumMesh(0)
+    , mNumVertex(0)
 {
     
 }
@@ -13,18 +17,21 @@ Model::~Model()
 
 void Model::Render(ID3D11DeviceContext* deviceContext, ID3D11ShaderResourceView** resourceView, const size_t numTexture)
 {
-    /*
-     *  render에 이건 좀 아닌듯..
-     *  그냥 GetMeshListReference를 없애고, 외부에서 벡터를 받아서 초기화하고
-     *  나머지 정보도 초기화 하는걸로.
-     *  (렌더 준비에 오래걸리겠지만, 렌더링이 느려지는 것 보단 나을 것)
-     */
-    const size_t numMesh = mMeshes.size();
-    size_t offset = 0;
-    for (size_t index = 0; index < numMesh; ++index)
+    size_t vertexOffset = 0;
+    size_t indexOffset = 0;
+    for (size_t index = 0; index < mNumMesh; ++index)
     {
-
-        deviceContext->PSSetShaderResources(0, 1, &resourceView[index]);
+        /*
+         *  이 방법외에 다른 방법으로 적용이 필요하다.
+         */
+        if (index < 4)
+        {
+            deviceContext->PSSetShaderResources(0, 1, &resourceView[index]);
+        }
+        else
+        {
+            deviceContext->PSSetShaderResources(0, 1, &resourceView[3]);
+        }
         /*
          *  문제점
          *  외부에서 받은 vertex buffer에 써넣어주는 방식에
@@ -33,9 +40,47 @@ void Model::Render(ID3D11DeviceContext* deviceContext, ID3D11ShaderResourceView*
          *  -현재는 모델 하나만 그리기 때문에 아직까지 상관은 없음.
          *  - 나중에 외부에서 버퍼를 관리하고 모델은 버퍼에서 자신의 정보에 대한 위치만 가지고 있는것도
          */
-        deviceContext->Draw(mMeshes[index].Vertex.size(), offset);
+         //deviceContext->Draw(mMeshes[index].Vertex.size(), offset);
+        deviceContext->DrawIndexed(mMeshes[index].IndexList.size(), indexOffset, vertexOffset);
 
-        offset += mMeshes[index].Vertex.size();
+        vertexOffset += mMeshes[index].Vertex.size();
+        indexOffset += mMeshes[index].IndexList.size();
+    }
+}
+
+void Model::SetupMesh(ModelImporter& importer)
+{
+    const std::vector<Mesh>& meshes = *importer.GetMesh();
+
+    mNumMesh = meshes.size();
+    mMeshes.reserve(mNumMesh);
+    for (size_t meshIndex = 0; meshIndex < mNumMesh; ++meshIndex)
+    {
+        mMeshes.push_back(Mesh());
+        Mesh& mesh = mMeshes.back();
+
+        mNumVertex = meshes[meshIndex].Vertex.size();
+        mMeshes[meshIndex].Vertex.reserve(mNumVertex);
+        for (size_t vertexIndex = 0; vertexIndex < mNumVertex; ++vertexIndex)
+        {
+            mesh.Vertex.push_back(VertexInfo());
+            VertexInfo& vertex = mesh.Vertex.back();
+
+            vertex.Pos = meshes[meshIndex].Vertex[vertexIndex].Pos;
+            vertex.Norm = meshes[meshIndex].Vertex[vertexIndex].Norm;
+            vertex.Tex = meshes[meshIndex].Vertex[vertexIndex].Tex;
+        }
+
+        const int numIndexList = meshes[meshIndex].IndexList.size();
+        mMeshes[meshIndex].IndexList.reserve(numIndexList);
+        for (size_t index = 0; index < numIndexList; ++index)
+        {
+            mesh.IndexList.push_back(meshes[meshIndex].IndexList[index]);
+        }
+
+        mesh.HasTexture = meshes[meshIndex].HasTexture;
+        wcscpy_s(mesh.Name, MESH_NAME_LENGTH, meshes[meshIndex].Name);
+        mesh.Name[MESH_NAME_LENGTH - 1] = (WCHAR)L"\n";
     }
 }
 
@@ -60,6 +105,25 @@ void Model::UpdateVertexBuffer(VertexInfo* buffer, size_t bufferSize, size_t sta
     
 }
 
+void Model::UpdateIndexBuffer(size_t* buffer, size_t bufferSize, size_t startIndex)
+{
+    ASSERT(buffer != nullptr, "버퍼는 nullptr가 아니어야 합니다.");
+
+    const size_t numMesh = mMeshes.size();
+    size_t offset = 0;
+    for (size_t meshIndex = 0; meshIndex < numMesh; ++meshIndex)
+    {
+        const size_t numIndex = mMeshes[meshIndex].IndexList.size();
+        for (size_t index = 0; index < numIndex; ++index)
+        {
+            const size_t bufferIndex = startIndex + offset + index;
+            buffer[bufferIndex] = mMeshes[meshIndex].IndexList[index];
+        }
+        offset += numIndex;
+    }
+
+}
+
 size_t Model::GetMeshCount() const
 {
     return mMeshes.size();
@@ -79,13 +143,9 @@ size_t Model::GetVertexCount(size_t meshIndex) const
     return mMeshes[meshIndex].Vertex.size();
 }
 
-std::vector<Mesh> Model::GetMeshList() const
+size_t Model::GetIndexListCount(size_t meshIndex) const
 {
-    return mMeshes;
-}
-
-std::vector<Mesh>* Model::GetMeshListReference()
-{
-    return &mMeshes;
+    ASSERT(meshIndex < mMeshes[meshIndex].Vertex.size(), "인덱스 범위를 벗어났습니다.");
+    return mMeshes[meshIndex].IndexList.size();
 }
 

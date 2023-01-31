@@ -490,10 +490,13 @@ HRESULT InitGeometry()
      *  버텍스, 인덱스 리스트 설정
      *
      */
+    gModel = new Model();
 
-    gImporter.LoadFBXAndCreateModel("/models/anbi.fbx", &gModel);
+    gImporter.LoadFbxModel("/models/anbi.fbx");
 
-    size_t numMesh = gModel->GetMeshCount();
+    gModel->SetupMesh(gImporter);
+
+    size_t numMesh = gImporter.GetMeshCount();
     for (size_t meshIndex = 0; meshIndex < numMesh; ++meshIndex)
     {
         OutputDebugStringW(gModel->GetMeshName(meshIndex));
@@ -521,37 +524,40 @@ HRESULT InitGeometry()
         return E_FAIL;
     }
 
-    // 메모리를 아끼려는건지?
-    // 내부에서 저장하고 쓰는게 아니라 넘겨준 변수를 그대로 활용하는 듯.
-    // 따라서 0도 변수로 전달.
     UINT32 stride = sizeof(VertexInfo);
     UINT32 offset = 0;
     gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &stride, &offset);
 
     /*
      *
-     * 로드시에 index list를 구성할 수 있는 방법 더 연구 후에 주석 해제
+     * index list 구성
      *
      */
 
+    for (size_t meshIndex = 0; meshIndex < numMesh; ++meshIndex)
+    {
+        gIndexListCount += gModel->GetIndexListCount(meshIndex);
+    }
+    gIndexList = new size_t[gIndexListCount];
+    gModel->UpdateIndexBuffer(gIndexList, gIndexListCount, 0);
 
-     //bd.Usage = D3D11_USAGE_DEFAULT;
-     ////bd.ByteWidth = sizeof(WORD) * 36;
-     //bd.ByteWidth = sizeof(unsigned int) * gIndexListCount;
-     //bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-     //bd.CPUAccessFlags = 0;
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(unsigned int) * gIndexListCount;
+    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    bd.CPUAccessFlags = 0;
 
-     ////initData.pSysMem = indices;
-     //initData.pSysMem = gIndexList;
+    initData.pSysMem = gIndexList;
 
-     //result = gDevice->CreateBuffer(&bd, &initData, &gIndexBuffer);
-     //if (FAILED(result))
-     //{
-     //    ASSERT(false, "인덱스 버퍼 생성 실패");
-     //    return E_FAIL;
-     //}
-     //// DXGI_FORMAT_R32G32_UINT DXGI_FORMAT_R16_UINT 
-     //gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+    result = gDevice->CreateBuffer(&bd, &initData, &gIndexBuffer);
+    if (FAILED(result))
+    {
+        ASSERT(false, "인덱스 버퍼 생성 실패");
+        return E_FAIL;
+    }
+
+    // DXGI_FORMAT_R32G32_UINT DXGI_FORMAT_R16_UINT 
+    gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
 
     gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -982,7 +988,7 @@ void Cleanup()
     }
     delete[] gVertexList;
     delete[] gIndexList;
-
+    
     delete gModel;
 
     SAFETY_RELEASE(gSamplerAnisotropic);

@@ -1,7 +1,5 @@
 ﻿#include "pch.h"
 #include "ModelImporter.h"
-#include <fstream>
-#include <string>
 
 ModelImporter::ModelImporter()
     : mFbxScene(nullptr)
@@ -49,7 +47,7 @@ void ModelImporter::Release()
     }
 }
 
-void ModelImporter::LoadFBXAndCreateModel(const char* fileName, Model** model)
+void ModelImporter::LoadFbxModel(const char* fileName)
 {
 
     if (!mImporter->Initialize(fileName, -1, mFbxManager->GetIOSettings()))
@@ -72,13 +70,21 @@ void ModelImporter::LoadFBXAndCreateModel(const char* fileName, Model** model)
     // 메시를 가진 노드들 추출
     preprocess(nullptr, rootNode);
 
-    *model = new Model();
-
-    parseMesh(*(*model)->GetMeshListReference());
-
+    parseMesh();
 
     mImporter->Destroy();
 
+}
+
+
+const std::vector<Mesh>* ModelImporter::GetMesh() const
+{
+    return &mMeshes;
+}
+
+size_t ModelImporter::GetMeshCount() const
+{
+    return mMeshes.size();
 }
 
 void ModelImporter::preprocess(FbxNode* parent, FbxNode* current)
@@ -109,182 +115,148 @@ void ModelImporter::preprocess(FbxNode* parent, FbxNode* current)
     }
 }
 
-void ModelImporter::parseMesh(std::vector<Mesh>& meshesToLoad)
+void ModelImporter::parseMesh()
 {
     // 이전에 구성한 메시를 가지는 노드들을 순회.
     for (size_t nodeIndex = 0; nodeIndex < mFbxObjects.size(); ++nodeIndex)
     {
         Mesh meshTemp;
-        meshesToLoad.push_back(meshTemp);
-        Mesh& meshData = meshesToLoad.back();
+        mMeshes.push_back(meshTemp);
+        Mesh& meshData = mMeshes.back();
 
         FbxMesh* mesh = mFbxObjects[nodeIndex].current->GetMesh();
 
         size_t numConverted = 0;
+        mbstowcs_s(&numConverted, meshData.Name, MESH_NAME_LENGTH, mesh->GetName(), strlen(mesh->GetName()));
+        meshData.Name[127] = (WCHAR)L"\n";
 
-        mbstowcs_s(&numConverted, meshData.Name, 128, mesh->GetName(), strlen(mesh->GetName()));
-        ASSERT(numConverted < 128, "버퍼 초과")
+        ASSERT(numConverted < MESH_NAME_LENGTH, "버퍼 초과")
             ASSERT(numConverted > 0, "복사된 문자가 없음.")
 
-            meshData.Name[127] = (wchar_t)L"\n";
 
-        // 메시가 가지는 모든 정점들의 위치 배열
-        FbxVector4* allVertexPos = mesh->GetControlPoints();
+            // 메시가 가지는 모든 정점들의 위치 배열
+            FbxVector4* allVertexPos = mesh->GetControlPoints();
+
+        meshData.IndexList.reserve(mesh->GetPolygonVertexCount());
         meshData.Vertex.reserve(mesh->GetControlPointsCount());
 
         // 메시가 가지는 폴리곤 수.
         size_t numPoly = mesh->GetPolygonCount();
         for (size_t polyIndex = 0; polyIndex < numPoly; ++polyIndex)
         {
+
             // 폴리곤의 구성단위 수(삼각형 || 사각형)
             size_t numVertexInPoly = mesh->GetPolygonSize(polyIndex);
-            // 
+
+            // 폴리곤을 구성하는 삼각형의 개수를 구함.
             // 폴리곤의 구성은 삼각형뿐만 아니라 사각형 등과 같은 형태도 될 수 있음.
             // 따라서 사각형인 경우(==삼각형 두개)도 대응할 수 있도록 한다.
             // 삼각형으로 분해한다고도 볼 수 있을 듯.
             size_t numFaceInPoly = numVertexInPoly - 2;
-
             for (size_t faceIndex = 0; faceIndex < numFaceInPoly; ++faceIndex)
             {
                 // 이 부분. 참고 자료에는 max와 dx는 서로 다른 방향으로 인덱스가 배치된다 했는데,
                 // 현재 가지고 있는 fbx파일은 어느 모델링 툴을 사용했는지 불분명하기 때문에 특정시켜 구현 불가.
                 // 하지만 일단 구현은 참고자료와 동일하게 했다.
                 // 만약에 파일에 좌표계의 형식이 기록되어 있고, sdk가 읽을 수 있다면 한번 해보는 것도 좋을 듯.
+                // 참고: https://dlemrcnd.tistory.com/85
                 size_t indexListOfTriangle[3] = { 0, faceIndex + 2, faceIndex + 1 };
 
                 // indexListOfTriangle에 따른 삼각형 하나의 인덱스를 돌면서 정점의 필요한 정보들을 얻어온다.
                 // 한번에 3개의 점 -> for문으로 하나씩
-                int indexOfVertex;
+                int indexOfVertex = 0;
                 FbxVector4 normalIndex;
                 VertexInfo vertexInfo;
                 for (size_t index = 0; index < 3; ++index)
                 {
                     indexOfVertex = mesh->GetPolygonVertex(polyIndex, indexListOfTriangle[index]);
-                    mesh->GetPolygonVertexNormal(polyIndex, indexListOfTriangle[index], normalIndex);
 
-                    FbxVector4 position = allVertexPos[indexOfVertex].mData;
-                    vertexInfo.Pos.x = position[0];
-                    vertexInfo.Pos.y = position[2];
-                    vertexInfo.Pos.z = position[1];
-
-                    FbxVector4 normal = normalIndex.mData;
-                    vertexInfo.Norm.x = normal[0];
-                    vertexInfo.Norm.y = normal[2];
-                    vertexInfo.Norm.z = normal[1];
-
-                    double* uv = nullptr;
-                    // 텍스처를 가진 메시만
-                    vertexInfo.Tex.x = 0.0f;
-                    vertexInfo.Tex.y = 0.0f;
-                    if (mesh->GetElementUVCount() > 0)
+                    // 폴리곤 기준으로 진행하므로 인덱스 리스트를 사용하려면 중복처리를 해야한다.
+                    // 이미 처리한 버텍스이면 건너뛴다.
+                    if (mVertexDuplicationCheck.find(indexOfVertex) == mVertexDuplicationCheck.end())
                     {
-                        meshData.HasTexture = true;
-                        FbxGeometryElementUV* texture = mesh->GetElementUV(0);
-                        if (texture->GetMappingMode() == FbxGeometryElement::eByControlPoint
-                            && texture->GetReferenceMode() == FbxGeometryElement::eIndexToDirect)
+                        mVertexDuplicationCheck.insert(indexOfVertex);
+
+                        mesh->GetPolygonVertexNormal(polyIndex, indexListOfTriangle[index], normalIndex);
+
+                        /*
+                         *  position
+                         */
+                        FbxVector4 position = allVertexPos[indexOfVertex].mData;
+                        vertexInfo.Pos.x = position[0];
+                        vertexInfo.Pos.y = position[2];
+                        vertexInfo.Pos.z = position[1];
+
+                        /*
+                         *  normal
+                         */
+                        FbxVector4 normal = normalIndex.mData;
+                        vertexInfo.Norm.x = normal[0];
+                        vertexInfo.Norm.y = normal[2];
+                        vertexInfo.Norm.z = normal[1];
+
+                        /*
+                         *  texture
+                         */
+                        double* uv = nullptr;
+                        // 텍스처를 가진 메시만
+                        vertexInfo.Tex.x = 0.0f;
+                        vertexInfo.Tex.y = 0.0f;
+                        if (mesh->GetElementUVCount() > 0)
                         {
-                            size_t indexOfUV = texture->GetIndexArray().GetAt(indexOfVertex);
-                            uv = texture->GetDirectArray().GetAt(indexOfVertex).mData;
+                            meshData.HasTexture = true;
+                            FbxGeometryElementUV* texture = mesh->GetElementUV(0);
+                            if (texture->GetMappingMode() == FbxGeometryElement::eByControlPoint
+                                && texture->GetReferenceMode() == FbxGeometryElement::eIndexToDirect)
+                            {
+                                size_t indexOfUV = texture->GetIndexArray().GetAt(indexOfVertex);
+                                uv = texture->GetDirectArray().GetAt(indexOfVertex).mData;
+                            }
+                            else
+                            {
+                                uv = texture->GetDirectArray().GetAt(indexOfVertex).mData;
+                            }
+
+                            vertexInfo.Tex.x = uv[0];
+                            vertexInfo.Tex.y = 1.0f - uv[1];
                         }
-                        else
-                        {
-                            uv = texture->GetDirectArray().GetAt(indexOfVertex).mData;
-                        }
 
-                        vertexInfo.Tex.x = uv[0];
-                        vertexInfo.Tex.y = 1.0f - uv[1];
-                    }
+                        meshData.Vertex.push_back(vertexInfo);
+                        mIndexMap.insert(std::make_pair(indexOfVertex, meshData.Vertex.size() - 1));
 
-
-                    meshData.Vertex.push_back(vertexInfo);
-
+                    } // if end
                 }
 
             }
+        }  // object set end
+
+        /*
+        *  index list
+        */
+        for (size_t polyIndex = 0; polyIndex < numPoly; ++polyIndex)
+        {
+            size_t numVertexInPoly = mesh->GetPolygonSize(polyIndex);
+            size_t numFaceInPoly = numVertexInPoly - 2;
+            for (size_t faceIndex = 0; faceIndex < numFaceInPoly; ++faceIndex)
+            {
+                size_t indexListOfTriangle[3] = { 0, faceIndex + 2, faceIndex + 1 };
+
+                // MAP과 비교하여 실제 버텍스에 따른 벡터내의 순서를 얻어와 인덱스 리스트 구성.
+                for (size_t index = 0; index < 3; ++index)
+                {
+                    int indexOfVertex = mesh->GetPolygonVertex(polyIndex, indexListOfTriangle[index]);
+                    auto resultIter = mIndexMap.find(indexOfVertex);
+                    if (resultIter == mIndexMap.end())
+                    {
+                        ASSERT(false, "map 구성 과정에 누락된 버텍스가 있음.");
+                    }
+                    meshData.IndexList.push_back(resultIter->second);
+                }
+            }
         }
+
+        // 다음 메시를 세팅을 위한 초기화. 
+        mVertexDuplicationCheck.clear();
+        mIndexMap.clear();
     }
-}
-
-
-
-
-/*
- *  sdk sample code
- */
-void ModelImporter::printNode(FbxNode* node)
-{
-
-    const char* nodeName = node->GetName();
-    FbxDouble3 translation = node->LclTranslation.Get();
-    FbxDouble3 rotation = node->LclRotation.Get();
-    FbxDouble3 scaling = node->LclScaling.Get();
-
-    char str[256];
-    sprintf_s(str, "<node name='%s' translation='(%lf, %lf, %lf)' rotation='(%lf, %lf, %lf)' scaling='(%lf, %lf, %lf)'>\n",
-        nodeName,
-        translation[0], translation[1], translation[2],
-        rotation[0], rotation[1], rotation[2],
-        scaling[0], scaling[1], scaling[2]);
-
-    OutputDebugStringA(str);
-
-    // Print the node's attributes.
-    for (int i = 0; i < node->GetNodeAttributeCount(); i++)
-        printAttribute(node->GetNodeAttributeByIndex(i));
-
-    // Recursively print the children.
-    for (int j = 0; j < node->GetChildCount(); j++)
-        printNode(node->GetChild(j));
-
-    OutputDebugStringA("</node>\n");
-}
-
-/**
- *
- *  sdk sample code
- *
-* Return a string-based representation based on the attribute type.
-*/
-FbxString ModelImporter::getAttributeTypeName(FbxNodeAttribute::EType type) {
-    switch (type) {
-    case FbxNodeAttribute::eUnknown: return "unidentified";
-    case FbxNodeAttribute::eNull: return "null";
-    case FbxNodeAttribute::eMarker: return "marker";
-    case FbxNodeAttribute::eSkeleton: return "skeleton";
-    case FbxNodeAttribute::eMesh: return "mesh";
-    case FbxNodeAttribute::eNurbs: return "nurbs";
-    case FbxNodeAttribute::ePatch: return "patch";
-    case FbxNodeAttribute::eCamera: return "camera";
-    case FbxNodeAttribute::eCameraStereo: return "stereo";
-    case FbxNodeAttribute::eCameraSwitcher: return "camera switcher";
-    case FbxNodeAttribute::eLight: return "light";
-    case FbxNodeAttribute::eOpticalReference: return "optical reference";
-    case FbxNodeAttribute::eOpticalMarker: return "marker";
-    case FbxNodeAttribute::eNurbsCurve: return "nurbs curve";
-    case FbxNodeAttribute::eTrimNurbsSurface: return "trim nurbs surface";
-    case FbxNodeAttribute::eBoundary: return "boundary";
-    case FbxNodeAttribute::eNurbsSurface: return "nurbs surface";
-    case FbxNodeAttribute::eShape: return "shape";
-    case FbxNodeAttribute::eLODGroup: return "lodgroup";
-    case FbxNodeAttribute::eSubDiv: return "subdiv";
-    default: return "unknown";
-    }
-}
-
-/**
- *
- *  sdk sample code
- * Print an attribute.
- */
-void ModelImporter::printAttribute(FbxNodeAttribute* pAttribute) {
-    if (!pAttribute) return;
-
-    FbxString typeName = getAttributeTypeName(pAttribute->GetAttributeType());
-    FbxString attrName = pAttribute->GetName();
-
-    // Note: to retrieve the character array of a FbxString, use its Buffer() method.
-    char str[256];
-    sprintf_s(str, "\n<attribute type='%s' name='%s'/>\n", typeName.Buffer(), attrName.Buffer());
-    OutputDebugStringA(str);
-
 }
