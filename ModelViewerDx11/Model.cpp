@@ -117,6 +117,7 @@ void Model::Draw()
 
     auto* texShadow = Renderer::GetInstance()->GetShadowTexture();
     mDeviceContext->PSSetShaderResources(2U, 1U, &texShadow);
+    texShadow->Release();
 
     // Draw
     // 위에 따라서 변경 필요. 아니면 원래 방법대로 VertexBuffer를 하나로 뭉쳐야 함.

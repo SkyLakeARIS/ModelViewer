@@ -66,6 +66,9 @@
     <ClInclude Include="LightManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Floor.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModelViewerDx11.cpp">
@@ -99,6 +102,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="LightManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Floor.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -153,6 +159,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\LayoutP.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PsColor.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

@@ -16,7 +16,7 @@ public:
     {
         XMFLOAT3    Float3;
         float       Reserve;
-    } CbCameraPosition, CbOutlineProperty;
+    } CbCameraPosition, CbOutlineProperty, CbColor;
 
     typedef struct CbTwoVec4
     {
@@ -55,6 +55,7 @@ public:
         CbOutlineProperty,
         CbLightProperty,
         CbMaterial,
+        CbColor,
         NumConstantBuffer
     };
 
@@ -82,6 +83,7 @@ public:
         Shadow,
         BasicWithShadow,
         RenderToTexture,
+        Color,
         NumShader
     };
 
@@ -112,6 +114,7 @@ private:
         PsShadow,
         PsSkybox,
         PsRenderToTexture,
+        PsColor,
         NumPixelShader
     };
 
@@ -315,6 +318,7 @@ private:
     ID3D11Texture2D*            mTexShadow;
     ID3D11Texture2D*            mTexColor;
     ID3D11ShaderResourceView*     mShadowSrv;
+    ID3D11ShaderResourceView**     mCascadeShadowSrvList;
     D3D11_VIEWPORT mViewportFull;
     D3D11_VIEWPORT mViewportTex;
 

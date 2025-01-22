@@ -16,12 +16,14 @@ public:
     ~Plane();
 
     void Draw();
+    void DrawTexture(Light* const light);
     void Update();
 
     void SetPosition(XMFLOAT3& pos);
     void SetScale(XMFLOAT3& scale);
     // tex ref count is increased internally
     void SetTexture(ID3D11ShaderResourceView* const tex);
+    void UnbindTexture();
 
     XMFLOAT3 GetPosition() const;
     XMFLOAT3 GetScale() const;
@@ -30,6 +32,7 @@ public:
 private:
     ID3D11Buffer* mVertexBuffers;
     ID3D11Buffer* mIndexBuffers;
+    ID3D11Buffer* mCbWorld;
     ID3D11SamplerState* mSamplerState;
 
     VertexTex mMesh;

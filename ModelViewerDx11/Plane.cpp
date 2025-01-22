@@ -28,7 +28,7 @@ Plane::Plane()
         3,
     };
 
-        D3D11_BUFFER_DESC desc;
+    D3D11_BUFFER_DESC desc;
     ZeroMemory(&desc, sizeof(desc));
     desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     desc.Usage = D3D11_USAGE_DEFAULT;
@@ -61,6 +61,16 @@ Plane::Plane()
         ASSERT(false, "인덱스 버퍼 생성 실패 failed to create IndexBuffers");
     }
 
+
+    desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    desc.ByteWidth = sizeof(Renderer::CbWorld);
+    result = Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbWorld);
+    if (FAILED(result))
+    {
+        ASSERT(false, "상수 버퍼 생성 실패 failed to create Constant Buffers");
+    }
+
+
     // sampler
     D3D11_SAMPLER_DESC samplerDesc = {};
     // D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR  D3D11_FILTER_MIN_MAG_MIP_POINT
@@ -78,6 +88,7 @@ Plane::Plane()
         ASSERT(false, "SamplerState 생성 실패");
     }
 
+   
     device->Release();
 }
 
@@ -86,6 +97,7 @@ Plane::~Plane()
     SAFETY_RELEASE(mTexture);
     SAFETY_RELEASE(mVertexBuffers);
     SAFETY_RELEASE(mIndexBuffers);
+    SAFETY_RELEASE(mCbWorld);
     SAFETY_RELEASE(mSamplerState);
 }
 
@@ -129,6 +141,37 @@ void Plane::Draw()
     deviceContext->Release();
 }
 
+void Plane::DrawTexture(Light* const light)
+{
+    ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
+
+    Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::PT);
+    Renderer::GetInstance()->SetShaderTo(Renderer::eShader::RenderToTexture);
+
+    constexpr uint32 stride = sizeof(VertexTex);
+    constexpr uint32 offset = 0U;
+    deviceContext->IASetVertexBuffers(0U, 1U, &mVertexBuffers, &stride, &offset);
+    deviceContext->IASetIndexBuffer(mIndexBuffers, DXGI_FORMAT_R32_UINT, 0U);
+
+    XMMATRIX matWorld = XMMatrixTranspose(mMatWorld);
+    Renderer::GetInstance()->UpdateCbTo(mCbWorld, &matWorld);
+    Renderer::GetInstance()->BindCbToVsByObj(0, 1, &mCbWorld);
+    Renderer::GetInstance()->BindCbToVsByType(1, 1, Renderer::eCbType::CbViewProj);
+
+    deviceContext->PSSetSamplers(0U, 1U, &mSamplerState);
+    SetTexture(Renderer::GetInstance()->GetShadowTexture());
+
+    deviceContext->PSSetShaderResources(0U, 1U, &mTexture);
+
+    deviceContext->DrawIndexed(6, 0U, 0U);
+
+    ID3D11ShaderResourceView* const unbindSrv = nullptr;
+    deviceContext->PSSetShaderResources(0U, 1U, &unbindSrv);
+    UnbindTexture();
+    deviceContext->Release();
+
+}
+
 void Plane::Update()
 {
     mMatWorld = XMMatrixIdentity();
@@ -149,9 +192,13 @@ void Plane::SetScale(XMFLOAT3& scale)
 void Plane::SetTexture(ID3D11ShaderResourceView* const tex)
 {
     ASSERT(tex != nullptr, "Plane ) do not pass nullptr.");
-    SAFETY_RELEASE(mTexture);
-    tex->AddRef();
     mTexture = tex;
 
+}
+
+void Plane::UnbindTexture()
+{
+    SAFETY_RELEASE(mTexture);
+    mTexture = nullptr;
 }
 

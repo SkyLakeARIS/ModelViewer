@@ -50,7 +50,7 @@ HWND Renderer::GetWindowHandle() const
 
 ID3D11ShaderResourceView* Renderer::GetShadowTexture()
 {
-    // MEMO D3D 개체들은 Getter에서 AddRef를 해야하지 않을까.
+    mShadowSrv->AddRef();
     return mShadowSrv;
 }
 
@@ -190,6 +190,10 @@ HRESULT Renderer::createRasterState()
     }
     // 아웃라인용 래스터 스테이트
     rasterDesc.CullMode = D3D11_CULL_FRONT;
+  //  rasterDesc.CullMode = D3D11_CULL_BACK;
+    rasterDesc.FrontCounterClockwise = false;
+    // TODO: msdn 읽어보고 설정.
+    rasterDesc.DepthBias = 1;
     result = mDevice->CreateRasterizerState(&rasterDesc, &mRasterStates[static_cast<uint32>(eRasterType::Outline)]);
     if(FAILED(result))
     {
@@ -416,6 +420,7 @@ HRESULT Renderer::PrepareRender()
         {eCbType::CbOutlineProperty, sizeof(CbOutlineProperty) },
         {eCbType::CbLightProperty, sizeof(CbLightProperty)},
         {eCbType::CbMaterial, sizeof(CbMaterial)},
+        {eCbType::CbColor, sizeof(CbMaterial)},
     };
 
     D3D11_BUFFER_DESC desc={};
@@ -717,9 +722,14 @@ HRESULT Renderer::CreateShadowRenderTarget()
      * 따라서 텍스쳐만 갈아끼우며 사용하려면 지정한 사이즈와 동일한 사이즈의 텍스쳐로 사용해야 한다.
      * 
      */
+   /* uint32_t texWidth = 2048U;
+    uint32_t texHeight = 2048U;*/
+
+    uint32_t texWidth = 4096;
+    uint32_t texHeight = 4096U;
     D3D11_TEXTURE2D_DESC depthDesc = {};
-    depthDesc.Width = 2048U;
-    depthDesc.Height = 2048U;
+    depthDesc.Width = texWidth;
+    depthDesc.Height = texHeight;
     depthDesc.MipLevels = 1;
     depthDesc.ArraySize = 1;
     depthDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -745,8 +755,8 @@ HRESULT Renderer::CreateShadowRenderTarget()
     SET_PRIVATE_DATA(mRenderTargetViewList[static_cast<uint8_t>(eRenderTarget::Shadow)], "eRenderTarget::Shadow");
     SAFETY_RELEASE(mTexColor);
 
-    mViewportTex.Width = 2048.0f;
-    mViewportTex.Height = 2048.0f;
+    mViewportTex.Width    = static_cast<float>(texWidth);
+    mViewportTex.Height   = static_cast<float>(texHeight);
     mViewportTex.MinDepth = 0.0f;
     mViewportTex.MaxDepth = 1.0f;
     mViewportTex.TopLeftX = 0;
@@ -863,17 +873,6 @@ HRESULT Renderer::setupShaders()
         { "NORMAL", 0U, DXGI_FORMAT_R32G32B32_FLOAT, 0U, 20U, D3D11_INPUT_PER_VERTEX_DATA, 0U}
     };
 
-    //D3D11_INPUT_ELEMENT_DESC layoutPTDesc[] =
-    //{
-    //    { "POSITION", 0U, DXGI_FORMAT_R32G32B32_FLOAT, 0U, 0U, D3D11_INPUT_PER_VERTEX_DATA, 0U },
-    //    { "TEXCOORD", 0U, DXGI_FORMAT_R32G32_FLOAT, 0U, 12U, D3D11_INPUT_PER_VERTEX_DATA, 0U }
-    //};
-
-    //D3D11_INPUT_ELEMENT_DESC layoutPDesc[] =
-    //{
-    //    { "POSITION", 0U, DXGI_FORMAT_R32G32B32_FLOAT, 0U, 0U, D3D11_INPUT_PER_VERTEX_DATA, 0U }
-    //};
-
     const wchar_t* InputLayoutSourceList[] =
     {
         L"Shaders/LayoutPTN.hlsl",
@@ -895,7 +894,8 @@ HRESULT Renderer::setupShaders()
         L"Shaders/PsBasicWithShadow.hlsl",
         L"Shaders/PsShadow.hlsl",
         L"Shaders/PsRenderToTexture.hlsl",
-        L"Shaders/PsSkybox.hlsl"
+        L"Shaders/PsSkybox.hlsl",
+        L"Shaders/PsColor.hlsl"
     };
 
     struct PixelShaderContainer
@@ -940,6 +940,7 @@ HRESULT Renderer::setupShaders()
         {ePixelShader::PsRenderToTexture, 3U},
         {ePixelShader::PsShadow, 2U},
         {ePixelShader::PsSkybox, 4U},
+        {ePixelShader::PsColor, 5U},
     };
 
 
@@ -951,6 +952,7 @@ HRESULT Renderer::setupShaders()
         { eShader::Shadow, eVertexShader::VsSimple, ePixelShader::PsShadow}, // TODO : 개선 예정(셰이더 최적화) - VSSimple을 다른걸로 변경하기.(inputlayout관점 최적화)
         {eShader::BasicWithShadow,  eVertexShader::VsBasicWithShadow, ePixelShader::PsBasicWithShadow},
         {eShader::RenderToTexture,  eVertexShader::VsRenderToTexture, ePixelShader::PsRenderToTexture}, // TODO : 개선 예정(셰이더 최적화)
+        {eShader::Color,  eVertexShader::VsSimple, ePixelShader::PsColor},
     };
 
     static_assert(sizeof(mShaderMapTable) == sizeof(ShaderMapTable), "mShaderMapTable and ShaderMapTable MUST be same size.");

@@ -2,17 +2,17 @@
 
 
 int64_t Timer::mLastTime = 0;
-float Timer::mTimeScale = 0;
-float Timer::mDeltaTime = 0;
+double Timer::mTimeScale = 0;
+double Timer::mDeltaTime = 0;
 
 void Timer::Initialize()
 {
     mLastTime = 0;
-    mTimeScale = 0.0f;
-    mDeltaTime = 0.0f;
+    mTimeScale = 0.0;
+    mDeltaTime = 0.0;
     uint64_t frequency;
     QueryPerformanceFrequency((LARGE_INTEGER*)&frequency);
-    mTimeScale = 1 / (float)frequency;
+    mTimeScale = 1.0 / static_cast<double>(frequency);
 
     QueryPerformanceCounter((LARGE_INTEGER*)&mLastTime);
 }
@@ -29,12 +29,12 @@ void Timer::Tick()
 }
 
 // Tick()에서 갱신된 DeltaTime을 반환합니다.
-float Timer::GetDeltaTime()
+double Timer::GetDeltaTime()
 {
     return mDeltaTime;
 }
 
-float Timer::GetNowMS()
+double Timer::GetNowMS()
 {
     LARGE_INTEGER currentTime;
     QueryPerformanceCounter((LARGE_INTEGER*)&currentTime);

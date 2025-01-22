@@ -10,12 +10,12 @@ public:
     static void     Initialize();
 
     static void     Tick();
-    static float    GetDeltaTime();
-    static float    GetNowMS();
+    static double    GetDeltaTime();
+    static double    GetNowMS();
 
 private:
     static int64_t  mLastTime;
-    static float    mTimeScale;
-    static float    mDeltaTime;
+    static double    mTimeScale;
+    static double    mDeltaTime;
 };
 //

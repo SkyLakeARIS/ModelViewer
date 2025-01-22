@@ -8,6 +8,7 @@
 
 #include <string>
 
+#include "Floor.h"
 #include "Light.h"
 #include "LightManager.h"
 #include "Sky.h"
@@ -26,6 +27,7 @@ Camera* gCamera = nullptr;
 Sky* gSkybox = nullptr;
 Light* gLight = nullptr;
 Plane* gPlane = nullptr;
+Floor* gFloor = nullptr;
 
 DirectInput*            gDirectInput = nullptr;
 
@@ -36,13 +38,13 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-HRESULT             SetupGeometry();
-HRESULT             UpdateFrame(float deltaTime);
-HRESULT             Render(float deltaTime);
-void                Cleanup();
+HRESULT SetupGeometry();
+HRESULT UpdateFrame(double deltaTime);
+HRESULT Render();
+void    Cleanup();
 
 
-void preprocess(float deltaTime);
+void preprocess();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                       _In_opt_ HINSTANCE hPrevInstance,
@@ -61,7 +63,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     int programReturn = FALSE;
     // 애플리케이션 초기화를 수행합니다:
 
-    const int WINDOW_WIDTH = 1024;
+    const int WINDOW_WIDTH = 1280;
     const int WINDOW_HEIGHT = 720;
     const HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
         0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr, hInstance, nullptr);
@@ -82,7 +84,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     swapDesc.BufferDesc.Width = WINDOW_WIDTH;
     swapDesc.BufferDesc.Height = WINDOW_HEIGHT;
     swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    swapDesc.BufferDesc.RefreshRate.Numerator = 60;
+    swapDesc.BufferDesc.RefreshRate.Numerator = 120;
     swapDesc.BufferDesc.RefreshRate.Denominator = 1;
     swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapDesc.OutputWindow = hWnd;
@@ -146,14 +148,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LightManager::GetInstance();
     gCamera->ChangeFocus(gCharacter->GetCenterPoint());
     // MEMO Light 위치값 막 바꾸면 안됨. 그림자 제대로 안그려질 수 있음. 나중에 개선해야 할 항목 중 하나(cascade)
-    gLight = new Light(XMFLOAT3(0.0f, 50.0f, 70.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f));
+  //  gLight = new Light(XMFLOAT3(0.0f, 50.0f, 70.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), gCamera, 0.1f, 300.0f);
+
+    gLight = new Light(XMFLOAT3(0.0f, 20.0f, 50.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), gCamera, 0.1f, 500.0f);
     gLight->Initialize();
+    gLight->SetupCascade();
     gCharacter->SetLight(gLight);
 
     // debug quad
     // 깊이 텍스쳐 확인용
     gPlane = new Plane();
-    
+    gPlane->SetPosition(XMFLOAT3(0.0, 0.0, -1.0));
+
+    gFloor = new Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
+
     MSG msg;
     ZeroMemory(&msg, sizeof(msg));
     Timer::Initialize();
@@ -162,17 +170,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         constexpr float FPS_RENDER = 120.0f;
         constexpr float UpdateInterval = 1000.0f / FPS_UPDATE;
         constexpr float RenderInterval = 1000.0f / FPS_RENDER;
-        float nextUpdateTime = 0.0f;
-        float nextUpdateTimeRender = 0.0f;
-        float nextUpdateFPS = 0.0f;
-        float sumUpdate = 0.0f;
-        float sumRender = 0.0f;
+
 
         uint8_t updateFPS = 0;
         uint8_t renderFPS = 0;
+        double prevUpdateTime = 0.0;
+        double prevRenderTime = 0.0;
+        double prevFrameTime = 0.0;
+
         while (true)
         {
-            float start = Timer::GetNowMS();
 
             if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE | PM_NOYIELD))
             {
@@ -192,8 +199,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             else
             {
                 gDirectInput->UpdateInput();
-
-                while(sumUpdate >= nextUpdateTime)
+                double now = Timer::GetNowMS();
+                if(now - prevUpdateTime >= UpdateInterval)
                 {
                     // MEMO 위의 키입력을 토대로
                     // MEMO 아래에서 반영하여 물체에 갱신
@@ -201,30 +208,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     // 그외, 앱에서 처리하는 키 입력은 게임의 업데이트와는 무관. 즉시처리해도 됨.
                     // 그렇다면 UpdateInput은 업데이트만하고, UpdateFrame에서 다시 read한다면?
                     // MEMO : 일단, 현 상황에서 필요한 마우스 인풋관련은 처리 완료.
-                    sumUpdate -= UpdateInterval;
                     Timer::Tick();
+                    UpdateFrame(now - prevUpdateTime);
 
-                    UpdateFrame(Timer::GetDeltaTime());
-
+                    prevUpdateTime = now;
                     ++updateFPS;
                 }
 
-               if(sumRender >= nextUpdateTimeRender)
+                if (now - prevRenderTime >= RenderInterval)
                 {
+                    preprocess();
+                    Render();
 
-                    nextUpdateTimeRender = sumRender + RenderInterval;
-
-                    preprocess(sumUpdate/ nextUpdateTime);
-                    Render(sumUpdate / nextUpdateTime);
+                    prevRenderTime = now;
                     ++renderFPS;
                 }
-               else
-               {
-                   YieldProcessor();
-               }
-
-                if(Timer::GetNowMS() >= nextUpdateFPS)
+    
+                if(now - prevFrameTime >= 1000.0)
                 {
+                    prevFrameTime = now;
                     OutputDebugString(L"Render FPS : ");
                     OutputDebugString(std::to_wstring(renderFPS).c_str());
                     OutputDebugString(L"\n");
@@ -233,15 +235,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     OutputDebugString(std::to_wstring(updateFPS).c_str());
                     OutputDebugString(L"\n");
 
-                    nextUpdateFPS = Timer::GetNowMS() + 1000.0f;
 
                     updateFPS = 0;
                     renderFPS = 0;
                 }
 
             }
-            sumRender += (Timer::GetNowMS() - start);
-            sumUpdate += (Timer::GetNowMS() - start);
         }
     }
 
@@ -313,7 +312,7 @@ HRESULT SetupGeometry()
     return S_OK;
 }
 
-HRESULT UpdateFrame(float deltaTime)
+HRESULT UpdateFrame(double deltaTime)
 {
 
     float speed = 10.0f;
@@ -362,17 +361,17 @@ HRESULT UpdateFrame(float deltaTime)
     // 카메라와 물체간의 거리 조절(구체 크기 확대/축소)
     if (gKeyboard[DIK_Q] & 0x80)
     {
-       // gCamera->AddRadiusSphere( deltaTime);
-        gLight->Move(0.001f, -1.0f);
-        gLight->SetDirection(gCharacter->GetCenterPoint());
+        gCamera->AddRadiusSphere( deltaTime);
+       // gLight->Move(0.001f, -1.0f);
+      //  gLight->SetDirection(gCharacter->GetCenterPoint());
 
     }
 
     if (gKeyboard[DIK_E] & 0x80)
     {
-        //gCamera->AddRadiusSphere(-deltaTime);
-        gLight->Move(-0.001f, 1.0f);
-        gLight->SetDirection(gCharacter->GetCenterPoint());
+        gCamera->AddRadiusSphere(-deltaTime);
+   //     gLight->Move(-0.001f, 1.0f);
+    //    gLight->SetDirection(gCharacter->GetCenterPoint());
     }
 
     // 키보드<-> 마우스 조작 전환
@@ -414,23 +413,30 @@ HRESULT UpdateFrame(float deltaTime)
 
     
     gLight->Update(gCamera);
+    gLight->SetupCascade();
     gSkybox->Update();
     gCharacter->Update();
     return S_OK;
 }
 
-HRESULT Render(float deltaTime)
+HRESULT Render()
 {
     Renderer::GetInstance()->SetRenderTargetTo(Renderer::eRenderTarget::Default);
     Renderer::GetInstance()->SetViewport(true);
     Renderer::GetInstance()->ClearScreenAndDepth(Renderer::eRenderTarget::Default);
 
     // 리소스뷰를 어떻게 괜찮은 방법으로 처리할 방법을 검색하기
+
     gSkybox->Draw();
+
+   // gFloor->Draw();
     gCharacter->Draw();
+    
+    gLight->Draw();
+    gLight->DrawDebug();
 
-    gLight->Draw(deltaTime);
-
+    gPlane->Update();
+    gPlane->DrawTexture(gLight);
     Renderer::GetInstance()->Present();
 
     return S_OK;
@@ -441,7 +447,7 @@ void Cleanup()
     gDirectInput->Release();
     delete gDirectInput;
     gDirectInput = nullptr;
-
+    delete gFloor;
     delete gPlane;
  //   gImporter->Release();
     delete gSkybox;
@@ -454,7 +460,7 @@ void Cleanup()
     Renderer::GetInstance()->Release();
 }
 
-void preprocess(float deltaTime)
+void preprocess()
 {
     Renderer::GetInstance()->SetRenderTargetTo(Renderer::eRenderTarget::Shadow);
     Renderer::GetInstance()->SetViewport(false);

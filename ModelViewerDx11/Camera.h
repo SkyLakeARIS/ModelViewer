@@ -18,6 +18,8 @@ public:
 
     void ChangeFocus(XMFLOAT3 newFocus);
 
+    float GetFov() const;
+    float GetAspectRatio() const;
     XMFLOAT3 GetCameraPositionFloat() const;
     XMVECTOR GetCameraPositionVector() const;
 
@@ -45,6 +47,7 @@ private:
     XMVECTOR    mvForward;          // 필요없음.
     XMVECTOR    mvRight;            // 필요없음.
 
+    float       mFov;
     uint32      mScreenWidth;
     uint32      mScreenHeight;
 

@@ -33,6 +33,7 @@
 #include <fbxsdk.h>
 
 // Windows 헤더 파일
+#define NOMINMAX
 #include <windows.h>
 
 // C 런타임 헤더 파일입니다.
@@ -42,7 +43,7 @@
 #include <memory.h>
 #include <tchar.h>
 #include <vector>
-
+#include <crtdbg.h>
 // my header
 #include "Type.h"
 #include "Timer.h"
@@ -57,12 +58,12 @@
      obj = nullptr;             \
 }                               \
 
-#define ASSERT(expr, msg)                                               \
- if(!(expr))                                                            \
-{                                                                       \
-     fprintf(stderr, "%s (%d), msg: %s\n", __FILE__, __LINE__, msg);    \
-     __debugbreak();                                                    \
-}                                                                       \
+#define ASSERT(expr, format, ...)                                                   \
+if(!(expr))                                                                         \
+{                                                                                   \
+    _CrtDbgReport(_CRT_ASSERT, __FILE__, __LINE__, nullptr, format, ##__VA_ARGS__); \
+    __debugbreak();                                                                 \
+}                                                                                   \
 
 #ifdef _DEBUG
 #define SET_PRIVATE_DATA(obj, objectNameStr)         \

@@ -24,6 +24,8 @@ Camera::Camera(XMVECTOR vEye, XMVECTOR vLookAt, XMVECTOR vUp)
     mAnglesRad.x = atan(eyePos.x / -eyePos.z);
     mAnglesRad.y = acos(eyePos.y);
 
+    mFov = XMConvertToRadians(60.0f);
+
     makeViewMatrix();
     makeProjectionMatrix();
 }
@@ -71,7 +73,7 @@ void Camera::AddRadiusSphere(float scaleFactor)
     constexpr float MAX_RADIUS = 10.0f;
     constexpr float MIN_RADIUS = 0.1f;
 
-    mRadiusOfSphere += scaleFactor;
+    mRadiusOfSphere += scaleFactor *2.0f;
 
     if(mRadiusOfSphere > MAX_RADIUS)
     {
@@ -117,6 +119,16 @@ void Camera::ChangeFocus(XMFLOAT3 newFocus)
     makeViewMatrix();
 }
 
+float Camera::GetFov() const
+{
+    return mFov;
+}
+
+float Camera::GetAspectRatio() const
+{
+    return static_cast<float>(mScreenWidth) / static_cast<float>(mScreenHeight);
+}
+
 XMVECTOR Camera::GetCameraPositionVector() const
 {
     return mvEye;
@@ -156,6 +168,6 @@ void Camera::makeViewMatrix()
 
 void Camera::makeProjectionMatrix()
 {
-    mMatProjection = XMMatrixPerspectiveFovLH(XM_PIDIV4, static_cast<float>(mScreenWidth) / static_cast<float>(mScreenHeight), 0.001f, 1000.0f);
+    mMatProjection = XMMatrixPerspectiveFovLH(mFov, static_cast<float>(mScreenWidth) / static_cast<float>(mScreenHeight), 0.1f, 500.0f);
     mMatViewProjection = mMatView * mMatProjection;
 }
