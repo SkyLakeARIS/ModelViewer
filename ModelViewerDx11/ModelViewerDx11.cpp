@@ -1,17 +1,18 @@
 ﻿// ModelViewerDx11.cpp : 애플리케이션에 대한 진입점을 정의합니다.
 //
-
-#include "Camera.h"
-#include "ModelImporter.h"
 #include "ModelViewerDx11.h"
-#include "Plane.h"
-
 #include <string>
-
-#include "Floor.h"
-#include "Light.h"
-#include "LightManager.h"
-#include "Sky.h"
+#include "Core/Input.h"
+#include "Core/Timer.h"
+#include "Renderer/Importer/ModelImporter.h"
+#include "Renderer/Primitive/Plane.h"
+#include "Renderer/Resources/Model.h"
+#include "Scene/Camera.h"
+#include "Scene/Floor.h"
+#include "Scene/Light.h"
+#include "Scene/LightManager.h"
+#include "Scene/Sky.h"
+#include "Util/Macro.h"
 
 
 using namespace DirectX;
@@ -21,15 +22,15 @@ using namespace DirectX;
 WCHAR       szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR       szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
 
-ModelImporter*          gImporter = nullptr;
-Model*                  gCharacter = nullptr;
-Camera* gCamera = nullptr;
-Sky* gSkybox = nullptr;
-Light* gLight = nullptr;
-Plane* gPlane = nullptr;
-Floor* gFloor = nullptr;
+renderer::ModelImporter* gImporter = nullptr;
+renderer::Model* gCharacter = nullptr;
+scene::Camera* gCamera = nullptr;
+scene::Sky* gSkybox = nullptr;
+scene::Light* gLight = nullptr;
+renderer::Plane* gPlane = nullptr;
+scene::Floor* gFloor = nullptr;
 
-DirectInput*            gDirectInput = nullptr;
+core::DirectInput* gDirectInput = nullptr;
 
 
 
@@ -92,7 +93,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     swapDesc.SampleDesc.Quality = 0;
     swapDesc.Windowed = TRUE;
 
-    result = Renderer::GetInstance()->CreateDeviceAndSetup(swapDesc, hWnd, WINDOW_HEIGHT, WINDOW_WIDTH, true);
+    result = renderer::Renderer::GetInstance()->CreateDeviceAndSetup(swapDesc, hWnd, WINDOW_HEIGHT, WINDOW_WIDTH, true);
     if (FAILED(result))
     {
         ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
@@ -101,7 +102,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
 
 
-    result = Renderer::GetInstance()->PrepareRender();
+    result = renderer::Renderer::GetInstance()->PrepareRender();
     if (FAILED(result))
     {
         ASSERT(false, "Fail to initialize shaders");
@@ -112,7 +113,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //
     // DirectInput initialize
     //
-    gDirectInput = new DirectInput(hInstance, hWnd, WINDOW_WIDTH, WINDOW_HEIGHT);
+    gDirectInput = new core::DirectInput(hInstance, hWnd, WINDOW_WIDTH, WINDOW_HEIGHT);
     result = gDirectInput->Initialize();
     if (FAILED(result))
     {
@@ -120,20 +121,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         goto EXIT_PROGRAM;
     }
 
-    gCamera = new Camera(
-        XMVectorSet(0.0f, 10.0f, -15.0f, 0.0f)
-        , XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f)
-        , XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+    gCamera = new scene::Camera(
+                                XMVectorSet(0.0f, 10.0f, -15.0f, 0.0f)
+                                , XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f)
+                                , XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
 
 
-    gImporter = new ModelImporter(Renderer::GetInstance()->GetDevice());
+    gImporter = new renderer::ModelImporter(renderer::Renderer::GetInstance()->GetDevice());
     gImporter->Initialize();
 
-    gCharacter = new Model(Renderer::GetInstance(), gCamera);
+    gCharacter = new renderer::Model(renderer::Renderer::GetInstance(), gCamera);
 
-    gImporter->LoadFbxModel("/models/unagi.fbx");
+    gImporter->LoadFbxModel("/AssetData/models/unagi.fbx");
 
-    gSkybox = new Sky(*Renderer::GetInstance(), *gCamera);
+    gSkybox = new scene::Sky(*renderer::Renderer::GetInstance(), *gCamera);
     gSkybox->Initialize(10, 10);
 
     result = gCharacter->SetupMesh(*gImporter);
@@ -144,27 +145,27 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
 
 
-    Renderer::GetInstance()->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    LightManager::GetInstance();
+    renderer::Renderer::GetInstance()->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    scene::LightManager::GetInstance();
     gCamera->ChangeFocus(gCharacter->GetCenterPoint());
     // MEMO Light 위치값 막 바꾸면 안됨. 그림자 제대로 안그려질 수 있음. 나중에 개선해야 할 항목 중 하나(cascade)
   //  gLight = new Light(XMFLOAT3(0.0f, 50.0f, 70.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), gCamera, 0.1f, 300.0f);
 
-    gLight = new Light(XMFLOAT3(0.0f, 20.0f, 50.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), gCamera, 0.1f, 500.0f);
+    gLight = new scene::Light(XMFLOAT3(0.0f, 20.0f, 50.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), gCamera, 0.1f, 500.0f);
     gLight->Initialize();
     gLight->SetupCascade();
     gCharacter->SetLight(gLight);
 
     // debug quad
     // 깊이 텍스쳐 확인용
-    gPlane = new Plane();
+    gPlane = new renderer::Plane();
     gPlane->SetPosition(XMFLOAT3(0.0, 0.0, -1.0));
 
-    gFloor = new Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
+    gFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
 
     MSG msg;
     ZeroMemory(&msg, sizeof(msg));
-    Timer::Initialize();
+    core::Timer::Initialize();
     {
         constexpr float FPS_UPDATE = 25.0f;
         constexpr float FPS_RENDER = 120.0f;
@@ -199,7 +200,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             else
             {
                 gDirectInput->UpdateInput();
-                double now = Timer::GetNowMS();
+                double now = core::Timer::GetNowMS();
                 if(now - prevUpdateTime >= UpdateInterval)
                 {
                     // MEMO 위의 키입력을 토대로
@@ -208,7 +209,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     // 그외, 앱에서 처리하는 키 입력은 게임의 업데이트와는 무관. 즉시처리해도 됨.
                     // 그렇다면 UpdateInput은 업데이트만하고, UpdateFrame에서 다시 read한다면?
                     // MEMO : 일단, 현 상황에서 필요한 마우스 인풋관련은 처리 완료.
-                    Timer::Tick();
+                    core::Timer::Tick();
                     UpdateFrame(now - prevUpdateTime);
 
                     prevUpdateTime = now;
@@ -248,7 +249,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     EXIT_PROGRAM:;
     Cleanup();
 #ifdef _DEBUG
-    Renderer::CheckLiveObjects();
+    renderer::Renderer::CheckLiveObjects();
 
 #endif
     return programReturn;
@@ -323,7 +324,7 @@ HRESULT UpdateFrame(double deltaTime)
 
     unsigned char* gKeyboard = gDirectInput->GetKeyboardPress();
 
-    if(!(gDirectInput->GetControlMode() & (uint32)eControlFlags::KEYBOARD_MOVEMENT_MODE))
+    if(!(gDirectInput->GetControlMode() & (uint32)core::eControlFlags::KEYBOARD_MOVEMENT_MODE))
     {
         int mouseX = 0;
         int mouseY = 0;
@@ -378,7 +379,7 @@ HRESULT UpdateFrame(double deltaTime)
     static bool bPressKey = false;
     if (!(gKeyboard[DIK_C] & 0x80) && bPressKey)
     {
-        gDirectInput->SetControlMode((uint32)eControlFlags::KEYBOARD_MOVEMENT_MODE);
+        gDirectInput->SetControlMode((uint32)core::eControlFlags::KEYBOARD_MOVEMENT_MODE);
     }
     bPressKey = gKeyboard[DIK_C] & 0x80;
 
@@ -403,13 +404,13 @@ HRESULT UpdateFrame(double deltaTime)
 
     if (gKeyboard[DIK_ESCAPE] & 0x80)
     {
-        SendMessage(Renderer::GetInstance()->GetWindowHandle(), WM_DESTROY, 0, 0);
+        SendMessage(renderer::Renderer::GetInstance()->GetWindowHandle(), WM_DESTROY, 0, 0);
     }
 
 
-    Renderer::CbViewProj cbViewProj;
+    renderer::Renderer::CbViewProj cbViewProj;
     cbViewProj.Matrix = XMMatrixTranspose(gCamera->GetViewProjectionMatrix());
-    Renderer::GetInstance()->UpdateCB(Renderer::eCbType::CbViewProj, &cbViewProj);
+    renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbViewProj, &cbViewProj);
 
     
     gLight->Update(gCamera);
@@ -421,9 +422,9 @@ HRESULT UpdateFrame(double deltaTime)
 
 HRESULT Render()
 {
-    Renderer::GetInstance()->SetRenderTargetTo(Renderer::eRenderTarget::Default);
-    Renderer::GetInstance()->SetViewport(true);
-    Renderer::GetInstance()->ClearScreenAndDepth(Renderer::eRenderTarget::Default);
+    renderer::Renderer::GetInstance()->SetRenderTargetTo(renderer::Renderer::eRenderTarget::Default);
+    renderer::Renderer::GetInstance()->SetViewport(true);
+    renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Default);
 
     // 리소스뷰를 어떻게 괜찮은 방법으로 처리할 방법을 검색하기
 
@@ -437,7 +438,7 @@ HRESULT Render()
 
     gPlane->Update();
     gPlane->DrawTexture(gLight);
-    Renderer::GetInstance()->Present();
+    renderer::Renderer::GetInstance()->Present();
 
     return S_OK;
 }
@@ -457,14 +458,14 @@ void Cleanup()
     delete gCamera;
  
     // MEMO device가 가장 마지막에 해제되도록.
-    Renderer::GetInstance()->Release();
+    renderer::Renderer::GetInstance()->Release();
 }
 
 void preprocess()
 {
-    Renderer::GetInstance()->SetRenderTargetTo(Renderer::eRenderTarget::Shadow);
-    Renderer::GetInstance()->SetViewport(false);
-    Renderer::GetInstance()->ClearScreenAndDepth(Renderer::eRenderTarget::Shadow);
+    renderer::Renderer::GetInstance()->SetRenderTargetTo(renderer::Renderer::eRenderTarget::Shadow);
+    renderer::Renderer::GetInstance()->SetViewport(false);
+    renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Shadow);
     
     gCharacter->DrawShadow();
 }

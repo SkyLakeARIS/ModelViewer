@@ -33,40 +33,49 @@
     <ClInclude Include="ModelViewerDx11.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Timer.h">
+    <ClInclude Include="Renderer\Resources\ModelData.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
+    <ClInclude Include="Renderer\Resources\RenderTypes.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Input.h">
+    <ClInclude Include="Scene\Camera.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="ModelImporter.h">
+    <ClInclude Include="Scene\Floor.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Type.h">
+    <ClInclude Include="Core\Input.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Model.h">
+    <ClInclude Include="Scene\Light.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Plane.h">
+    <ClInclude Include="Scene\LightManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer.h">
+    <ClInclude Include="Renderer\Resources\Model.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Sky.h">
+    <ClInclude Include="Renderer\Importer\ModelImporter.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Light.h">
+    <ClInclude Include="Renderer\Primitive\Plane.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="LightManager.h">
+    <ClInclude Include="Renderer\Renderer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Floor.h">
+    <ClInclude Include="Scene\Sky.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Timer.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Macro.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Util\Type.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -74,37 +83,39 @@
     <ClCompile Include="ModelViewerDx11.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Timer.cpp">
+    <ClCompile Include="Scene\Camera.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Camera.cpp">
+    <ClCompile Include="Scene\Floor.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Input.cpp">
+    <ClCompile Include="Core\Input.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="ModelImporter.cpp">
+    <ClCompile Include="Scene\Light.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Model.cpp">
+    <ClCompile Include="Scene\LightManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Plane.cpp">
+    <ClCompile Include="Renderer\Resources\Model.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer.cpp">
+    <ClCompile Include="Renderer\Importer\ModelImporter.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Sky.cpp">
+    <ClCompile Include="Renderer\Primitive\Plane.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Light.cpp">
+    <ClCompile Include="Renderer\Renderer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="LightManager.cpp">
+    <ClCompile Include="Scene\Sky.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Floor.cpp">
+    <ClCompile Include="Core\Timer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -122,48 +133,20 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\PsOutline.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PsRenderToTexture.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VsOutline.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VsRenderToTexture.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PsSkybox.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VsSkybox.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PsBasicWithShadow.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PsShadow.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VsBasicWithShadow.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VsSimple.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\LayoutPTN.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\LayoutPT.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\LayoutP.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PsColor.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
+    <FxCompile Include="Renderer\Shaders\PsBasicWithShadow.hlsl" />
+    <FxCompile Include="Renderer\Shaders\PsColor.hlsl" />
+    <FxCompile Include="Renderer\Shaders\PsOutline.hlsl" />
+    <FxCompile Include="Renderer\Shaders\PsRenderToTexture.hlsl" />
+    <FxCompile Include="Renderer\Shaders\PsShadow.hlsl" />
+    <FxCompile Include="Renderer\Shaders\PsSkybox.hlsl" />
+    <FxCompile Include="Renderer\Shaders\LayoutPTN.hlsl" />
+    <FxCompile Include="Renderer\Shaders\VsBasicWithShadow.hlsl" />
+    <FxCompile Include="Renderer\Shaders\VsOutline.hlsl" />
+    <FxCompile Include="Renderer\Shaders\LayoutPT.hlsl" />
+    <FxCompile Include="Renderer\Shaders\VsRenderToTexture.hlsl" />
+    <FxCompile Include="Renderer\Shaders\VsSimple.hlsl" />
+    <FxCompile Include="Renderer\Shaders\LayoutP.hlsl" />
+    <FxCompile Include="Renderer\Shaders\VsSkybox.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -161,36 +161,39 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="Floor.h" />
+    <ClInclude Include="Renderer\Resources\ModelData.h" />
+    <ClInclude Include="Renderer\Resources\RenderTypes.h" />
+    <ClInclude Include="Scene\Camera.h" />
+    <ClInclude Include="Scene\Floor.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="Input.h" />
-    <ClInclude Include="Light.h" />
-    <ClInclude Include="LightManager.h" />
-    <ClInclude Include="Model.h" />
-    <ClInclude Include="ModelImporter.h" />
+    <ClInclude Include="Core\Input.h" />
+    <ClInclude Include="Scene\Light.h" />
+    <ClInclude Include="Scene\LightManager.h" />
+    <ClInclude Include="Renderer\Resources\Model.h" />
+    <ClInclude Include="Renderer\Importer\ModelImporter.h" />
     <ClInclude Include="ModelViewerDx11.h" />
-    <ClInclude Include="Plane.h" />
-    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="Renderer\Primitive\Plane.h" />
+    <ClInclude Include="Renderer\Renderer.h" />
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="Sky.h" />
+    <ClInclude Include="Scene\Sky.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="Timer.h" />
-    <ClInclude Include="Type.h" />
+    <ClInclude Include="Core\Timer.h" />
+    <ClInclude Include="Util\Macro.h" />
+    <ClInclude Include="Util\Type.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Floor.cpp" />
-    <ClCompile Include="Input.cpp" />
-    <ClCompile Include="Light.cpp" />
-    <ClCompile Include="LightManager.cpp" />
-    <ClCompile Include="Model.cpp" />
-    <ClCompile Include="ModelImporter.cpp" />
+    <ClCompile Include="Scene\Camera.cpp" />
+    <ClCompile Include="Scene\Floor.cpp" />
+    <ClCompile Include="Core\Input.cpp" />
+    <ClCompile Include="Scene\Light.cpp" />
+    <ClCompile Include="Scene\LightManager.cpp" />
+    <ClCompile Include="Renderer\Resources\Model.cpp" />
+    <ClCompile Include="Renderer\Importer\ModelImporter.cpp" />
     <ClCompile Include="ModelViewerDx11.cpp" />
-    <ClCompile Include="Plane.cpp" />
-    <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="Sky.cpp" />
-    <ClCompile Include="Timer.cpp" />
+    <ClCompile Include="Renderer\Primitive\Plane.cpp" />
+    <ClCompile Include="Renderer\Renderer.cpp" />
+    <ClCompile Include="Scene\Sky.cpp" />
+    <ClCompile Include="Core\Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ModelViewerDx11.rc" />
@@ -200,50 +203,50 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\PsBasicWithShadow.hlsl">
+    <FxCompile Include="Renderer\Shaders\PsBasicWithShadow.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shaders\PsColor.hlsl">
+    <FxCompile Include="Renderer\Shaders\PsColor.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shaders\PsOutline.hlsl">
+    <FxCompile Include="Renderer\Shaders\PsOutline.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="Shaders\PsRenderToTexture.hlsl">
+    <FxCompile Include="Renderer\Shaders\PsRenderToTexture.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="Shaders\PsShadow.hlsl">
+    <FxCompile Include="Renderer\Shaders\PsShadow.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shaders\PsSkybox.hlsl">
+    <FxCompile Include="Renderer\Shaders\PsSkybox.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shaders\LayoutPTN.hlsl" />
-    <FxCompile Include="Shaders\VsBasicWithShadow.hlsl">
+    <FxCompile Include="Renderer\Shaders\LayoutPTN.hlsl" />
+    <FxCompile Include="Renderer\Shaders\VsBasicWithShadow.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shaders\VsOutline.hlsl">
+    <FxCompile Include="Renderer\Shaders\VsOutline.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
-    <FxCompile Include="Shaders\LayoutPT.hlsl" />
-    <FxCompile Include="Shaders\VsRenderToTexture.hlsl">
+    <FxCompile Include="Renderer\Shaders\LayoutPT.hlsl" />
+    <FxCompile Include="Renderer\Shaders\VsRenderToTexture.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
-    <FxCompile Include="Shaders\VsSimple.hlsl">
+    <FxCompile Include="Renderer\Shaders\VsSimple.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shaders\LayoutP.hlsl" />
-    <FxCompile Include="Shaders\VsSkybox.hlsl">
+    <FxCompile Include="Renderer\Shaders\LayoutP.hlsl" />
+    <FxCompile Include="Renderer\Shaders\VsSkybox.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
