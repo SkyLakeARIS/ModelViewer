@@ -439,7 +439,8 @@ HRESULT Render()
     gLight->DrawDebug();
 
     gPlane->Update();
-    gPlane->DrawTexture(gLight);
+    //gPlane->DrawTexture(gLight);
+    gPlane->DrawTextureNew(gLight);
     renderer::Renderer::GetInstance()->Present();
 
     return S_OK;

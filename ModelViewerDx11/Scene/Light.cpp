@@ -121,7 +121,8 @@ namespace scene
         renderer::Renderer::GetInstance()->BindCbToVsByObj(0U, 1U, &mCbMatWorld);
         renderer::Renderer::GetInstance()->BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
 
-        mMesh->Draw();
+        //mMesh->Draw();
+        mMesh->DrawNew();
     }
 
     void Light::DrawDebug()

@@ -8,6 +8,7 @@ namespace scene
 
 namespace renderer
 {
+    // TODO: UI, debug panel 용도 분리 필요, Plane mesh 자체도 Generator가 담당하도록 
     class Plane final
     {
     public:
@@ -22,7 +23,9 @@ namespace renderer
         ~Plane();
 
         void Draw();
+        void DrawNew();
         void DrawTexture(scene::Light* const light);
+        void DrawTextureNew(scene::Light* const light);
         void Update();
 
         void SetPosition(XMFLOAT3& pos);
@@ -36,11 +39,14 @@ namespace renderer
         void GetWorldMatrix(XMMATRIX& outMat) const;
 
     private:
+        static std::atomic_int32_t sObjectCount;
+    private:
         ID3D11Buffer* mVertexBuffers;
         ID3D11Buffer* mIndexBuffers;
         ID3D11Buffer* mCbWorld;
         ID3D11SamplerState* mSamplerState;
 
+        HashID mModelHash;
         VertexTex mMesh;
         XMFLOAT3 mPosition;
         XMFLOAT3 mScale;

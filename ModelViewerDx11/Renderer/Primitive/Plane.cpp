@@ -1,9 +1,14 @@
 ﻿#include "Plane.h"
 #include "../Renderer.h"
 #include "../../Util/Macro.h"
+#include "../../Util/Util.h"
+#include "../Resources/BufferManager.h"
+#include "../Resources/ModelData.h"
 
 namespace renderer
 {
+    std::atomic_int32_t Plane::sObjectCount(0);
+
     Plane::Plane()
         : mPosition(XMFLOAT3(0.0f, 0.0f, 0.0f))
         , mScale(XMFLOAT3(1.6f, 1.6f, 0.6f))
@@ -20,7 +25,7 @@ namespace renderer
         };
 
 
-        const DWORD indices[] =
+        DWORD indices[] =
         {
             0,
             1,
@@ -29,6 +34,20 @@ namespace renderer
             2,
             3,
         };
+
+        sObjectCount.fetch_add(1);
+
+        // TODO: 이런 상수 값들도 따로 모아놓을 파일을 만드는 게 좋아 보임
+        enum { MAX_FILE_PATH = 260 };
+        int8_t virtualFilePath[MAX_FILE_PATH] = {};
+        sprintf_s(reinterpret_cast<char*>(virtualFilePath), MAX_FILE_PATH, "%sPrimitive_Plane_%d.mesh",
+            reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), sObjectCount.load());
+
+        mModelHash = util::GetDjb2Hash(virtualFilePath);
+
+        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices), sizeof(vertices), mModelHash);
+        bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices), sizeof(indices), mModelHash);
 
         D3D11_BUFFER_DESC desc;
         ZeroMemory(&desc, sizeof(desc));
@@ -96,6 +115,10 @@ namespace renderer
 
     Plane::~Plane()
     {
+        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        bufferManager->RemoveVertexData(mModelHash);
+        bufferManager->RemoveIndexData(mModelHash);
+
         SAFETY_RELEASE(mTexture);
         SAFETY_RELEASE(mVertexBuffers);
         SAFETY_RELEASE(mIndexBuffers);
@@ -143,6 +166,38 @@ namespace renderer
         deviceContext->Release();
     }
 
+    void Plane::DrawNew()
+    {
+        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
+
+        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
+        const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
+        const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
+
+        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
+        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
+
+        const uint32 stride = sizeof(VertexTex);
+        const uint32 offset = vertexRange.StartIndex;
+
+        Renderer::GetInstance()->BindVertexBuffer(stride, offset);
+        Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
+
+        ID3D11ShaderResourceView* texDefault = mTexture;
+
+        if (!mTexture)
+        {
+            texDefault = Renderer::GetInstance()->GetDefaultTexture();
+            texDefault->Release();
+        }
+        deviceContext->PSSetSamplers(0U, 1U, &mSamplerState);
+        deviceContext->PSSetShaderResources(0U, 1U, &texDefault);
+
+        deviceContext->DrawIndexed(6, 0U, 0U);
+
+        deviceContext->Release();
+    }
+
     void Plane::DrawTexture(scene::Light* const light)
     {
         ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
@@ -171,7 +226,36 @@ namespace renderer
         deviceContext->PSSetShaderResources(0U, 1U, &unbindSrv);
         UnbindTexture();
         deviceContext->Release();
+    }
 
+    void Plane::DrawTextureNew(scene::Light* const light)
+    {
+        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
+
+        Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::PT);
+        Renderer::GetInstance()->SetShaderTo(Renderer::eShader::RenderToTexture);
+
+        constexpr uint32 stride = sizeof(VertexTex);
+        constexpr uint32 offset = 0U;
+        deviceContext->IASetVertexBuffers(0U, 1U, &mVertexBuffers, &stride, &offset);
+        deviceContext->IASetIndexBuffer(mIndexBuffers, DXGI_FORMAT_R32_UINT, 0U);
+
+        XMMATRIX matWorld = XMMatrixTranspose(mMatWorld);
+        Renderer::GetInstance()->UpdateCbTo(mCbWorld, &matWorld);
+        Renderer::GetInstance()->BindCbToVsByObj(0, 1, &mCbWorld);
+        Renderer::GetInstance()->BindCbToVsByType(1, 1, Renderer::eCbType::CbViewProj);
+
+        deviceContext->PSSetSamplers(0U, 1U, &mSamplerState);
+        SetTexture(Renderer::GetInstance()->GetShadowTexture());
+
+        deviceContext->PSSetShaderResources(0U, 1U, &mTexture);
+
+        deviceContext->DrawIndexed(6, 0U, 0U);
+
+        ID3D11ShaderResourceView* const unbindSrv = nullptr;
+        deviceContext->PSSetShaderResources(0U, 1U, &unbindSrv);
+        UnbindTexture();
+        deviceContext->Release();
     }
 
     void Plane::Update()
