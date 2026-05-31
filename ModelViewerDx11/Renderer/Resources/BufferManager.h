@@ -36,8 +36,8 @@ namespace renderer
     private:
 
         // TODO: 하나로 합쳐도 좋을 것 같고, 분리해도 좋을 것 같고.
-        void resizeVertexBuffer();
-        void resizeIndexBuffer();
+        void resizeVertexBuffer(uint32_t newSize);
+        void resizeIndexBuffer(uint32_t newSize);
     private:
         ID3D11Device* mDevice;
         ID3D11DeviceContext* mDeviceContext;

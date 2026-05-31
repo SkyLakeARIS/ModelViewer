@@ -78,7 +78,7 @@ namespace renderer
 
         if(mVertexBufferTotalSize <= mVertexBufferCursor + dataByteSize)
         {
-            resizeVertexBuffer();
+            resizeVertexBuffer(mVertexBufferCursor + dataByteSize);
         }
 
         D3D11_BOX updateRange = {};
@@ -113,7 +113,7 @@ namespace renderer
 
         if (mIndexBufferTotalSize <= mIndexBufferCursor + dataByteSize)
         {
-            resizeIndexBuffer();
+            resizeIndexBuffer(mIndexBufferCursor + dataByteSize);
         }
 
         D3D11_BOX updateRange = {};
@@ -223,43 +223,63 @@ namespace renderer
         return mIndexBuffer;
     }
 
-    void BufferManager::resizeVertexBuffer()
+    void BufferManager::resizeVertexBuffer(uint32_t newSize)
     {
         ID3D11Buffer* resizedBuffer = nullptr;
         D3D11_BUFFER_DESC bufferDesc = {};
         bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
         bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-        bufferDesc.ByteWidth = mVertexBufferTotalSize * 2;
+        bufferDesc.ByteWidth = newSize * 2;
         if (mDevice->CreateBuffer(&bufferDesc, nullptr, &resizedBuffer) == E_FAIL)
         {
             ASSERT(false, "vertex buffer creation failed while resizing. check the options. tried buffer type (%d)", bufferDesc.BindFlags);
             return;
         }
 
-        mDeviceContext->CopyResource(resizedBuffer, mVertexBuffer);
+        if(mVertexBufferCursor > 0)
+        {
+            D3D11_BOX updateRange = {};
+            updateRange.front = 0;
+            updateRange.back = 1;
+            updateRange.top = 0;
+            updateRange.bottom = 1;
+            updateRange.left = 0;
+            updateRange.right = mVertexBufferCursor;
+            mDeviceContext->CopySubresourceRegion(resizedBuffer, 0, 0, 0, 0, mVertexBuffer, 0, &updateRange);
+        }
 
         std::swap(mVertexBuffer,resizedBuffer);
         SAFETY_RELEASE(resizedBuffer);
-        mVertexBufferTotalSize *= 2;
+        mVertexBufferTotalSize = bufferDesc.ByteWidth;
     }
 
-    void BufferManager::resizeIndexBuffer()
+    void BufferManager::resizeIndexBuffer(uint32_t newSize)
     {
         ID3D11Buffer* resizedBuffer = nullptr;
         D3D11_BUFFER_DESC bufferDesc = {};
         bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
         bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-        bufferDesc.ByteWidth = mIndexBufferTotalSize * 2;
+        bufferDesc.ByteWidth = newSize * 2;
         if (mDevice->CreateBuffer(&bufferDesc, nullptr, &resizedBuffer) == E_FAIL)
         {
             ASSERT(false, "index buffer creation failed while resizing. check the options. tried buffer type (%d)", bufferDesc.BindFlags);
             return;
         }
 
-        mDeviceContext->CopyResource(resizedBuffer, mIndexBuffer);
+        if(mIndexBufferCursor > 0)
+        {
+            D3D11_BOX updateRange = {};
+            updateRange.front = 0;
+            updateRange.back = 1;
+            updateRange.top = 0;
+            updateRange.bottom = 1;
+            updateRange.left = 0;
+            updateRange.right = mIndexBufferCursor;
+            mDeviceContext->CopySubresourceRegion(resizedBuffer, 0, 0, 0, 0, mIndexBuffer, 0, &updateRange);
+        }
 
         std::swap(mIndexBuffer, resizedBuffer);
         SAFETY_RELEASE(resizedBuffer);
-        mIndexBufferTotalSize *= 2;
+        mIndexBufferTotalSize = bufferDesc.ByteWidth;
     }
 }
