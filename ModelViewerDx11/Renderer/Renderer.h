@@ -3,6 +3,8 @@
 
 namespace renderer
 {
+    class BufferManager;
+
     class Renderer final : IUnknown
     {
     public:
@@ -250,6 +252,9 @@ namespace renderer
             mDeviceContext->PSSetConstantBuffers(slot, numBuffer, &mCbList[static_cast<uint32_t>(type)]);
         }
 
+        void BindVertexBuffer(uint32_t stride, uint32_t offset);
+        void BindIndexBuffer(uint32_t offset);
+
         void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology) const;
 
         void SetRenderTargetTo(eRenderTarget type);
@@ -262,6 +267,8 @@ namespace renderer
         // getter
         ID3D11Device*           GetDevice() const;
         ID3D11DeviceContext*    GetDeviceContext() const;
+
+        BufferManager* const GetBufferManager() const;
 
         void                    GetWindowSize(uint32& outWidth, uint32& outHeight) const;
         HWND                    GetWindowHandle() const;
@@ -281,6 +288,10 @@ namespace renderer
 
         HRESULT setupShaders();
 
+    public:
+
+        static constexpr int32_t sVertexBufferDefaultSize = 4096;
+        static constexpr int32_t sIndexBufferDefaultSize = 4096;
     private:
         // TODO texture resource manager 생기면 이동 시키기.
         ID3D11ShaderResourceView*   mDefaultTexture;
@@ -332,5 +343,7 @@ namespace renderer
         uint32      mWindowHeight;
         uint32      mWindowWidth;
 
+        // Managers
+        BufferManager* mBufferManager;
     };
 }

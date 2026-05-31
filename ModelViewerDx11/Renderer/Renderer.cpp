@@ -1,6 +1,7 @@
 ﻿#include "Renderer.h"
 #include <string>
 #include "../Util/Macro.h"
+#include "Resources/BufferManager.h"
 
 namespace renderer
 {
@@ -37,6 +38,11 @@ namespace renderer
     {
         mDeviceContext->AddRef();
         return mDeviceContext;
+    }
+
+    BufferManager* const Renderer::GetBufferManager() const
+    {
+        return mBufferManager;
     }
 
     void Renderer::GetWindowSize(uint32& outWidth, uint32& outHeight) const
@@ -123,6 +129,7 @@ namespace renderer
             SAFETY_RELEASE(mDepthStencilViewList[i]);
         }
 
+        delete mBufferManager;
 
         SAFETY_RELEASE(mDefaultTexture);
         SAFETY_RELEASE(mTexShadow);
@@ -392,6 +399,9 @@ namespace renderer
     HRESULT Renderer::PrepareRender()
     {
         HRESULT result = S_OK;
+
+        mBufferManager = new BufferManager(mDevice, mDeviceContext);
+        mBufferManager->Initialize(sVertexBufferDefaultSize, sIndexBufferDefaultSize);
 
         // set default resources
 
@@ -822,6 +832,19 @@ namespace renderer
         }
         SET_PRIVATE_DATA((*outTex), tag);
         return result;
+    }
+
+    void Renderer::BindVertexBuffer(uint32_t stride, uint32_t offset)
+    {
+        ID3D11Buffer* const vertexBuffer = mBufferManager->GetVertexBuffer();
+        mDeviceContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+    }
+
+    void Renderer::BindIndexBuffer(uint32_t offset)
+    {
+        ID3D11Buffer* const indexBuffer = mBufferManager->GetIndexBuffer();
+        // TODO: 나중에 BufferManager가 format을 가지도록 하는게 관리에 좋을 것으로 보임.
+        mDeviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, offset);
     }
 
     void Renderer::SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology) const
