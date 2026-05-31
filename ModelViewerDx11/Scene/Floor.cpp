@@ -1,6 +1,9 @@
 #include "Floor.h"
 #include "../Util/Macro.h"
 #include "../Renderer/Renderer.h"
+#include "../Renderer/Resources/ModelData.h"
+#include "../Renderer/Resources/BufferManager.h"
+#include "../Util/Util.h"
 
 namespace scene
 {
@@ -57,10 +60,23 @@ namespace scene
         result = renderer::Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbWorld);
         ASSERT(result == S_OK, "mCbWorld 생성 실패.");
         device->Release();
+
+        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+
+        enum {MAX_FILE_PATH = 260};
+        int8_t virtualFilePath[MAX_FILE_PATH] = {};
+        (void)sprintf_s(reinterpret_cast<char*>(virtualFilePath), MAX_FILE_PATH, "%sPrimitive_Grid_%d_%d.mesh",
+                        reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), numLineX, numLineY);
+
+        mModelHash = util::GetDjb2Hash(virtualFilePath);
+        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(mVertices), sizeof(XMFLOAT3) * mNumVertices, mModelHash);
     }
 
     Floor::~Floor()
     {
+        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        bufferManager->RemoveVertexData(mModelHash);
+
         delete[] mVertices;
         SAFETY_RELEASE(mCbWorld);
         SAFETY_RELEASE(mVerticesBuffer);
@@ -89,6 +105,49 @@ namespace scene
         UINT stride = sizeof(XMFLOAT3);
         UINT offset = 0;
         deviceContext->IASetVertexBuffers(0, 1, &mVerticesBuffer, &stride, &offset);
+        D3D11_PRIMITIVE_TOPOLOGY orgTopology;
+        deviceContext->IAGetPrimitiveTopology(&orgTopology);
+
+        deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+        deviceContext->Draw(mNumVertices, 0);
+
+        deviceContext->IASetPrimitiveTopology(orgTopology);
+
+        deviceContext->Release();
+    }
+
+    void Floor::DrawNew()
+    {
+        renderer::Renderer::GetInstance()->SetRasterState(renderer::Renderer::eRasterType::Basic);
+        renderer::Renderer::GetInstance()->SetInputLayoutTo(renderer::Renderer::eInputLayout::P);
+        renderer::Renderer::GetInstance()->SetShaderTo(renderer::Renderer::eShader::Color);
+
+        renderer::Renderer::CbWorld cbWorld;
+        cbWorld.Matrix = XMMatrixIdentity();
+        renderer::Renderer::GetInstance()->UpdateCbTo(mCbWorld, &cbWorld);
+
+        renderer::Renderer::GetInstance()->BindCbToVsByObj(0, 1, &mCbWorld);
+        renderer::Renderer::GetInstance()->BindCbToVsByType(1, 1, renderer::Renderer::eCbType::CbViewProj);
+        renderer::Renderer::GetInstance()->BindCbToPs(0, 1, renderer::Renderer::eCbType::CbColor);
+
+
+        renderer::Renderer::CbColor cbColor = {};
+        cbColor.Float3 = XMFLOAT3(0.0, 1.0, 0.0);
+        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbColor, &cbColor);
+
+
+        ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
+        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+
+        const renderer::BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
+        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
+
+        UINT stride = sizeof(XMFLOAT3);
+        UINT offset = vertexRange.StartIndex;
+
+        renderer::Renderer::GetInstance()->BindVertexBuffer(stride, offset);
+
         D3D11_PRIMITIVE_TOPOLOGY orgTopology;
         deviceContext->IAGetPrimitiveTopology(&orgTopology);
 

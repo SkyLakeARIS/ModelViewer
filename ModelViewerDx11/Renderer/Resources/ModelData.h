@@ -4,6 +4,9 @@
 
 namespace renderer
 {
+    // TODO: Generator 클래스를 만들면 옮겨야 함.
+    static const int8_t* const VIRTUAL_ROOT_PATH = reinterpret_cast<const int8_t*>("/AssetData/Generated/");
+
     struct Vertex;
 
     constexpr size_t MESH_NAME_LENGTH = 128;

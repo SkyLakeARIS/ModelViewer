@@ -432,6 +432,7 @@ HRESULT Render()
     gSkybox->Draw();
 
    // gFloor->Draw();
+    gFloor->DrawNew();
     gCharacter->DrawNew();
     
     gLight->Draw();
