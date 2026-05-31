@@ -13,6 +13,7 @@
 #include "Scene/LightManager.h"
 #include "Scene/Sky.h"
 #include "Util/Macro.h"
+#include "Util/Util.h"
 
 
 using namespace DirectX;
@@ -130,14 +131,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     gImporter = new renderer::ModelImporter(renderer::Renderer::GetInstance()->GetDevice());
     gImporter->Initialize();
 
-    gCharacter = new renderer::Model(renderer::Renderer::GetInstance(), gCamera);
+    gCharacter = new renderer::Model(renderer::Renderer::GetInstance(), gCamera, reinterpret_cast<int8_t*>("/AssetData/models/unagi.fbx"));
 
     gImporter->LoadFbxModel("/AssetData/models/unagi.fbx");
 
     gSkybox = new scene::Sky(*renderer::Renderer::GetInstance(), *gCamera);
     gSkybox->Initialize(10, 10);
 
-    result = gCharacter->SetupMesh(*gImporter);
+    result = gCharacter->SetupMeshNew(*gImporter);
     if (FAILED(result))
     {
         ASSERT(false, "gCharacter::SetupMesh 모델데이터 혹은 D3D개체 초기화 실패 _ could not initialize mesh or d3d obj");
@@ -431,7 +432,7 @@ HRESULT Render()
     gSkybox->Draw();
 
    // gFloor->Draw();
-    gCharacter->Draw();
+    gCharacter->DrawNew();
     
     gLight->Draw();
     gLight->DrawDebug();
@@ -467,5 +468,5 @@ void preprocess()
     renderer::Renderer::GetInstance()->SetViewport(false);
     renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Shadow);
     
-    gCharacter->DrawShadow();
+    gCharacter->DrawShadowNew();
 }

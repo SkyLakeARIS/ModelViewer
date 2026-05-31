@@ -23,10 +23,13 @@ namespace renderer
     {
     public:
         Model(Renderer* renderer, scene::Camera* camera);
+        Model(Renderer* renderer, scene::Camera* camera, int8_t* filePath);
         ~Model();
 
         void                Draw();
+        void                DrawNew();
         void                DrawShadow();
+        void                DrawShadowNew();
 
         void Update();
 
@@ -34,6 +37,7 @@ namespace renderer
         void SetLight(scene::Light* light);
 
         HRESULT             SetupMesh(ModelImporter& importer);
+        HRESULT             SetupMeshNew(ModelImporter& importer);
 
         void                SetHighlight(bool bSelection);
 
@@ -56,6 +60,7 @@ namespace renderer
         ID3D11DeviceContext* mDeviceContext;
         scene::Camera* mCamera; // 나중에 모델에 카메라를 붙이도록(상호참조해야 할 것 같음. 아니면 다른 방법)
 
+        HashID mModelHash;
         size_t mNumMesh;
         size_t mNumVertex;
 
