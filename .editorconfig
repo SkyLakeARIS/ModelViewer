@@ -1,0 +1,80 @@
+# root = true는 이 파일이 최상위 설정임을 의미합니다.
+root = true
+
+[*.{cpp,c,cc,cxx,h,hpp}]
+# 파일 인코딩을 UTF-8로 설정
+charset = utf-8
+
+# ==========================================
+# II. 소스 코드 포맷팅 (Formatting)
+# ==========================================
+
+# 탭은 비주얼 스튜디오 기본값 또는 4칸 띄어쓰기 사용
+indent_style = space
+indent_size = 4
+tab_width = 4
+
+# 중괄호({)를 열 때는 언제나 새로운 줄에 연다
+resharper_cpp_brace_style = next_line
+
+# 중괄호 안에 코드가 한 줄만 있더라도 반드시 중괄호를 사용한다
+resharper_cpp_force_braces_in_control_statements = always
+
+# 포인터나 참조 기호는 자료형에 붙인다 (예: int* number)
+resharper_cpp_pointer_alignment = left
+resharper_cpp_reference_alignment = left
+resharper_cpp_space_before_pointer_in_declaration = false
+resharper_cpp_space_after_pointer_in_declaration = true
+resharper_cpp_space_before_reference_in_declaration = false
+resharper_cpp_space_after_reference_in_declaration = true
+
+# include 전처리문 블록과 코드 본문 사이에 반드시 빈 줄 추가
+resharper_cpp_blank_lines_after_includes = 1
+
+# 초기화 리스트를 이용해 멤버 변수를 초기화할 때는 한 줄에 변수 하나씩 초기화
+resharper_cpp_wrap_base_clause_style = wrap_always
+resharper_cpp_wrap_constructor_initializers_style = wrap_always
+
+# ==========================================
+# I. 메인 코딩 표준 (Naming Conventions)
+# ==========================================
+
+# 네임스페이스는 모두 소문자
+resharper_cpp_naming_rule.namespace.naming_style = all_lower
+
+# 클래스와 구조체의 이름은 파스칼(Pascal) 표기법
+resharper_cpp_naming_rule.class.naming_style = PascalCase
+resharper_cpp_naming_rule.struct.naming_style = PascalCase
+
+# 인터페이스를 선언할 때는 앞에 I를 붙인다
+resharper_cpp_naming_rule.interface.prefix = I
+resharper_cpp_naming_rule.interface.naming_style = PascalCase
+
+# 열거형을 선언할 때는 앞에 e를 붙인다
+resharper_cpp_naming_rule.enum.prefix = e
+resharper_cpp_naming_rule.enum.naming_style = PascalCase
+
+# public 메서드의 이름은 파스칼 표기법
+resharper_cpp_naming_rule.public_method.naming_style = PascalCase
+
+# 그 외 다른 메서드(private, protected)의 이름은 카멜(Camel) 표기법
+resharper_cpp_naming_rule.private_method.naming_style = camelCase
+resharper_cpp_naming_rule.protected_method.naming_style = camelCase
+
+# 지역 변수 그리고 함수의 매개 변수의 이름은 카멜 표기법
+resharper_cpp_naming_rule.local_variable.naming_style = camelCase
+resharper_cpp_naming_rule.parameter.naming_style = camelCase
+
+# 정적(static) 변수의 이름 앞에는 s를 붙인다 (예: sNumMonsters)
+resharper_cpp_naming_rule.static_field.prefix = s
+resharper_cpp_naming_rule.static_field.naming_style = PascalCase
+
+# 클래스 멤버 변수명은 앞에 m을 붙인다 (예: mAge)
+resharper_cpp_naming_rule.private_field.prefix = m
+resharper_cpp_naming_rule.private_field.naming_style = PascalCase
+resharper_cpp_naming_rule.protected_field.prefix = m
+resharper_cpp_naming_rule.protected_field.naming_style = PascalCase
+
+# 상수 또는 #define으로 정의된 상수는 모두 대문자 및 밑줄 분리 (예: SOME_CONSTANT)
+resharper_cpp_naming_rule.constant.naming_style = ALL_UPPER
+resharper_cpp_naming_rule.macro.naming_style = ALL_UPPER
