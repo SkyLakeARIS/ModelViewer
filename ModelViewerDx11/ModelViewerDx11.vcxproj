@@ -181,6 +181,7 @@
     <ClInclude Include="Core\Timer.h" />
     <ClInclude Include="Util\Macro.h" />
     <ClInclude Include="Util\Type.h" />
+    <ClInclude Include="Util\Util.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Scene\Camera.cpp" />
