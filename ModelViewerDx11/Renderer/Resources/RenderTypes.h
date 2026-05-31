@@ -27,4 +27,10 @@ namespace renderer
         float    Shininess;     // 스페큘러 거듭제곱 값
         float    Reserve4;
     };
+
+    struct BufferRange
+    {
+        int32_t StartIndex;
+        int32_t Count;
+    };
 }

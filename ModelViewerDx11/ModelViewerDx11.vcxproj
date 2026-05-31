@@ -162,6 +162,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Renderer\Resources\BufferManager.h" />
     <ClInclude Include="Renderer\Resources\ModelData.h" />
     <ClInclude Include="Renderer\Resources\RenderTypes.h" />
     <ClInclude Include="Scene\Camera.h" />
@@ -184,6 +185,7 @@
     <ClInclude Include="Util\Util.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Renderer\Resources\BufferManager.cpp" />
     <ClCompile Include="Scene\Camera.cpp" />
     <ClCompile Include="Scene\Floor.cpp" />
     <ClCompile Include="Core\Input.cpp" />
