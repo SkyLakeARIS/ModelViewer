@@ -1,4 +1,4 @@
-﻿#include "BufferManager.h"
+#include "BufferManager.h"
 
 #include "RenderTypes.h"
 #include "../../Util/Macro.h"

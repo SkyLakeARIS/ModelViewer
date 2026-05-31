@@ -58,7 +58,7 @@ namespace scene
         desc.Usage = D3D11_USAGE_DEFAULT;
         desc.ByteWidth = sizeof(renderer::Renderer::CbWorld);
         result = renderer::Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbWorld);
-        ASSERT(result == S_OK, "mCbWorld »ı¼º ½ÇÆĞ.");
+        ASSERT(result == S_OK, "mCbWorld ìƒì„± ì‹¤íŒ¨.");
         device->Release();
 
         renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();

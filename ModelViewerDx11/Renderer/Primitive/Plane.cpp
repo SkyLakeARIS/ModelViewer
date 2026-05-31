@@ -1,4 +1,4 @@
-﻿#include "Plane.h"
+#include "Plane.h"
 #include "../Renderer.h"
 #include "../../Util/Macro.h"
 #include "../../Util/Util.h"

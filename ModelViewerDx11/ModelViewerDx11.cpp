@@ -1,4 +1,4 @@
-﻿// ModelViewerDx11.cpp : 애플리케이션에 대한 진입점을 정의합니다.
+// ModelViewerDx11.cpp : 애플리케이션에 대한 진입점을 정의합니다.
 //
 #include "ModelViewerDx11.h"
 #include <string>

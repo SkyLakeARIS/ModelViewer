@@ -1,4 +1,4 @@
-﻿#include "Input.h"
+#include "Input.h"
 #include "../Util/Macro.h"
 
 namespace core

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "RenderTypes.h"
 #include "../../Util/Type.h"
 

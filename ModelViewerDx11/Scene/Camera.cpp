@@ -1,4 +1,4 @@
-﻿#include "Camera.h"
+#include "Camera.h"
 #include "../Renderer/Renderer.h"
 #include "cmath"
 

@@ -1,4 +1,4 @@
-﻿#include "ModelImporter.h"
+#include "ModelImporter.h"
 #include <fstream>
 #include "../../Util/Macro.h"
 

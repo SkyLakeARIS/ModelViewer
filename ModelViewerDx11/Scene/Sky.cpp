@@ -28,7 +28,7 @@ namespace scene
         desc.Usage = D3D11_USAGE_DEFAULT;
         desc.ByteWidth = sizeof(renderer::Renderer::CbWorld);
         HRESULT result = renderer::Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbMatWorld);
-        ASSERT(result == S_OK, "mCbMatWorld »ı¼º ½ÇÆĞ.");
+        ASSERT(result == S_OK, "mCbMatWorld ìƒì„± ì‹¤íŒ¨.");
 
     }
 
@@ -90,14 +90,14 @@ namespace scene
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER; // ¾ÆÁ÷ Á¤È®È÷´Â Àß ¸ğ¸§.
+        samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER; // ì•„ì§ ì •í™•íˆëŠ” ì˜ ëª¨ë¦„.
         samplerDesc.MinLOD = 0;
         samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
         result = mDevice->CreateSamplerState(&samplerDesc, &mSampler);
         if (FAILED(result))
         {
-            ASSERT(false, "SamplerState »ı¼º ½ÇÆĞ");
+            ASSERT(false, "SamplerState ìƒì„± ì‹¤íŒ¨");
             return E_FAIL;
         }
 
@@ -152,7 +152,7 @@ namespace scene
 
     /*
      * https://www.braynzarsoft.net/viewtutorial/q16390-20-cube-mapping-skybox
-     * ³ªÁß¿¡ µ¿ÀûÀ¸·Î »ı¼ºÇÏ´Â sphere Å¬·¡½º¸¦ ¸¸µé¾îµÎ¸é ÁÁÀ» °Í °°À¸¹Ç·Î ÃÖ´ëÇÑ °ÇµéÁö ¾Ê´Â °ÍÀ¸·Î ÇÑ´Ù.
+     * ë‚˜ì¤‘ì— ë™ì ìœ¼ë¡œ ìƒì„±í•˜ëŠ” sphere í´ë˜ìŠ¤ë¥¼ ë§Œë“¤ì–´ë‘ë©´ ì¢‹ì„ ê²ƒ ê°™ìœ¼ë¯€ë¡œ ìµœëŒ€í•œ ê±´ë“¤ì§€ ì•ŠëŠ” ê²ƒìœ¼ë¡œ í•œë‹¤.
      */
     HRESULT Sky::createSphere(uint32 latLines, uint32 lonLines)
     {

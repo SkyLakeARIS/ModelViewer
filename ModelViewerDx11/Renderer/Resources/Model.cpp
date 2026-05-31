@@ -1,4 +1,4 @@
-﻿#include "Model.h"
+#include "Model.h"
 #include "BufferManager.h"
 #include "../Importer/ModelImporter.h"
 #include "../../Util/Util.h"
