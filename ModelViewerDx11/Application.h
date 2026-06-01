@@ -1,0 +1,48 @@
+#pragma once
+#include "framework.h"
+
+namespace scene
+{
+    class Floor;
+    class Light;
+    class Sky;
+    class Camera;
+}
+
+namespace renderer
+{
+    class Plane;
+    class Model;
+    class ModelImporter;
+}
+
+class Application
+{
+public:
+
+    Application() = default;
+    ~Application();
+
+    bool InitializeWithWindows(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow);
+
+    void Run();
+
+private:
+    bool initializeScene();
+
+    void updateScene(double deltaTime);
+
+    void preprocess();
+    void renderScene();
+private:
+
+    renderer::ModelImporter* mImporter;
+    renderer::Model* mCharacter;
+    scene::Camera* mCamera;
+    scene::Sky* mSkybox;
+    scene::Light* mLight;
+    renderer::Plane* mPlane;
+    scene::Floor* mFloor;
+
+    core::DirectInput* mDirectInput;
+};

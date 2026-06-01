@@ -1,0 +1,411 @@
+#include "Application.h"
+#include <string>
+#include "ModelViewerDx11.h"
+#include "Renderer/Renderer.h"
+#include "Renderer/Importer/ModelImporter.h"
+#include "Renderer/Primitive/Plane.h"
+#include "Renderer/Resources/Model.h"
+#include "Scene/Camera.h"
+#include "Scene/Floor.h"
+#include "Scene/Light.h"
+#include "Scene/Sky.h"
+#include "Util/Macro.h"
+
+ATOM                MyRegisterClass(HINSTANCE hInstance);
+LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+
+#define MAX_LOADSTRING 100
+
+WCHAR       szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
+WCHAR       szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
+
+
+ATOM MyRegisterClass(HINSTANCE hInstance)
+{
+    WNDCLASSEXW wcex;
+
+    wcex.cbSize = sizeof(WNDCLASSEX);
+
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = WndProc;
+    wcex.cbClsExtra = 0;
+    wcex.cbWndExtra = 0;
+    wcex.hInstance = hInstance;
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MODELVIEWERDX11));
+    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MODELVIEWERDX11);
+    wcex.lpszClassName = szWindowClass;
+    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+
+    return RegisterClassExW(&wcex);
+}
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+
+Application::~Application()
+{
+    mDirectInput->Release();
+    delete mDirectInput;
+    mDirectInput = nullptr;
+    delete mFloor;
+    delete mPlane;
+    //   gImporter->Release();
+    delete mSkybox;
+    delete mImporter;
+    delete mLight;
+    delete mCharacter;
+    delete mCamera;
+
+    // MEMO device가 가장 마지막에 해제되도록.
+    renderer::Renderer::GetInstance()->Release();
+#ifdef _DEBUG
+    renderer::Renderer::CheckLiveObjects();
+#endif
+}
+
+bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
+{
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
+
+    // 전역 문자열을 초기화합니다.
+    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+    LoadStringW(hInstance, IDC_MODELVIEWERDX11, szWindowClass, MAX_LOADSTRING);
+    MyRegisterClass(hInstance);
+
+
+    HRESULT result = S_OK;
+    int programReturn = FALSE;
+    // 애플리케이션 초기화를 수행합니다:
+
+    const int WINDOW_WIDTH = 1280;
+    const int WINDOW_HEIGHT = 720;
+    const HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+        0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr, hInstance, nullptr);
+
+    if (!hWnd)
+    {
+        return false;
+    }
+
+    ShowWindow(hWnd, nCmdShow);
+    UpdateWindow(hWnd);
+
+    // 백버퍼와 프론트 버퍼를 스왑하는 방식, 백버퍼에서 프론트로 카피하는 방식 두 개가 존재함.
+    DXGI_SWAP_CHAIN_DESC swapDesc;
+    ZeroMemory(&swapDesc, sizeof(swapDesc));
+    swapDesc.BufferCount = 1;
+    swapDesc.BufferDesc.Width = WINDOW_WIDTH;
+    swapDesc.BufferDesc.Height = WINDOW_HEIGHT;
+    swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    swapDesc.BufferDesc.RefreshRate.Numerator = 120;
+    swapDesc.BufferDesc.RefreshRate.Denominator = 1;
+    swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapDesc.OutputWindow = hWnd;
+    swapDesc.SampleDesc.Count = 1;
+    swapDesc.SampleDesc.Quality = 0;
+    swapDesc.Windowed = TRUE;
+
+    result = renderer::Renderer::GetInstance()->CreateDeviceAndSetup(swapDesc, hWnd, WINDOW_HEIGHT, WINDOW_WIDTH, true);
+    if (FAILED(result))
+    {
+        ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
+        return false;
+    }
+
+    result = renderer::Renderer::GetInstance()->PrepareRender();
+    if (FAILED(result))
+    {
+        ASSERT(false, "Fail to initialize shaders");
+        return false;
+    }
+
+    mDirectInput = new core::DirectInput(hInstance, hWnd, WINDOW_WIDTH, WINDOW_HEIGHT);
+    result = mDirectInput->Initialize();
+    if (FAILED(result))
+    {
+        ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
+        return false;
+    }
+
+    initializeScene();
+
+    return true;
+}
+
+void Application::Run()
+{
+    constexpr float FPS_UPDATE = 25.0f;
+    constexpr float FPS_RENDER = 120.0f;
+    constexpr float UpdateInterval = 1000.0f / FPS_UPDATE;
+    constexpr float RenderInterval = 1000.0f / FPS_RENDER;
+
+    uint8_t updateFPS = 0;
+    uint8_t renderFPS = 0;
+    double prevUpdateTime = 0.0;
+    double prevRenderTime = 0.0;
+    double prevFrameTime = 0.0;
+
+    MSG msg;
+    ZeroMemory(&msg, sizeof(msg));
+
+    while (true)
+    {
+        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE | PM_NOYIELD))
+        {
+            bool fHandled = false;
+
+            if (WM_QUIT == msg.message)
+            {
+                break;
+            }
+
+            if (!fHandled)
+            {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        }
+        else
+        {
+            mDirectInput->UpdateInput();
+            double now = core::Timer::GetNowMS();
+            if (now - prevUpdateTime >= UpdateInterval)
+            {
+                // MEMO 위의 키입력을 토대로
+                // MEMO 아래에서 반영하여 물체에 갱신
+                // 일단 키 인풋에 대한 처리 필요 : 카메라, 캐릭터(지금은 아니지만)
+                // 그외, 앱에서 처리하는 키 입력은 게임의 업데이트와는 무관. 즉시처리해도 됨.
+                // 그렇다면 UpdateInput은 업데이트만하고, UpdateFrame에서 다시 read한다면?
+                // MEMO : 일단, 현 상황에서 필요한 마우스 인풋관련은 처리 완료.
+                core::Timer::Tick();
+                updateScene(now - prevUpdateTime);
+
+                prevUpdateTime = now;
+                ++updateFPS;
+            }
+
+            if (now - prevRenderTime >= RenderInterval)
+            {
+                preprocess();
+                renderScene();
+
+                prevRenderTime = now;
+                ++renderFPS;
+            }
+
+            if (now - prevFrameTime >= 1000.0)
+            {
+                prevFrameTime = now;
+                OutputDebugString(L"Render FPS : ");
+                OutputDebugString(std::to_wstring(renderFPS).c_str());
+                OutputDebugString(L"\n");
+
+                OutputDebugString(L"Update FPS : ");
+                OutputDebugString(std::to_wstring(updateFPS).c_str());
+                OutputDebugString(L"\n");
+
+
+                updateFPS = 0;
+                renderFPS = 0;
+            }
+
+        }
+    }
+}
+
+bool Application::initializeScene()
+{
+    core::Timer::Initialize();
+
+    mCamera = new scene::Camera(
+        XMVectorSet(0.0f, 10.0f, -15.0f, 0.0f)
+        , XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f)
+        , XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+
+    mImporter = new renderer::ModelImporter(renderer::Renderer::GetInstance()->GetDevice());
+    mImporter->Initialize();
+
+    mCharacter = new renderer::Model(renderer::Renderer::GetInstance(), mCamera, reinterpret_cast<int8_t*>("/AssetData/models/unagi.fbx"));
+
+    // TODO: 로드 시점과 처리에 대한 내용도 고민이 필요함. (모델이 로드를 요청할 것인지? - 요청하면 언제 로드되었음을 확인하고 처리할 것인지? - Importer와는 hash id로 통신)
+    mImporter->LoadFbxModel("/AssetData/models/unagi.fbx");
+
+    mSkybox = new scene::Sky(*renderer::Renderer::GetInstance(), *mCamera);
+    mSkybox->Initialize(10, 10);
+
+    // TODO: 실패시 프로그램 종료말고, 나중에 Object List를 만들어서 관리하도록 변경(성공하면 drawable 리스트에 추가)
+    if (FAILED(mCharacter->SetupMeshNew(*mImporter)))
+    {
+        ASSERT(false, "gCharacter::SetupMesh 모델데이터 혹은 D3D개체 초기화 실패 _ could not initialize mesh or d3d obj");
+        return false;
+    }
+
+    renderer::Renderer::GetInstance()->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    mCamera->ChangeFocus(mCharacter->GetCenterPoint());
+    // MEMO Light 위치값 막 바꾸면 안됨. 그림자 제대로 안그려질 수 있음. 나중에 개선해야 할 항목 중 하나(cascade)
+  //  gLight = new Light(XMFLOAT3(0.0f, 50.0f, 70.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), gCamera, 0.1f, 300.0f);
+
+    mLight = new scene::Light(XMFLOAT3(0.0f, 20.0f, 50.0f), mCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), mCamera, 0.1f, 500.0f);
+    mLight->Initialize();
+    mLight->SetupCascade();
+    mCharacter->SetLight(mLight);
+
+    // debug quad
+    // 깊이 텍스쳐 확인용
+    mPlane = new renderer::Plane();
+    mPlane->SetPosition(XMFLOAT3(0.0, 0.0, -1.0));
+
+    mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
+
+    return true;
+}
+
+void Application::updateScene(double deltaTime)
+{
+    float speed = 10.0f;
+
+    /*
+     *  direct input ver
+     */
+
+    unsigned char* gKeyboard = mDirectInput->GetKeyboardPress();
+
+    if (!(mDirectInput->GetControlMode() & (uint32)core::eControlFlags::KEYBOARD_MOVEMENT_MODE))
+    {
+        int mouseX = 0;
+        int mouseY = 0;
+        speed = 0.5f;
+        mDirectInput->GetMouseDeltaPosition(mouseX, mouseY);
+        if (!(mouseX == 0 && mouseY == 0))
+        {
+            mCamera->RotateAxis(XMConvertToRadians(static_cast<float>(mouseX)) * deltaTime * speed, XMConvertToRadians(static_cast<float>(mouseY)) * deltaTime * speed);
+        }
+    }
+    else
+    {
+        if (gKeyboard[DIK_W] & 0x80)
+        {
+            mCamera->RotateAxis(0.0f, XMConvertToRadians(-(speed * deltaTime)));
+        }
+
+        if (gKeyboard[DIK_S] & 0x80)
+        {
+            mCamera->RotateAxis(0.0f, XMConvertToRadians(speed * deltaTime));
+        }
+        if (gKeyboard[DIK_A] & 0x80)
+        {
+            mCamera->RotateAxis(XMConvertToRadians(-(speed * deltaTime)), 0.0f);
+        }
+
+        if (gKeyboard[DIK_D] & 0x80)
+        {
+            mCamera->RotateAxis(XMConvertToRadians(speed * deltaTime), 0.0f);
+        }
+    }
+
+    // 마우스 휠 처리 이전에 임시용.
+    // 카메라와 물체간의 거리 조절(구체 크기 확대/축소)
+    if (gKeyboard[DIK_Q] & 0x80)
+    {
+        mCamera->AddRadiusSphere(deltaTime);
+        // gLight->Move(0.001f, -1.0f);
+       //  gLight->SetDirection(gCharacter->GetCenterPoint());
+
+    }
+
+    if (gKeyboard[DIK_E] & 0x80)
+    {
+        mCamera->AddRadiusSphere(-deltaTime);
+        //     gLight->Move(-0.001f, 1.0f);
+         //    gLight->SetDirection(gCharacter->GetCenterPoint());
+    }
+
+    // 키보드<-> 마우스 조작 전환
+    static bool bPressKey = false;
+    if (!(gKeyboard[DIK_C] & 0x80) && bPressKey)
+    {
+        mDirectInput->SetControlMode((uint32)core::eControlFlags::KEYBOARD_MOVEMENT_MODE);
+    }
+    bPressKey = gKeyboard[DIK_C] & 0x80;
+
+    static bool bPressHKey = false;
+    static bool bHightlight = false;
+    if (!(gKeyboard[DIK_H] & 0x80) && bPressHKey)
+    {
+        bHightlight = !bHightlight;
+        mCharacter->SetHighlight(bHightlight);
+    }
+    bPressHKey = gKeyboard[DIK_H] & 0x80;
+
+    if (gKeyboard[DIK_Z] & 0x80)
+    {
+        mCamera->AddHeight(-deltaTime);
+    }
+
+    if (gKeyboard[DIK_X] & 0x80)
+    {
+        mCamera->AddHeight(deltaTime);
+    }
+
+    if (gKeyboard[DIK_ESCAPE] & 0x80)
+    {
+        SendMessage(renderer::Renderer::GetInstance()->GetWindowHandle(), WM_DESTROY, 0, 0);
+    }
+
+
+    renderer::Renderer::CbViewProj cbViewProj;
+    cbViewProj.Matrix = XMMatrixTranspose(mCamera->GetViewProjectionMatrix());
+    renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbViewProj, &cbViewProj);
+
+
+    mLight->Update(mCamera);
+    mLight->SetupCascade();
+    mSkybox->Update();
+    mCharacter->Update();
+}
+
+void Application::preprocess()
+{
+    renderer::Renderer::GetInstance()->SetRenderTargetTo(renderer::Renderer::eRenderTarget::Shadow);
+    renderer::Renderer::GetInstance()->SetViewport(false);
+    renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Shadow);
+
+    mCharacter->DrawShadowNew();
+}
+
+void Application::renderScene()
+{
+    renderer::Renderer::GetInstance()->SetRenderTargetTo(renderer::Renderer::eRenderTarget::Default);
+    renderer::Renderer::GetInstance()->SetViewport(true);
+    renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Default);
+
+    // 리소스뷰를 어떻게 괜찮은 방법으로 처리할 방법을 검색하기
+
+    mSkybox->Draw();
+
+    // gFloor->Draw();
+    mFloor->DrawNew();
+    mCharacter->DrawNew();
+
+    mLight->Draw();
+    mLight->DrawDebug();
+
+    mPlane->Update();
+    //gPlane->DrawTexture(gLight);
+    mPlane->DrawTextureNew(mLight);
+    renderer::Renderer::GetInstance()->Present();
+}

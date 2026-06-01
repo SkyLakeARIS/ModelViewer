@@ -162,6 +162,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Application.h" />
     <ClInclude Include="Renderer\Resources\BufferManager.h" />
     <ClInclude Include="Renderer\Resources\ModelData.h" />
     <ClInclude Include="Renderer\Resources\RenderTypes.h" />
@@ -185,6 +186,7 @@
     <ClInclude Include="Util\Util.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Application.cpp" />
     <ClCompile Include="Renderer\Resources\BufferManager.cpp" />
     <ClCompile Include="Scene\Camera.cpp" />
     <ClCompile Include="Scene\Floor.cpp" />
