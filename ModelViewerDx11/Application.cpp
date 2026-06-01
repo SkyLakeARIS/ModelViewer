@@ -1,6 +1,5 @@
 #include "Application.h"
 #include <string>
-#include "ModelViewerDx11.h"
 #include "Window.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Importer/ModelImporter.h"
@@ -45,9 +44,6 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     const int WINDOW_HEIGHT = 720;
     mWindow = new Window(hInstance, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    HRESULT result = S_OK;
-    int programReturn = FALSE;
-    // 애플리케이션 초기화를 수행합니다:
     mWindow->RegisterWindowClass();
 
     const HWND handleWindow = mWindow->MakeWindow();
@@ -74,23 +70,20 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     swapDesc.SampleDesc.Quality = 0;
     swapDesc.Windowed = TRUE;
 
-    result = renderer::Renderer::GetInstance()->CreateDeviceAndSetup(swapDesc, handleWindow, WINDOW_HEIGHT, WINDOW_WIDTH, true);
-    if (FAILED(result))
+    if (FAILED(renderer::Renderer::GetInstance()->CreateDeviceAndSetup(swapDesc, handleWindow, WINDOW_HEIGHT, WINDOW_WIDTH, true)))
     {
         ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
         return false;
     }
 
-    result = renderer::Renderer::GetInstance()->PrepareRender();
-    if (FAILED(result))
+    if (FAILED(renderer::Renderer::GetInstance()->PrepareRender()))
     {
         ASSERT(false, "Fail to initialize shaders");
         return false;
     }
 
     mDirectInput = new core::DirectInput(hInstance, handleWindow, WINDOW_WIDTH, WINDOW_HEIGHT);
-    result = mDirectInput->Initialize();
-    if (FAILED(result))
+    if (FAILED(mDirectInput->Initialize()))
     {
         ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
         return false;
