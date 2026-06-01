@@ -1,6 +1,8 @@
 #pragma once
 #include "framework.h"
 
+class Window;
+
 namespace scene
 {
     class Floor;
@@ -23,7 +25,7 @@ public:
     Application() = default;
     ~Application();
 
-    bool InitializeWithWindows(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow);
+    bool InitializeWithWindows(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int32_t nCmdShow);
 
     void Run();
 
@@ -36,6 +38,7 @@ private:
     void renderScene();
 private:
 
+    Window* mWindow;
     renderer::ModelImporter* mImporter;
     renderer::Model* mCharacter;
     scene::Camera* mCamera;

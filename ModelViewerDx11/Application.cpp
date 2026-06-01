@@ -1,6 +1,7 @@
 #include "Application.h"
 #include <string>
 #include "ModelViewerDx11.h"
+#include "Window.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Importer/ModelImporter.h"
 #include "Renderer/Primitive/Plane.h"
@@ -10,49 +11,6 @@
 #include "Scene/Light.h"
 #include "Scene/Sky.h"
 #include "Util/Macro.h"
-
-ATOM                MyRegisterClass(HINSTANCE hInstance);
-LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-
-#define MAX_LOADSTRING 100
-
-WCHAR       szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
-WCHAR       szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
-
-
-ATOM MyRegisterClass(HINSTANCE hInstance)
-{
-    WNDCLASSEXW wcex;
-
-    wcex.cbSize = sizeof(WNDCLASSEX);
-
-    wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = WndProc;
-    wcex.cbClsExtra = 0;
-    wcex.cbWndExtra = 0;
-    wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MODELVIEWERDX11));
-    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MODELVIEWERDX11);
-    wcex.lpszClassName = szWindowClass;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
-    return RegisterClassExW(&wcex);
-}
-
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    switch (message)
-    {
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
-    default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
-    }
-    return 0;
-}
 
 
 Application::~Application()
@@ -69,6 +27,7 @@ Application::~Application()
     delete mCharacter;
     delete mCamera;
 
+    delete mWindow;
     // MEMO device가 가장 마지막에 해제되도록.
     renderer::Renderer::GetInstance()->Release();
 #ifdef _DEBUG
@@ -76,33 +35,28 @@ Application::~Application()
 #endif
 }
 
-bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
+bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int32_t nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // 전역 문자열을 초기화합니다.
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_MODELVIEWERDX11, szWindowClass, MAX_LOADSTRING);
-    MyRegisterClass(hInstance);
-
+    const int WINDOW_WIDTH = 1280;
+    const int WINDOW_HEIGHT = 720;
+    mWindow = new Window(hInstance, nCmdShow, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     HRESULT result = S_OK;
     int programReturn = FALSE;
     // 애플리케이션 초기화를 수행합니다:
+    mWindow->RegisterWindowClass();
 
-    const int WINDOW_WIDTH = 1280;
-    const int WINDOW_HEIGHT = 720;
-    const HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-        0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, nullptr, nullptr, hInstance, nullptr);
-
-    if (!hWnd)
+    const HWND handleWindow = mWindow->MakeWindow();
+    if(!handleWindow)
     {
         return false;
     }
 
-    ShowWindow(hWnd, nCmdShow);
-    UpdateWindow(hWnd);
+    mWindow->DisplayWindow();
+    mWindow->RefreshWindow();
 
     // 백버퍼와 프론트 버퍼를 스왑하는 방식, 백버퍼에서 프론트로 카피하는 방식 두 개가 존재함.
     DXGI_SWAP_CHAIN_DESC swapDesc;
@@ -114,12 +68,12 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     swapDesc.BufferDesc.RefreshRate.Numerator = 120;
     swapDesc.BufferDesc.RefreshRate.Denominator = 1;
     swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapDesc.OutputWindow = hWnd;
+    swapDesc.OutputWindow = handleWindow;
     swapDesc.SampleDesc.Count = 1;
     swapDesc.SampleDesc.Quality = 0;
     swapDesc.Windowed = TRUE;
 
-    result = renderer::Renderer::GetInstance()->CreateDeviceAndSetup(swapDesc, hWnd, WINDOW_HEIGHT, WINDOW_WIDTH, true);
+    result = renderer::Renderer::GetInstance()->CreateDeviceAndSetup(swapDesc, handleWindow, WINDOW_HEIGHT, WINDOW_WIDTH, true);
     if (FAILED(result))
     {
         ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
@@ -133,7 +87,7 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
         return false;
     }
 
-    mDirectInput = new core::DirectInput(hInstance, hWnd, WINDOW_WIDTH, WINDOW_HEIGHT);
+    mDirectInput = new core::DirectInput(hInstance, handleWindow, WINDOW_WIDTH, WINDOW_HEIGHT);
     result = mDirectInput->Initialize();
     if (FAILED(result))
     {
@@ -159,70 +113,54 @@ void Application::Run()
     double prevRenderTime = 0.0;
     double prevFrameTime = 0.0;
 
-    MSG msg;
-    ZeroMemory(&msg, sizeof(msg));
 
     while (true)
     {
-        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE | PM_NOYIELD))
+        if(mWindow->ProcessMessages())
         {
-            bool fHandled = false;
-
-            if (WM_QUIT == msg.message)
-            {
-                break;
-            }
-
-            if (!fHandled)
-            {
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-            }
+            break;
         }
-        else
+
+        mDirectInput->UpdateInput();
+        double now = core::Timer::GetNowMS();
+        if (now - prevUpdateTime >= UpdateInterval)
         {
-            mDirectInput->UpdateInput();
-            double now = core::Timer::GetNowMS();
-            if (now - prevUpdateTime >= UpdateInterval)
-            {
-                // MEMO 위의 키입력을 토대로
-                // MEMO 아래에서 반영하여 물체에 갱신
-                // 일단 키 인풋에 대한 처리 필요 : 카메라, 캐릭터(지금은 아니지만)
-                // 그외, 앱에서 처리하는 키 입력은 게임의 업데이트와는 무관. 즉시처리해도 됨.
-                // 그렇다면 UpdateInput은 업데이트만하고, UpdateFrame에서 다시 read한다면?
-                // MEMO : 일단, 현 상황에서 필요한 마우스 인풋관련은 처리 완료.
-                core::Timer::Tick();
-                updateScene(now - prevUpdateTime);
+            // MEMO 위의 키입력을 토대로
+            // MEMO 아래에서 반영하여 물체에 갱신
+            // 일단 키 인풋에 대한 처리 필요 : 카메라, 캐릭터(지금은 아니지만)
+            // 그외, 앱에서 처리하는 키 입력은 게임의 업데이트와는 무관. 즉시처리해도 됨.
+            // 그렇다면 UpdateInput은 업데이트만하고, UpdateFrame에서 다시 read한다면?
+            // MEMO : 일단, 현 상황에서 필요한 마우스 인풋관련은 처리 완료.
+            core::Timer::Tick();
+            updateScene(now - prevUpdateTime);
 
-                prevUpdateTime = now;
-                ++updateFPS;
-            }
+            prevUpdateTime = now;
+            ++updateFPS;
+        }
 
-            if (now - prevRenderTime >= RenderInterval)
-            {
-                preprocess();
-                renderScene();
+        if (now - prevRenderTime >= RenderInterval)
+        {
+            preprocess();
+            renderScene();
 
-                prevRenderTime = now;
-                ++renderFPS;
-            }
+            prevRenderTime = now;
+            ++renderFPS;
+        }
 
-            if (now - prevFrameTime >= 1000.0)
-            {
-                prevFrameTime = now;
-                OutputDebugString(L"Render FPS : ");
-                OutputDebugString(std::to_wstring(renderFPS).c_str());
-                OutputDebugString(L"\n");
+        if (now - prevFrameTime >= 1000.0)
+        {
+            prevFrameTime = now;
+            OutputDebugString(L"Render FPS : ");
+            OutputDebugString(std::to_wstring(renderFPS).c_str());
+            OutputDebugString(L"\n");
 
-                OutputDebugString(L"Update FPS : ");
-                OutputDebugString(std::to_wstring(updateFPS).c_str());
-                OutputDebugString(L"\n");
+            OutputDebugString(L"Update FPS : ");
+            OutputDebugString(std::to_wstring(updateFPS).c_str());
+            OutputDebugString(L"\n");
 
 
-                updateFPS = 0;
-                renderFPS = 0;
-            }
-
+            updateFPS = 0;
+            renderFPS = 0;
         }
     }
 }
