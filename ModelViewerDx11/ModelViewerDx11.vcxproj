@@ -183,6 +183,7 @@
     <ClInclude Include="Util\Macro.h" />
     <ClInclude Include="Util\Type.h" />
     <ClInclude Include="Util\Util.h" />
+    <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
@@ -199,6 +200,7 @@
     <ClCompile Include="Renderer\Renderer.cpp" />
     <ClCompile Include="Scene\Sky.cpp" />
     <ClCompile Include="Core\Timer.cpp" />
+    <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ModelViewerDx11.rc" />
