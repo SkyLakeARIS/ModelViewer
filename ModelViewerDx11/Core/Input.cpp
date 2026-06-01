@@ -97,8 +97,15 @@ namespace core
 
     void DirectInput::Release()
     {
-        mKeyboardInput->Unacquire();
-        mMouseInput->Unacquire();
+        if(mKeyboardInput)
+        {
+            mKeyboardInput->Unacquire();
+        }
+
+        if(mMouseInput)
+        {
+            mMouseInput->Unacquire();
+        }
 
         SAFETY_RELEASE(mKeyboardInput);
         SAFETY_RELEASE(mMouseInput);
