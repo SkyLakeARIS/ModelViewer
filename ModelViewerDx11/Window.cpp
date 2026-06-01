@@ -1,51 +1,38 @@
 #include "Window.h"
 #include "ModelViewerDx11.h"
 
-ATOM                MyRegisterClass(HINSTANCE hInstance);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 
-#define MAX_LOADSTRING 100
-
-WCHAR       szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
-WCHAR       szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
-
-
-Window::Window(HINSTANCE hInstance, int32_t nCmdShow, int16_t width, int16_t height)
+Window::Window(HINSTANCE hInstance, int16_t width, int16_t height)
     : mHandleWindow(nullptr)
     , mHandleInstance(hInstance)
-    , mCmdShow(nCmdShow)
     , mAppTitleName{}
     , mWindowClassName{}
     , mWindowWidth(width)
     , mWindowHeight(height)
 {
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_MODELVIEWERDX11, szWindowClass, MAX_LOADSTRING);
-}
-
-Window::~Window()
-{
-    
+    LoadStringW(mHandleInstance, IDS_APP_TITLE, mAppTitleName, MAX_WINDOW_NAME_LENGTH);
+    LoadStringW(mHandleInstance, IDC_MODELVIEWERDX11, mWindowClassName, MAX_WINDOW_NAME_LENGTH);
 }
 
 HWND Window::MakeWindow()
 {
-    mHandleWindow = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+    mHandleWindow = CreateWindowW(mWindowClassName, mAppTitleName, WS_OVERLAPPEDWINDOW,
         0, 0, mWindowWidth, mWindowHeight, nullptr, nullptr, mHandleInstance, nullptr);
     return mHandleWindow;
 }
 
-void Window::DisplayWindow()
+void Window::DisplayWindow(int32_t nCmdShow) const
 {
-    ShowWindow(mHandleWindow, mCmdShow);
+    ShowWindow(mHandleWindow, nCmdShow);
 }
 
-void Window::RefreshWindow()
+void Window::RefreshWindow() const
 {
     UpdateWindow(mHandleWindow);
 }
 
-ATOM Window::RegisterWindowClass()
+void Window::RegisterWindowClass() const
 {
     WNDCLASSEXW wcex;
 
@@ -60,10 +47,10 @@ ATOM Window::RegisterWindowClass()
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MODELVIEWERDX11);
-    wcex.lpszClassName = szWindowClass;
+    wcex.lpszClassName = mWindowClassName;
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
-    return RegisterClassExW(&wcex);
+    RegisterClassExW(&wcex);
 }
 
 bool Window::ProcessMessages()

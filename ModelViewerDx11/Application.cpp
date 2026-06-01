@@ -40,9 +40,10 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+    // TODO: 기본 해상도는 앱단에서 가지고 있는 것도..Window 클래스는 API 구조만 다루도록.
     const int WINDOW_WIDTH = 1280;
     const int WINDOW_HEIGHT = 720;
-    mWindow = new Window(hInstance, nCmdShow, WINDOW_WIDTH, WINDOW_HEIGHT);
+    mWindow = new Window(hInstance, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     HRESULT result = S_OK;
     int programReturn = FALSE;
@@ -55,7 +56,7 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
         return false;
     }
 
-    mWindow->DisplayWindow();
+    mWindow->DisplayWindow(nCmdShow);
     mWindow->RefreshWindow();
 
     // 백버퍼와 프론트 버퍼를 스왑하는 방식, 백버퍼에서 프론트로 카피하는 방식 두 개가 존재함.
