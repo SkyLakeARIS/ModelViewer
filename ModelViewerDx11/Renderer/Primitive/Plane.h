@@ -22,9 +22,7 @@ namespace renderer
         Plane();
         ~Plane();
 
-        void Draw();
         void DrawNew();
-        void DrawTexture(scene::Light* const light);
         void DrawTextureNew(scene::Light* const light);
         void Update();
 
@@ -41,8 +39,6 @@ namespace renderer
     private:
         static std::atomic_int32_t sObjectCount;
     private:
-        ID3D11Buffer* mVertexBuffers;
-        ID3D11Buffer* mIndexBuffers;
         ID3D11Buffer* mCbWorld;
         ID3D11SamplerState* mSamplerState;
 

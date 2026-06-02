@@ -51,37 +51,12 @@ namespace renderer
 
         D3D11_BUFFER_DESC desc;
         ZeroMemory(&desc, sizeof(desc));
-        desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
         desc.Usage = D3D11_USAGE_DEFAULT;
         desc.CPUAccessFlags = 0U;
 
-
         // vertex buffer
-        D3D11_SUBRESOURCE_DATA subData;
         HRESULT result;
-
-        desc.ByteWidth = sizeof(vertices);
-        subData.pSysMem = vertices;
-
         ID3D11Device* device = Renderer::GetInstance()->GetDevice();
-
-        result = device->CreateBuffer(&desc, &subData, &mVertexBuffers);
-        if (FAILED(result))
-        {
-            ASSERT(false, "버텍스 버퍼 생성 실패 failed to create VertexBuffers");
-        }
-
-
-        // index buffer
-        desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-        desc.ByteWidth = sizeof(indices);
-        subData.pSysMem = indices;
-        result = device->CreateBuffer(&desc, &subData, &mIndexBuffers);
-        if (FAILED(result))
-        {
-            ASSERT(false, "인덱스 버퍼 생성 실패 failed to create IndexBuffers");
-        }
-
 
         desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
         desc.ByteWidth = sizeof(Renderer::CbWorld);
@@ -120,8 +95,6 @@ namespace renderer
         bufferManager->RemoveIndexData(mModelHash);
 
         SAFETY_RELEASE(mTexture);
-        SAFETY_RELEASE(mVertexBuffers);
-        SAFETY_RELEASE(mIndexBuffers);
         SAFETY_RELEASE(mCbWorld);
         SAFETY_RELEASE(mSamplerState);
     }
@@ -140,30 +113,6 @@ namespace renderer
     void Plane::GetWorldMatrix(XMMATRIX& outMat) const
     {
         outMat = mMatWorld;
-    }
-
-    void Plane::Draw()
-    {
-        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
-
-        constexpr uint32 stride = sizeof(VertexTex);
-        constexpr uint32 offset = 0U;
-        deviceContext->IASetVertexBuffers(0U, 1U, &mVertexBuffers, &stride, &offset);
-        deviceContext->IASetIndexBuffer(mIndexBuffers, DXGI_FORMAT_R32_UINT, 0U);
-
-        ID3D11ShaderResourceView* texDefault = mTexture;
-
-        if (!mTexture)
-        {
-            texDefault = Renderer::GetInstance()->GetDefaultTexture();
-            texDefault->Release();
-        }
-        deviceContext->PSSetSamplers(0U, 1U, &mSamplerState);
-        deviceContext->PSSetShaderResources(0U, 1U, &texDefault);
-
-        deviceContext->DrawIndexed(6, 0U, 0U);
-
-        deviceContext->Release();
     }
 
     void Plane::DrawNew()
@@ -195,36 +144,6 @@ namespace renderer
 
         deviceContext->DrawIndexed(6, 0U, 0U);
 
-        deviceContext->Release();
-    }
-
-    void Plane::DrawTexture(scene::Light* const light)
-    {
-        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
-
-        Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::PT);
-        Renderer::GetInstance()->SetShaderTo(Renderer::eShader::RenderToTexture);
-
-        constexpr uint32 stride = sizeof(VertexTex);
-        constexpr uint32 offset = 0U;
-        deviceContext->IASetVertexBuffers(0U, 1U, &mVertexBuffers, &stride, &offset);
-        deviceContext->IASetIndexBuffer(mIndexBuffers, DXGI_FORMAT_R32_UINT, 0U);
-
-        XMMATRIX matWorld = XMMatrixTranspose(mMatWorld);
-        Renderer::GetInstance()->UpdateCbTo(mCbWorld, &matWorld);
-        Renderer::GetInstance()->BindCbToVsByObj(0, 1, &mCbWorld);
-        Renderer::GetInstance()->BindCbToVsByType(1, 1, Renderer::eCbType::CbViewProj);
-
-        deviceContext->PSSetSamplers(0U, 1U, &mSamplerState);
-        SetTexture(Renderer::GetInstance()->GetShadowTexture());
-
-        deviceContext->PSSetShaderResources(0U, 1U, &mTexture);
-
-        deviceContext->DrawIndexed(6, 0U, 0U);
-
-        ID3D11ShaderResourceView* const unbindSrv = nullptr;
-        deviceContext->PSSetShaderResources(0U, 1U, &unbindSrv);
-        UnbindTexture();
         deviceContext->Release();
     }
 
