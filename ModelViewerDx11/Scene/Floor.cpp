@@ -9,9 +9,9 @@ namespace scene
 {
     Floor::Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY)
     {
-        assert(numLineX >= 2, "numLineX must be 2 or greater");
-        assert(numLineY >= 2, "numLineY must be 2 or greater");
-        assert(gapEachLine >= 1, "gapEachLine must be 1 or greater");
+        ASSERT(numLineX >= 2, "numLineX must be 2 or greater");
+        ASSERT(numLineY >= 2, "numLineY must be 2 or greater");
+        ASSERT(gapEachLine >= 1, "gapEachLine must be 1 or greater");
 
         mNumVertices = (numLineX * 2) * (numLineY - 1) + (numLineY - 1);
         mVertices = new XMFLOAT3[mNumVertices];
@@ -51,7 +51,7 @@ namespace scene
         subResource.pSysMem = mVertices;
 
         HRESULT result = device->CreateBuffer(&desc, &subResource, &mVerticesBuffer);
-        assert(result == S_OK, "fail to create Buffer ");
+        ASSERT(result == S_OK, "fail to create Buffer ");
 
 
         desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
