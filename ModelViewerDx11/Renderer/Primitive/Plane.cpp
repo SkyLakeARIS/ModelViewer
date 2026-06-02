@@ -235,10 +235,18 @@ namespace renderer
         Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::PT);
         Renderer::GetInstance()->SetShaderTo(Renderer::eShader::RenderToTexture);
 
-        constexpr uint32 stride = sizeof(VertexTex);
-        constexpr uint32 offset = 0U;
-        deviceContext->IASetVertexBuffers(0U, 1U, &mVertexBuffers, &stride, &offset);
-        deviceContext->IASetIndexBuffer(mIndexBuffers, DXGI_FORMAT_R32_UINT, 0U);
+        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
+        const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
+        const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
+
+        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
+        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
+
+        const uint32 stride = sizeof(VertexTex);
+        const uint32 offset = vertexRange.StartIndex;
+
+        Renderer::GetInstance()->BindVertexBuffer(stride, offset);
+        Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
 
         XMMATRIX matWorld = XMMatrixTranspose(mMatWorld);
         Renderer::GetInstance()->UpdateCbTo(mCbWorld, &matWorld);
