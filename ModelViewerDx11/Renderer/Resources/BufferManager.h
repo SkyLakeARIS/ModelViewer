@@ -28,8 +28,8 @@ namespace renderer
         void UpdateVertexData(int8_t* const pData, HashID hash);
         void UpdateIndexData(int8_t* const pData, HashID hash);
 
-        BufferRange& GetVertexRangeByHash(HashID hash);
-        BufferRange& GetIndexRangeByHash(HashID hash);
+        BufferRange GetVertexRangeByHash(HashID hash);
+        BufferRange GetIndexRangeByHash(HashID hash);
 
         ID3D11Buffer* GetVertexBuffer() const;
         ID3D11Buffer* GetIndexBuffer() const;

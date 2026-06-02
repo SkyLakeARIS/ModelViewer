@@ -187,7 +187,7 @@ namespace renderer
         mDeviceContext->UpdateSubresource(mIndexBuffer, 0, &updateRange, pData, 0, 0);
     }
 
-    BufferRange& BufferManager::GetVertexRangeByHash(HashID hash)
+    BufferRange BufferManager::GetVertexRangeByHash(HashID hash)
     {
         BufferRange range = {-1, -1};
 
@@ -200,7 +200,7 @@ namespace renderer
         return range;
     }
 
-    BufferRange& BufferManager::GetIndexRangeByHash(HashID hash)
+    BufferRange BufferManager::GetIndexRangeByHash(HashID hash)
     {
         BufferRange range = { -1, -1 };
 
