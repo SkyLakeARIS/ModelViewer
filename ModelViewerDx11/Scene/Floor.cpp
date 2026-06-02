@@ -43,21 +43,12 @@ namespace scene
 
         ID3D11Device* device = renderer::Renderer::GetInstance()->GetDevice();
         D3D11_BUFFER_DESC desc = {};
-        desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-        desc.ByteWidth = sizeof(XMFLOAT3) * mNumVertices;
-        desc.Usage = D3D11_USAGE_DEFAULT;
-
-        D3D11_SUBRESOURCE_DATA subResource = {};
-        subResource.pSysMem = mVertices;
-
-        HRESULT result = device->CreateBuffer(&desc, &subResource, &mVerticesBuffer);
-        ASSERT(result == S_OK, "fail to create Buffer ");
 
 
         desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
         desc.Usage = D3D11_USAGE_DEFAULT;
         desc.ByteWidth = sizeof(renderer::Renderer::CbWorld);
-        result = renderer::Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbWorld);
+        HRESULT result = renderer::Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbWorld);
         ASSERT(result == S_OK, "mCbWorld 생성 실패.");
         device->Release();
 
@@ -79,42 +70,6 @@ namespace scene
 
         delete[] mVertices;
         SAFETY_RELEASE(mCbWorld);
-        SAFETY_RELEASE(mVerticesBuffer);
-    }
-
-    void Floor::Draw()
-    {
-        renderer::Renderer::GetInstance()->SetRasterState(renderer::Renderer::eRasterType::Basic);
-        renderer::Renderer::GetInstance()->SetInputLayoutTo(renderer::Renderer::eInputLayout::P);
-        renderer::Renderer::GetInstance()->SetShaderTo(renderer::Renderer::eShader::Color);
-
-        renderer::Renderer::CbWorld cbWorld;
-        cbWorld.Matrix = XMMatrixIdentity();
-        renderer::Renderer::GetInstance()->UpdateCbTo(mCbWorld, &cbWorld);
-
-        renderer::Renderer::GetInstance()->BindCbToVsByObj(0, 1, &mCbWorld);
-        renderer::Renderer::GetInstance()->BindCbToVsByType(1, 1, renderer::Renderer::eCbType::CbViewProj);
-        renderer::Renderer::GetInstance()->BindCbToPs(0, 1, renderer::Renderer::eCbType::CbColor);
-
-
-        renderer::Renderer::CbColor cbColor = {};
-        cbColor.Float3 = XMFLOAT3(0.0, 1.0, 0.0);
-        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbColor, &cbColor);
-
-        ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
-        UINT stride = sizeof(XMFLOAT3);
-        UINT offset = 0;
-        deviceContext->IASetVertexBuffers(0, 1, &mVerticesBuffer, &stride, &offset);
-        D3D11_PRIMITIVE_TOPOLOGY orgTopology;
-        deviceContext->IAGetPrimitiveTopology(&orgTopology);
-
-        deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-        deviceContext->Draw(mNumVertices, 0);
-
-        deviceContext->IASetPrimitiveTopology(orgTopology);
-
-        deviceContext->Release();
     }
 
     void Floor::DrawNew()

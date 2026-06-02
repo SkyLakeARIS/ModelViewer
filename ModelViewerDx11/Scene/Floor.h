@@ -11,7 +11,6 @@ namespace scene
         Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY);
         ~Floor();
 
-        void Draw();
         void DrawNew();
     private:
 
@@ -20,7 +19,6 @@ namespace scene
 
         HashID mModelHash;
 
-        ID3D11Buffer* mVerticesBuffer;
         ID3D11Buffer* mCbWorld;
     };
 }
