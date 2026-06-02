@@ -4,10 +4,10 @@
 class Window
 {
 public:
-    Window(HINSTANCE hInstance, int16_t width, int16_t height);
+    Window(HINSTANCE hInstance);
     ~Window() = default;
 
-    HWND MakeWindow();
+    HWND MakeWindow(int16_t windowWidth, int16_t windowHeight);
     void DisplayWindow(int32_t nCmdShow) const;
     void RefreshWindow() const;
     void RegisterWindowClass() const;
@@ -25,6 +25,4 @@ private:
     WCHAR mAppTitleName[MAX_WINDOW_NAME_LENGTH];
     WCHAR mWindowClassName[MAX_WINDOW_NAME_LENGTH];
 
-    int16_t mWindowWidth;
-    int16_t mWindowHeight;
 };

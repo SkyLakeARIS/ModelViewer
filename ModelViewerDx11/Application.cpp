@@ -12,6 +12,20 @@
 #include "Util/Macro.h"
 
 
+Application::Application()
+    : mWindowWidth(1280)
+    , mWindowHeight(720)
+    , mWindow(nullptr)
+    , mImporter(nullptr)
+    , mCharacter(nullptr)
+    , mCamera(nullptr)
+    , mSkybox(nullptr)
+    , mLight(nullptr)
+    , mPlane(nullptr)
+    , mFloor(nullptr)
+    , mDirectInput(nullptr)
+{}
+
 Application::~Application()
 {
     mDirectInput->Release();
@@ -39,19 +53,16 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: 기본 해상도는 앱단에서 가지고 있는 것도..Window 클래스는 API 구조만 다루도록.
-    const int WINDOW_WIDTH = 1280;
-    const int WINDOW_HEIGHT = 720;
-    mWindow = new Window(hInstance, WINDOW_WIDTH, WINDOW_HEIGHT);
+    mWindow = new Window(hInstance);
 
     mWindow->RegisterWindowClass();
 
-    const HWND handleWindow = mWindow->MakeWindow();
+    const HWND handleWindow = mWindow->MakeWindow(mWindowWidth, mWindowHeight);
     if(!handleWindow)
     {
         return false;
     }
-
+ 
     mWindow->DisplayWindow(nCmdShow);
     mWindow->RefreshWindow();
 
@@ -59,8 +70,8 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     DXGI_SWAP_CHAIN_DESC swapDesc;
     ZeroMemory(&swapDesc, sizeof(swapDesc));
     swapDesc.BufferCount = 1;
-    swapDesc.BufferDesc.Width = WINDOW_WIDTH;
-    swapDesc.BufferDesc.Height = WINDOW_HEIGHT;
+    swapDesc.BufferDesc.Width = mWindowWidth;
+    swapDesc.BufferDesc.Height = mWindowHeight;
     swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     swapDesc.BufferDesc.RefreshRate.Numerator = 120;
     swapDesc.BufferDesc.RefreshRate.Denominator = 1;
@@ -70,7 +81,8 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     swapDesc.SampleDesc.Quality = 0;
     swapDesc.Windowed = TRUE;
 
-    if (FAILED(renderer::Renderer::GetInstance()->CreateDeviceAndSetup(swapDesc, handleWindow, WINDOW_HEIGHT, WINDOW_WIDTH, true)))
+    if (FAILED(renderer::Renderer::GetInstance()->CreateDeviceAndSetup(
+            swapDesc, handleWindow, mWindowHeight, mWindowWidth, true)))
     {
         ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
         return false;
@@ -82,7 +94,8 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
         return false;
     }
 
-    mDirectInput = new core::DirectInput(hInstance, handleWindow, WINDOW_WIDTH, WINDOW_HEIGHT);
+    mDirectInput = new core::DirectInput(hInstance, handleWindow, mWindowWidth,
+                                         mWindowHeight);
     if (FAILED(mDirectInput->Initialize()))
     {
         ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");

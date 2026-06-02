@@ -3,22 +3,20 @@
 
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Window::Window(HINSTANCE hInstance, int16_t width, int16_t height)
+Window::Window(HINSTANCE hInstance)
     : mHandleWindow(nullptr)
     , mHandleInstance(hInstance)
     , mAppTitleName{}
     , mWindowClassName{}
-    , mWindowWidth(width)
-    , mWindowHeight(height)
 {
     LoadStringW(mHandleInstance, IDS_APP_TITLE, mAppTitleName, MAX_WINDOW_NAME_LENGTH);
     LoadStringW(mHandleInstance, IDC_MODELVIEWERDX11, mWindowClassName, MAX_WINDOW_NAME_LENGTH);
 }
 
-HWND Window::MakeWindow()
+HWND Window::MakeWindow(int16_t windowWidth, int16_t windowHeight)
 {
     mHandleWindow = CreateWindowW(mWindowClassName, mAppTitleName, WS_OVERLAPPEDWINDOW,
-        0, 0, mWindowWidth, mWindowHeight, nullptr, nullptr, mHandleInstance, nullptr);
+        0, 0, windowWidth, windowHeight, nullptr, nullptr, mHandleInstance, nullptr);
     return mHandleWindow;
 }
 
