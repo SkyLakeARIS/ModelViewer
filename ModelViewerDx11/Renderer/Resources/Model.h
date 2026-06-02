@@ -22,13 +22,10 @@ namespace renderer
     class Model
     {
     public:
-        Model(Renderer* renderer, scene::Camera* camera);
         Model(Renderer* renderer, scene::Camera* camera, int8_t* filePath);
         ~Model();
 
-        void                Draw();
         void                DrawNew();
-        void                DrawShadow();
         void                DrawShadowNew();
 
         void Update();
@@ -36,7 +33,6 @@ namespace renderer
         // TODO: LightManager 만들면 제거.
         void SetLight(scene::Light* light);
 
-        HRESULT             SetupMesh(ModelImporter& importer);
         HRESULT             SetupMeshNew(ModelImporter& importer);
 
         void                SetHighlight(bool bSelection);
@@ -68,9 +64,6 @@ namespace renderer
 
         renderer::Vertex* mVertices;
         uint32* mIndices;
-
-        ID3D11Buffer* mVertexBuffers;
-        ID3D11Buffer* mIndexBuffers;
 
         ID3D11Buffer* mCbMatWorld;
 
