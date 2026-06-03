@@ -1100,4 +1100,29 @@ namespace renderer
         ASSERT(false, "not implements");
         return E_FAIL;
     }
+
+    void Renderer::UpdateCB(eCbType type, void* data) const
+    {
+        mDeviceContext->UpdateSubresource(mCbList[static_cast<uint32_t>(type)], 0U, nullptr, data, 0U, 0U);
+    }
+
+    void Renderer::UpdateCbTo(ID3D11Buffer* buffer, void* data) const
+    {
+        mDeviceContext->UpdateSubresource(buffer, 0U, nullptr, data, 0U, 0U);
+    }
+
+    void Renderer::BindCbToVsByType(uint32_t slot, uint32_t numBuffer, eCbType type) const
+    {
+        mDeviceContext->VSSetConstantBuffers(slot, numBuffer, &mCbList[static_cast<uint32_t>(type)]);
+    }
+
+    void Renderer::BindCbToVsByObj(uint32_t slot, uint32_t numBuffer, ID3D11Buffer** buffer) const
+    {
+        mDeviceContext->VSSetConstantBuffers(slot, numBuffer, buffer);
+    }
+
+    void Renderer::BindCbToPs(uint32_t slot, uint32_t numBuffer, eCbType type) const
+    {
+        mDeviceContext->PSSetConstantBuffers(slot, numBuffer, &mCbList[static_cast<uint32_t>(type)]);
+    }
 }

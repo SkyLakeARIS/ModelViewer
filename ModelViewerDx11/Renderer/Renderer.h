@@ -227,30 +227,15 @@ namespace renderer
 
         //  D3D state
 
-        void UpdateCB(eCbType type, void* data) const
-        {
-            mDeviceContext->UpdateSubresource(mCbList[static_cast<uint32_t>(type)], 0U, nullptr, data, 0U, 0U);
-        }
+        void UpdateCB(eCbType type, void* data) const;
 
-        void UpdateCbTo(ID3D11Buffer* buffer, void* data) const
-        {
-            mDeviceContext->UpdateSubresource(buffer, 0U, nullptr, data, 0U, 0U);
-        }
+        void UpdateCbTo(ID3D11Buffer* buffer, void* data) const;
 
-        void BindCbToVsByType(uint32_t slot, uint32_t numBuffer, eCbType type) const
-        {
-            mDeviceContext->VSSetConstantBuffers(slot, numBuffer, &mCbList[static_cast<uint32_t>(type)]);
-        }
+        void BindCbToVsByType(uint32_t slot, uint32_t numBuffer, eCbType type) const;
 
-        void BindCbToVsByObj(uint32_t slot, uint32_t numBuffer, ID3D11Buffer** buffer) const
-        {
-            mDeviceContext->VSSetConstantBuffers(slot, numBuffer, buffer);
-        }
+        void BindCbToVsByObj(uint32_t slot, uint32_t numBuffer, ID3D11Buffer** buffer) const;
 
-        void BindCbToPs(uint32_t slot, uint32_t numBuffer, eCbType type) const
-        {
-            mDeviceContext->PSSetConstantBuffers(slot, numBuffer, &mCbList[static_cast<uint32_t>(type)]);
-        }
+        void BindCbToPs(uint32_t slot, uint32_t numBuffer, eCbType type) const;
 
         void BindVertexBuffer(uint32_t stride, uint32_t offset);
         void BindIndexBuffer(uint32_t offset);
