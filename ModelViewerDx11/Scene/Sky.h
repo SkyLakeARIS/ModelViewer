@@ -33,10 +33,8 @@ namespace scene
         ID3D11Device* mDevice;
         ID3D11DeviceContext* mDeviceContext;
 
+        HashID mModelHash;
         XMMATRIX mWorld;
-
-        ID3D11Buffer* mVertexBuffer;
-        ID3D11Buffer* mIndexBuffer;
 
         ID3D11Buffer* mCbMatWorld;
 

@@ -1,7 +1,9 @@
 #include "Sky.h"
 #include "Camera.h"
 #include "../Renderer/Renderer.h"
+#include "../Renderer/Resources/BufferManager.h"
 #include "../Util/Macro.h"
+#include "../Util/Util.h"
 
 namespace scene
 {
@@ -10,9 +12,8 @@ namespace scene
         , mCamera(&camera)
         , mDevice(nullptr)
         , mDeviceContext(nullptr)
+        , mModelHash(0)
         , mWorld(XMMatrixIdentity())
-        , mVertexBuffer(nullptr)
-        , mIndexBuffer(nullptr)
         , mCbMatWorld(nullptr)
         , mSampler(nullptr)
         , mLatLines(0)
@@ -30,6 +31,16 @@ namespace scene
         HRESULT result = renderer::Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbMatWorld);
         ASSERT(result == S_OK, "mCbMatWorld 생성 실패.");
 
+        // TODO: 이런 상수 값들도 따로 모아놓을 파일을 만드는 게 좋아 보임
+        enum
+        {
+            MAX_FILE_PATH = 260
+        };
+        int8_t virtualFilePath[MAX_FILE_PATH] = {};
+        (void)sprintf_s(reinterpret_cast<char*>(virtualFilePath), MAX_FILE_PATH, "%sPrimitive_Sphere_%d_%d.mesh",
+                  reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), mLonLines, mLatLines);
+
+        mModelHash = util::GetDjb2Hash(virtualFilePath);
     }
 
     Sky::~Sky()
@@ -49,8 +60,6 @@ namespace scene
         SAFETY_RELEASE(mSampler);
         SAFETY_RELEASE(mCbMatWorld);
 
-        SAFETY_RELEASE(mVertexBuffer);
-        SAFETY_RELEASE(mIndexBuffer);
 
         SAFETY_RELEASE(mMesh.Texture);
 
@@ -109,10 +118,19 @@ namespace scene
         // render
         mRenderer->SetInputLayoutTo(renderer::Renderer::eInputLayout::PT);
 
+        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        const renderer::BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
+        const renderer::BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
+
+        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
+        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
+
+
         uint32 stride = sizeof(renderer::Vertex);
-        uint32 offset = 0;
-        mDeviceContext->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
-        mDeviceContext->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+        uint32 offset = vertexRange.StartIndex;
+
+        renderer::Renderer::GetInstance()->BindVertexBuffer(stride, offset);
+        renderer::Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
 
         mRenderer->SetRasterState(renderer::Renderer::eRasterType::Skybox);
 
@@ -194,26 +212,6 @@ namespace scene
         vertices[numVertex - 1U].Position.z = -1.0f;
 
 
-        D3D11_BUFFER_DESC vertexBufferDesc;
-        ZeroMemory(&vertexBufferDesc, sizeof(vertexBufferDesc));
-
-        vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-        vertexBufferDesc.ByteWidth = sizeof(renderer::Vertex) * numVertex;
-        vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-        vertexBufferDesc.CPUAccessFlags = 0U;
-        vertexBufferDesc.MiscFlags      = 0U;
-
-        D3D11_SUBRESOURCE_DATA bufferData;
-        ZeroMemory(&bufferData, sizeof(bufferData));
-
-        bufferData.pSysMem = vertices.data();
-
-        HRESULT result = mDevice->CreateBuffer(&vertexBufferDesc, &bufferData, &mVertexBuffer);
-        if (FAILED(result))
-        {
-            ASSERT(false, "skybox - fail to create vertex buffer");
-            return result;
-        }
 
         std::vector<uint32> indices(numFace * 3U);
 
@@ -269,21 +267,10 @@ namespace scene
         indices[k + 1] = (numVertex - 1U) - lonLines;
         indices[k + 2] = numVertex - 2U;
 
-        vertexBufferDesc.ByteWidth = sizeof(uint32) * static_cast<uint32_t>(indices.size());
-        vertexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-        vertexBufferDesc.CPUAccessFlags = 0U;
-        vertexBufferDesc.MiscFlags = 0U;
 
-        ZeroMemory(&bufferData, sizeof(bufferData));
-        bufferData.pSysMem = indices.data();
-
-        result = mDevice->CreateBuffer(&vertexBufferDesc, &bufferData, &mIndexBuffer);
-        if (FAILED(result))
-        {
-            ASSERT(false, "skybox - fail to create vertex buffer");
-            return result;
-        }
-
+        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices.data()), sizeof(renderer::Vertex) * vertices.size(), mModelHash);
+        bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices.data()), sizeof(uint32_t) * indices.size(), mModelHash);
 
         mMesh.Vertex.swap(vertices);
         mMesh.IndexList.swap(indices);
