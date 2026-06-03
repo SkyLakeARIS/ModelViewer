@@ -122,7 +122,7 @@ namespace scene
         renderer::Renderer::GetInstance()->BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
 
         //mMesh->Draw();
-        mMesh->DrawNew();
+        mMesh->Draw();
     }
 
     void Light::DrawDebug()

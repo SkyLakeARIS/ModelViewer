@@ -351,6 +351,6 @@ void Application::renderScene()
 
     mPlane->Update();
     //gPlane->DrawTexture(gLight);
-    mPlane->DrawTextureNew(mLight);
+    mPlane->DrawTexture(mLight);
     renderer::Renderer::GetInstance()->Present();
 }

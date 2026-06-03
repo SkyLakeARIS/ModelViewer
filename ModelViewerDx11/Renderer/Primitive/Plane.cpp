@@ -115,7 +115,7 @@ namespace renderer
         outMat = mMatWorld;
     }
 
-    void Plane::DrawNew()
+    void Plane::Draw()
     {
         ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
 
@@ -147,7 +147,7 @@ namespace renderer
         deviceContext->Release();
     }
 
-    void Plane::DrawTextureNew(scene::Light* const light)
+    void Plane::DrawTexture(scene::Light* const light)
     {
         ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
 
