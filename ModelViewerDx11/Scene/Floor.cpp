@@ -72,7 +72,7 @@ namespace scene
         SAFETY_RELEASE(mCbWorld);
     }
 
-    void Floor::DrawNew()
+    void Floor::Draw()
     {
         renderer::Renderer::GetInstance()->SetRasterState(renderer::Renderer::eRasterType::Basic);
         renderer::Renderer::GetInstance()->SetInputLayoutTo(renderer::Renderer::eInputLayout::P);

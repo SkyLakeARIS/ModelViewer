@@ -343,8 +343,8 @@ void Application::renderScene()
     mSkybox->Draw();
 
     // gFloor->Draw();
-    mFloor->DrawNew();
     mCharacter->DrawNew();
+    mFloor->Draw();
 
     mLight->Draw();
     mLight->DrawDebug();
