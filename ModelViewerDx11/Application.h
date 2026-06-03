@@ -40,6 +40,7 @@ private:
 
     int16_t mWindowWidth;
     int16_t mWindowHeight;
+    int16_t mAppFrameRate;
 
     Window* mWindow;
 

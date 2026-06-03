@@ -15,6 +15,7 @@
 Application::Application()
     : mWindowWidth(1280)
     , mWindowHeight(720)
+    , mAppFrameRate(120)
     , mWindow(nullptr)
     , mImporter(nullptr)
     , mCharacter(nullptr)
@@ -109,18 +110,13 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
 
 void Application::Run()
 {
-    constexpr float FPS_UPDATE = 25.0f;
-    constexpr float FPS_RENDER = 120.0f;
-    constexpr float UpdateInterval = 1000.0f / FPS_UPDATE;
-    constexpr float RenderInterval = 1000.0f / FPS_RENDER;
+    const float RenderIntervalTime = 1000.0f / static_cast<float>(mAppFrameRate);
 
-    uint8_t updateFPS = 0;
-    uint8_t renderFPS = 0;
-    double prevUpdateTime = 0.0;
-    double prevRenderTime = 0.0;
-    double prevFrameTime = 0.0;
-
-
+    core::Timer::Tick();
+    // MEMO: 첫 프레임이 안정적으로 돌도록 함. 프로그램 내에서 FrameTime이 일관되도록
+    double lastFrameTime = core::Timer::GetNowMS();
+    double lastFPSTime = core::Timer::GetNowMS();
+    int16_t frameCount = 0;
     while (true)
     {
         if(mWindow->ProcessMessages())
@@ -128,46 +124,34 @@ void Application::Run()
             break;
         }
 
+        core::Timer::Tick();
+
+        const double startTime = core::Timer::GetNowMS();
+        const double deltaTime = startTime - lastFrameTime;
+
+        if (RenderIntervalTime >= deltaTime)
+        {
+            YieldProcessor();
+            continue;
+        }
+
+        lastFrameTime = startTime;
+
         mDirectInput->UpdateInput();
-        double now = core::Timer::GetNowMS();
-        if (now - prevUpdateTime >= UpdateInterval)
+
+        updateScene(deltaTime);
+
+        preprocess();
+        renderScene();
+
+        ++frameCount;
+        if (startTime - lastFPSTime >= 1000.0)
         {
-            // MEMO 위의 키입력을 토대로
-            // MEMO 아래에서 반영하여 물체에 갱신
-            // 일단 키 인풋에 대한 처리 필요 : 카메라, 캐릭터(지금은 아니지만)
-            // 그외, 앱에서 처리하는 키 입력은 게임의 업데이트와는 무관. 즉시처리해도 됨.
-            // 그렇다면 UpdateInput은 업데이트만하고, UpdateFrame에서 다시 read한다면?
-            // MEMO : 일단, 현 상황에서 필요한 마우스 인풋관련은 처리 완료.
-            core::Timer::Tick();
-            updateScene(now - prevUpdateTime);
-
-            prevUpdateTime = now;
-            ++updateFPS;
-        }
-
-        if (now - prevRenderTime >= RenderInterval)
-        {
-            preprocess();
-            renderScene();
-
-            prevRenderTime = now;
-            ++renderFPS;
-        }
-
-        if (now - prevFrameTime >= 1000.0)
-        {
-            prevFrameTime = now;
             OutputDebugString(L"Render FPS : ");
-            OutputDebugString(std::to_wstring(renderFPS).c_str());
+            OutputDebugString(std::to_wstring(frameCount).c_str());
             OutputDebugString(L"\n");
-
-            OutputDebugString(L"Update FPS : ");
-            OutputDebugString(std::to_wstring(updateFPS).c_str());
-            OutputDebugString(L"\n");
-
-
-            updateFPS = 0;
-            renderFPS = 0;
+            lastFPSTime += 1000.0;
+            frameCount = 0;
         }
     }
 }
