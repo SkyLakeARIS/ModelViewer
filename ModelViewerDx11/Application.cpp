@@ -193,7 +193,7 @@ bool Application::initializeScene()
     mSkybox->Initialize(10, 10);
 
     // TODO: 실패시 프로그램 종료말고, 나중에 Object List를 만들어서 관리하도록 변경(성공하면 drawable 리스트에 추가)
-    if (FAILED(mCharacter->SetupMeshNew(*mImporter)))
+    if (FAILED(mCharacter->SetupMesh(*mImporter)))
     {
         ASSERT(false, "gCharacter::SetupMesh 모델데이터 혹은 D3D개체 초기화 실패 _ could not initialize mesh or d3d obj");
         return false;
@@ -329,7 +329,7 @@ void Application::preprocess()
     renderer::Renderer::GetInstance()->SetViewport(false);
     renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Shadow);
 
-    mCharacter->DrawShadowNew();
+    mCharacter->DrawShadow();
 }
 
 void Application::renderScene()
@@ -343,8 +343,8 @@ void Application::renderScene()
     mSkybox->Draw();
 
     // gFloor->Draw();
-    mCharacter->DrawNew();
     mFloor->Draw();
+    mCharacter->Draw();
 
     mLight->Draw();
     mLight->DrawDebug();

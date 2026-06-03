@@ -71,7 +71,7 @@ namespace renderer
 
     }
 
-    void Model::DrawNew()
+    void Model::Draw()
     {
         mRenderer->SetInputLayoutTo(Renderer::eInputLayout::PTN);
 
@@ -163,7 +163,7 @@ namespace renderer
         mDeviceContext->PSSetShaderResources(2U, 1U, &unbind);
     }
 
-    void Model::DrawShadowNew()
+    void Model::DrawShadow()
     {
         mRenderer->SetInputLayoutTo(Renderer::eInputLayout::P);
 
@@ -213,7 +213,7 @@ namespace renderer
         mLight = light;
     }
 
-    HRESULT Model::SetupMeshNew(ModelImporter& importer)
+    HRESULT Model::SetupMesh(ModelImporter& importer)
     {
         // vertex / index list 데이터 합치기 용
         const uint32 sumVertexCount = importer.GetSumVertexCount();

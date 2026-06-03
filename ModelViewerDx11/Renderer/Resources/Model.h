@@ -25,15 +25,15 @@ namespace renderer
         Model(Renderer* renderer, scene::Camera* camera, int8_t* filePath);
         ~Model();
 
-        void                DrawNew();
-        void                DrawShadowNew();
+        void                Draw();
+        void                DrawShadow();
 
         void Update();
 
         // TODO: LightManager 만들면 제거.
         void SetLight(scene::Light* light);
 
-        HRESULT             SetupMeshNew(ModelImporter& importer);
+        HRESULT             SetupMesh(ModelImporter& importer);
 
         void                SetHighlight(bool bSelection);
 
