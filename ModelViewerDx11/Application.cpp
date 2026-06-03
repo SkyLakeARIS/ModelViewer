@@ -74,7 +74,7 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     swapDesc.BufferDesc.Width = mWindowWidth;
     swapDesc.BufferDesc.Height = mWindowHeight;
     swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    swapDesc.BufferDesc.RefreshRate.Numerator = 120;
+    swapDesc.BufferDesc.RefreshRate.Numerator = mAppFrameRate;
     swapDesc.BufferDesc.RefreshRate.Denominator = 1;
     swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapDesc.OutputWindow = handleWindow;
