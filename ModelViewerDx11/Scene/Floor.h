@@ -19,6 +19,5 @@ namespace scene
 
         HashID mModelHash;
 
-        ID3D11Buffer* mCbWorld;
     };
 }

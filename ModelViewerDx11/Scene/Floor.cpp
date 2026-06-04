@@ -41,16 +41,7 @@ namespace scene
 
         }
 
-        ID3D11Device* device = renderer::Renderer::GetInstance()->GetDevice();
-        D3D11_BUFFER_DESC desc = {};
 
-
-        desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        desc.Usage = D3D11_USAGE_DEFAULT;
-        desc.ByteWidth = sizeof(renderer::Renderer::CbWorld);
-        HRESULT result = renderer::Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbWorld);
-        ASSERT(result == S_OK, "mCbWorld 생성 실패.");
-        device->Release();
 
         renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
 
@@ -69,7 +60,6 @@ namespace scene
         bufferManager->RemoveVertexData(mModelHash);
 
         delete[] mVertices;
-        SAFETY_RELEASE(mCbWorld);
     }
 
     void Floor::Draw()
@@ -80,9 +70,9 @@ namespace scene
 
         renderer::Renderer::CbWorld cbWorld;
         cbWorld.Matrix = XMMatrixIdentity();
-        renderer::Renderer::GetInstance()->UpdateCbTo(mCbWorld, &cbWorld);
+        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWorld);
 
-        renderer::Renderer::GetInstance()->BindCbToVsByObj(0, 1, &mCbWorld);
+        renderer::Renderer::GetInstance()->BindCbToVsByType(0, 1, renderer::Renderer::eCbType::CbWorld);
         renderer::Renderer::GetInstance()->BindCbToVsByType(1, 1, renderer::Renderer::eCbType::CbViewProj);
         renderer::Renderer::GetInstance()->BindCbToPs(0, 1, renderer::Renderer::eCbType::CbColor);
 
