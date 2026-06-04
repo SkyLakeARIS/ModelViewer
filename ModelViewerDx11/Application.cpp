@@ -301,7 +301,6 @@ void Application::updateScene(double deltaTime)
     renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbViewProj, &cbViewProj);
 
 
-    mLight->Update(mCamera);
     mLight->SetupCascade();
 }
 
@@ -331,6 +330,7 @@ void Application::renderScene()
     mCharacter->Update();
     mCharacter->Draw();
 
+    mLight->Update(mCamera);
     mLight->Draw();
     mLight->DrawDebug();
 

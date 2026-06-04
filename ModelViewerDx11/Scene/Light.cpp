@@ -12,7 +12,6 @@ namespace scene
         , mColor(color)
         , mMatProj(XMMatrixIdentity())
         , mMatViewProj(XMMatrixIdentity())
-        , mCbMatWorld(nullptr)
         , mMatWorld(XMMatrixIdentity())
         , mNearPlane(nearPlane)
         , mFarPlane(farPlane)
@@ -22,12 +21,6 @@ namespace scene
         mMesh = new renderer::Plane();
         mMesh->SetPosition(mPosition);
 
-        D3D11_BUFFER_DESC desc = {};
-        desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        desc.Usage = D3D11_USAGE_DEFAULT;
-        desc.ByteWidth = sizeof(renderer::Renderer::CbWorld);
-        HRESULT result = renderer::Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbMatWorld);
-        ASSERT(result == S_OK, "mCbMatWorld 생성 실패.");
 
         mLines.reserve(24 * eCascadeLevel::Level_4);
         mCascadePlaneDistances[0] = nearPlane; // 0.1
@@ -52,7 +45,6 @@ namespace scene
 
         SAFETY_RELEASE(mLinesBuffer);
 
-        SAFETY_RELEASE(mCbMatWorld);
 
         SAFETY_RELEASE(mBlendState);
     }
@@ -100,7 +92,7 @@ namespace scene
 
         renderer::Renderer::CbWorld cbMatWorld;
         cbMatWorld.Matrix = XMMatrixTranspose(mMatWorld);
-        renderer::Renderer::GetInstance()->UpdateCbTo(mCbMatWorld, &cbMatWorld);
+        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbMatWorld);
     }
 
     void Light::Draw()
@@ -118,7 +110,7 @@ namespace scene
         deviceContext->Release();
 
 
-        renderer::Renderer::GetInstance()->BindCbToVsByObj(0U, 1U, &mCbMatWorld);
+        renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
         renderer::Renderer::GetInstance()->BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
 
         //mMesh->Draw();
@@ -138,9 +130,9 @@ namespace scene
 
         renderer::Renderer::CbWorld cbWorld;
         cbWorld.Matrix = XMMatrixTranspose(XMMatrixIdentity());
-        renderer::Renderer::GetInstance()->UpdateCbTo(mCbMatWorld, &cbWorld);
+        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWorld);
 
-        renderer::Renderer::GetInstance()->BindCbToVsByObj(0U, 1U, &mCbMatWorld);
+        renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
         renderer::Renderer::GetInstance()->BindCbToVsByType(1, 1, renderer::Renderer::eCbType::CbViewProj);
 
         ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();

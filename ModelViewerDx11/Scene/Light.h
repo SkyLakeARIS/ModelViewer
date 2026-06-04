@@ -56,7 +56,6 @@ namespace scene
         XMMATRIX mMatProj;
         XMMATRIX mMatViewProj;
 
-        ID3D11Buffer* mCbMatWorld;
 
         renderer::Plane* mMesh;
         XMMATRIX mMatWorld;
@@ -64,6 +63,7 @@ namespace scene
 
         //  XMFLOAT3 mLines[24];
         std::vector<XMFLOAT3> mLines;
+        // TODO: 디버그용 버퍼도 처리해야 한다.
         ID3D11Buffer* mLinesBuffer;
 
         float mNearPlane;
