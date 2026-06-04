@@ -25,6 +25,7 @@ namespace renderer
             XMFLOAT4    Second;
         }CbLightProperty;
 
+        // TODO: alignas 사용하도록 하기
         typedef struct CbMaterial
         {
             XMFLOAT3 Diffuse;
