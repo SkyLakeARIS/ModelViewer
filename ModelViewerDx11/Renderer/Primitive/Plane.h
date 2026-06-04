@@ -39,7 +39,6 @@ namespace renderer
     private:
         static std::atomic_int32_t sObjectCount;
     private:
-        ID3D11Buffer* mCbWorld;
         ID3D11SamplerState* mSamplerState;
 
         HashID mModelHash;

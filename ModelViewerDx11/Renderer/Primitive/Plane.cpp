@@ -49,22 +49,11 @@ namespace renderer
         bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices), sizeof(vertices), mModelHash);
         bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices), sizeof(indices), mModelHash);
 
-        D3D11_BUFFER_DESC desc;
-        ZeroMemory(&desc, sizeof(desc));
-        desc.Usage = D3D11_USAGE_DEFAULT;
-        desc.CPUAccessFlags = 0U;
 
         // vertex buffer
         HRESULT result;
         ID3D11Device* device = Renderer::GetInstance()->GetDevice();
 
-        desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        desc.ByteWidth = sizeof(Renderer::CbWorld);
-        result = Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbWorld);
-        if (FAILED(result))
-        {
-            ASSERT(false, "상수 버퍼 생성 실패 failed to create Constant Buffers");
-        }
 
 
         // sampler
@@ -95,7 +84,6 @@ namespace renderer
         bufferManager->RemoveIndexData(mModelHash);
 
         SAFETY_RELEASE(mTexture);
-        SAFETY_RELEASE(mCbWorld);
         SAFETY_RELEASE(mSamplerState);
     }
 
@@ -168,8 +156,8 @@ namespace renderer
         Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
 
         XMMATRIX matWorld = XMMatrixTranspose(mMatWorld);
-        Renderer::GetInstance()->UpdateCbTo(mCbWorld, &matWorld);
-        Renderer::GetInstance()->BindCbToVsByObj(0, 1, &mCbWorld);
+        Renderer::GetInstance()->UpdateCB(Renderer::eCbType::CbWorld, &matWorld);
+        Renderer::GetInstance()->BindCbToVsByType(0, 1, Renderer::eCbType::CbWorld);
         Renderer::GetInstance()->BindCbToVsByType(1, 1, Renderer::eCbType::CbViewProj);
 
         deviceContext->PSSetSamplers(0U, 1U, &mSamplerState);
