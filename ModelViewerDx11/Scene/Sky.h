@@ -36,7 +36,6 @@ namespace scene
         HashID mModelHash;
         XMMATRIX mWorld;
 
-        ID3D11Buffer* mCbMatWorld;
 
         renderer::Mesh mMesh; // sphere model
         ID3D11SamplerState* mSampler;

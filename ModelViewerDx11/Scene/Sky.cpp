@@ -14,7 +14,6 @@ namespace scene
         , mDeviceContext(nullptr)
         , mModelHash(0)
         , mWorld(XMMatrixIdentity())
-        , mCbMatWorld(nullptr)
         , mSampler(nullptr)
         , mLatLines(0)
         , mLonLines(0)
@@ -23,13 +22,6 @@ namespace scene
 
         mDevice = renderer.GetDevice();
         mDeviceContext = renderer.GetDeviceContext();
-
-        D3D11_BUFFER_DESC desc = {};
-        desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        desc.Usage = D3D11_USAGE_DEFAULT;
-        desc.ByteWidth = sizeof(renderer::Renderer::CbWorld);
-        HRESULT result = renderer::Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbMatWorld);
-        ASSERT(result == S_OK, "mCbMatWorld 생성 실패.");
 
         // TODO: 이런 상수 값들도 따로 모아놓을 파일을 만드는 게 좋아 보임
         enum
@@ -58,7 +50,6 @@ namespace scene
 
 
         SAFETY_RELEASE(mSampler);
-        SAFETY_RELEASE(mCbMatWorld);
 
 
         SAFETY_RELEASE(mMesh.Texture);
@@ -139,7 +130,7 @@ namespace scene
         mDeviceContext->PSSetSamplers(0, 1, &mSampler);
 
 
-        renderer::Renderer::GetInstance()->BindCbToVsByObj(0U, 1U, &mCbMatWorld);
+        renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
         renderer::Renderer::GetInstance()->BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
 
         mRenderer->SetDepthStencilState(true);
@@ -165,7 +156,7 @@ namespace scene
 
         renderer::Renderer::CbWorld cbWVP;
         cbWVP.Matrix = XMMatrixTranspose(mWorld);
-        renderer::Renderer::GetInstance()->UpdateCbTo(mCbMatWorld, &cbWVP);
+        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWVP);
     }
 
     /*
