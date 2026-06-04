@@ -94,6 +94,7 @@ namespace renderer
         , mhWindow()
         , mWindowHeight()
         , mWindowWidth(0)
+        , mBufferManager(nullptr)
     {}
 
     Renderer::~Renderer()
