@@ -65,7 +65,6 @@ namespace renderer
         renderer::Vertex* mVertices;
         uint32* mIndices;
 
-        ID3D11Buffer* mCbMatWorld;
 
         XMFLOAT3 mCenterPosition;
         XMMATRIX mMatWorld;

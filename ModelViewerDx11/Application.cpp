@@ -303,7 +303,6 @@ void Application::updateScene(double deltaTime)
 
     mLight->Update(mCamera);
     mLight->SetupCascade();
-    mCharacter->Update();
 }
 
 void Application::preprocess()
@@ -329,6 +328,7 @@ void Application::renderScene()
 
     // gFloor->Draw();
     mFloor->Draw();
+    mCharacter->Update();
     mCharacter->Draw();
 
     mLight->Draw();

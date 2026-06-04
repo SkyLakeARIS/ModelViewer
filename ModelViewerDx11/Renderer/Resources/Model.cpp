@@ -14,7 +14,6 @@ namespace renderer
         , mNumVertex(0)
         , mVertices(nullptr)
         , mIndices(nullptr)
-        , mCbMatWorld(nullptr)
         , mCenterPosition(0.0f, 0.0f, 0.0f)
         , mMatRotation(XMMatrixIdentity())
         , mMatScale(XMMatrixIdentity())
@@ -52,7 +51,6 @@ namespace renderer
         }
 
 
-        SAFETY_RELEASE(mCbMatWorld);
 
 
         SAFETY_RELEASE(mSamplerState);
@@ -99,7 +97,7 @@ namespace renderer
             Renderer::GetInstance()->SetRasterState(Renderer::eRasterType::CullBack);
 
             mRenderer->SetShaderTo(Renderer::eShader::Outline);
-            Renderer::GetInstance()->BindCbToVsByObj(0U, 1U, &mCbMatWorld);
+            Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
             Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbOutlineProperty);
             Renderer::GetInstance()->BindCbToVsByType(2U, 1U, Renderer::eCbType::CbViewProj);
 
@@ -120,7 +118,7 @@ namespace renderer
 
         mRenderer->SetShaderTo(Renderer::eShader::BasicWithShadow);
 
-        Renderer::GetInstance()->BindCbToVsByObj(0U, 1U, &mCbMatWorld);
+        Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
         Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
         Renderer::GetInstance()->BindCbToVsByType(2U, 1U, Renderer::eCbType::CbLightProperty);
         Renderer::GetInstance()->BindCbToVsByType(3U, 1U, Renderer::eCbType::CbCameraPosition);
@@ -183,7 +181,7 @@ namespace renderer
         Renderer::GetInstance()->SetRasterState(Renderer::eRasterType::Outline);
         mRenderer->SetShaderTo(Renderer::eShader::Shadow);
 
-        mRenderer->BindCbToVsByObj(0U, 1U, &mCbMatWorld);
+        mRenderer->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
         mRenderer->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
 
 
@@ -204,7 +202,7 @@ namespace renderer
         Renderer::CbWorld cbWorld;
         cbWorld.Matrix = XMMatrixTranspose(mMatWorld);
 
-        Renderer::GetInstance()->UpdateCbTo(mCbMatWorld, &cbWorld);
+        Renderer::GetInstance()->UpdateCB(Renderer::eCbType::CbWorld, &cbWorld);
 
     }
 
@@ -298,21 +296,6 @@ namespace renderer
 
         HRESULT result = S_OK;
 
-        // constant buffers
-        desc.Usage = D3D11_USAGE_DEFAULT;
-        desc.ByteWidth = sizeof(Renderer::CbWorld);
-        desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        desc.CPUAccessFlags = 0;
-
-        if (!mCbMatWorld)
-        {
-            result = Renderer::GetInstance()->CreateConstantBuffer(desc, &mCbMatWorld);
-            if (FAILED(result))
-            {
-                ASSERT(false, "mCbMatWorld상수 버퍼 생성 실패 failed to create CbBasic");
-                return E_FAIL;
-            }
-        }
 
         // sampler
         D3D11_SAMPLER_DESC samplerDesc = {};
