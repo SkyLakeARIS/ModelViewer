@@ -309,7 +309,7 @@ void Application::preprocess()
     renderer::Renderer::GetInstance()->SetRenderTargetTo(renderer::Renderer::eRenderTarget::Shadow);
     renderer::Renderer::GetInstance()->SetViewport(false);
     renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Shadow);
-
+    mCharacter->Update();
     mCharacter->DrawShadow();
 }
 
