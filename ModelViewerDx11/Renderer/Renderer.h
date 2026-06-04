@@ -50,7 +50,7 @@ namespace renderer
 
         enum class eCbType : uint8_t
         {
-            CbWorld, // TODO WorldMat용 buffer는 각 개체가 들고 있으므로 제거.(해도 되겠지)
+            CbWorld,
             CbViewProj,
             CbLightViewProjMatrix,
             CbCameraPosition,
