@@ -38,7 +38,6 @@ namespace scene
 
 
         renderer::Mesh mMesh; // sphere model
-        ID3D11SamplerState* mSampler;
 
         uint32 mLatLines;
         uint32 mLonLines;

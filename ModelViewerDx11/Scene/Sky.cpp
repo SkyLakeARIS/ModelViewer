@@ -14,7 +14,6 @@ namespace scene
         , mDeviceContext(nullptr)
         , mModelHash(0)
         , mWorld(XMMatrixIdentity())
-        , mSampler(nullptr)
         , mLatLines(0)
         , mLonLines(0)
     {
@@ -49,7 +48,6 @@ namespace scene
         mDeviceContext = nullptr;
 
 
-        SAFETY_RELEASE(mSampler);
 
 
         SAFETY_RELEASE(mMesh.Texture);
@@ -83,23 +81,6 @@ namespace scene
         wcscpy_s(mMesh.Name, L"skybox");
 
 
-        // sampler
-        D3D11_SAMPLER_DESC samplerDesc = {};
-        // D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR  D3D11_FILTER_MIN_MAG_MIP_POINT
-        samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
-        samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER; // 아직 정확히는 잘 모름.
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-        result = mDevice->CreateSamplerState(&samplerDesc, &mSampler);
-        if (FAILED(result))
-        {
-            ASSERT(false, "SamplerState 생성 실패");
-            return E_FAIL;
-        }
 
         return S_OK;
     }
@@ -127,7 +108,7 @@ namespace scene
 
         mRenderer->SetShaderTo(renderer::Renderer::eShader::Skybox);
 
-        mDeviceContext->PSSetSamplers(0, 1, &mSampler);
+        renderer::Renderer::GetInstance()->BindSamplerToPsByType(0, renderer::Renderer::eSamplerType::AnisotropicWrap);
 
 
         renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
