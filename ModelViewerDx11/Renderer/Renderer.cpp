@@ -114,6 +114,12 @@ namespace renderer
             SAFETY_RELEASE(mSamplerState[i]);
         }
 
+        for (auto& it : mBlendStateMap)
+        {
+            SAFETY_RELEASE(it.second);
+        }
+        mBlendStateMap.clear();
+
         for (uint32 i = 0; i < static_cast<uint32>(eVertexShader::NumVertexShader); ++i)
         {
             SAFETY_RELEASE(mVertexShadersList[i]);
@@ -262,6 +268,21 @@ namespace renderer
             mInstance = new Renderer();
         }
         return mInstance;
+    }
+
+    HashID Renderer::GetBlendStateHash(D3D11_BLEND_DESC& desc)
+    {
+        HashID hash = 0;
+        hash |= static_cast<uint32_t>(desc.RenderTarget[0].BlendEnable);
+        hash |= (desc.RenderTarget[0].SrcBlend << 1);
+        hash |= (desc.RenderTarget[0].DestBlend << 6);
+        hash |= (desc.RenderTarget[0].SrcBlendAlpha << 11);
+        hash |= (desc.RenderTarget[0].DestBlendAlpha << 16);
+        hash |= (desc.RenderTarget[0].RenderTargetWriteMask << 21);
+        hash |= (desc.RenderTarget[0].BlendOp << 26);
+        hash |= (desc.RenderTarget[0].BlendOpAlpha << 29);
+
+        return hash;
     }
 
     HRESULT Renderer::CreateDeviceAndSetup(
@@ -594,6 +615,28 @@ namespace renderer
         return result;
     }
 
+    HRESULT Renderer::CreateBlendState(D3D11_BLEND_DESC& desc, HashID& outHash)
+    {
+        outHash = GetBlendStateHash(desc);
+        if (mBlendStateMap.find(outHash) == mBlendStateMap.end())
+        {
+            ID3D11BlendState* newBlendState = nullptr;
+            if (FAILED(mDevice->CreateBlendState(&desc, &newBlendState)))
+            {
+                ASSERT(false, "failed to create BlendState");
+                return E_FAIL;
+            }
+            mBlendStateMap.insert(std::make_pair(outHash, newBlendState));
+        }
+        else
+        {
+            // TODO: 나중에 해당 코드 포함하여 모든 Create 함수에 Debug 매크로로만 체크될 수 있도록 분기하면 디버깅용으로 좋을 듯
+            const auto& it = mBlendStateMap.find(outHash);
+            ASSERT(false, "hash collision detected or double insertion. Hash(%u)", it->first);
+        }
+        return S_OK;
+    }
+
     HRESULT Renderer::CreateTextureResource(
         const WCHAR* fileName,
         WIC_FLAGS flag,
@@ -877,6 +920,19 @@ namespace renderer
     void Renderer::BindSamplerToPsByType(uint32_t slot, eSamplerType type) const
     {
         mDeviceContext->PSSetSamplers(slot, 1, &mSamplerState[static_cast<int32_t>(type)]);
+    }
+
+    void Renderer::BindBlendStateByHash(HashID hash, const float* const blendFactors, uint32_t mask)
+    {
+        const auto& it = mBlendStateMap.find(hash);
+        if (it != mBlendStateMap.end())
+        {
+            mDeviceContext->OMSetBlendState(it->second, blendFactors, mask);
+        }
+        else
+        {
+            ASSERT(false, "no blendState to bind. Hash(%u)", hash);
+        }
     }
 
     void Renderer::SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology) const

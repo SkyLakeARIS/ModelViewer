@@ -153,6 +153,7 @@ namespace renderer
     public:
 
         static Renderer* GetInstance();
+        static inline HashID GetBlendStateHash(D3D11_BLEND_DESC& desc);
 
         // D3D
         HRESULT CreateDeviceAndSetup(DXGI_SWAP_CHAIN_DESC& swapChainDesc, HWND hWnd, uint32 height, uint32 width, bool bDebugMode);
@@ -198,6 +199,8 @@ namespace renderer
 
         HRESULT CreatePixelShader(const WCHAR* const path, ID3D11PixelShader** const outPixelShader);
 
+        // TODO: API 의존성을 완전히 분리하려면 desc 조차도 분리하는 게 좋을 것 같다. 일단은 이대로 사용
+        HRESULT CreateBlendState(D3D11_BLEND_DESC& desc, HashID& outHash);
 
         // Cate : texture 
         HRESULT CreateTexture2D(D3D11_TEXTURE2D_DESC& desc, ID3D11Texture2D** outTex, const char* tag);
@@ -249,6 +252,8 @@ namespace renderer
         void BindIndexBuffer(uint32_t offset);
 
         void BindSamplerToPsByType(uint32_t slot, eSamplerType type) const;
+
+        void BindBlendStateByHash(HashID hash, const float* const blendFactors, uint32_t mask);
 
         void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology) const;
 
@@ -335,6 +340,9 @@ namespace renderer
 
         // sampler state
         ID3D11SamplerState* mSamplerState[static_cast<uint8_t>(eSamplerType::SamplerCount)];
+        // blend state
+        // MEMO: option이 많고, 블렌드 하는데 조합이 많을 것 같으니 Hash로 관리하는 게 나을 것 같다.
+        std::unordered_map<HashID, ID3D11BlendState*> mBlendStateMap;
         // CB
         ID3D11Buffer* mCbList[static_cast<uint8_t>(eCbType::NumConstantBuffer)];
     
