@@ -59,7 +59,7 @@ namespace scene
 
         renderer::Plane* mMesh;
         XMMATRIX mMatWorld;
-        ID3D11BlendState* mBlendState;
+        HashID mBlendHash;
 
         //  XMFLOAT3 mLines[24];
         std::vector<XMFLOAT3> mLines;

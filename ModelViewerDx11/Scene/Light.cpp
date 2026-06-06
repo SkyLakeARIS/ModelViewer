@@ -46,7 +46,6 @@ namespace scene
         SAFETY_RELEASE(mLinesBuffer);
 
 
-        SAFETY_RELEASE(mBlendState);
     }
 
     void Light::Initialize()
@@ -77,7 +76,8 @@ namespace scene
         blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
         blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
         blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        device->CreateBlendState(&blendDesc, &mBlendState);
+        // TODO: 좀 더 조사가 필요한 부분: 이런 정해지지 않은 것들은 어떻게 깔끔하게 처리할 수 있을지? 동적 생성은 피할 수 없는 부분인지?
+        renderer::Renderer::GetInstance()->CreateBlendState(blendDesc, mBlendHash);
 
 
         device->Release();
@@ -105,7 +105,7 @@ namespace scene
 
         ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
         renderer::Renderer::GetInstance()->SetRasterState(renderer::Renderer::eRasterType::Basic);
-        deviceContext->OMSetBlendState(mBlendState, nullptr, 0xffffffff);
+        renderer::Renderer::GetInstance()->BindBlendStateByHash(mBlendHash, nullptr, 0xffffffff);
 
         deviceContext->Release();
 
@@ -176,6 +176,7 @@ namespace scene
         // int32_t index = 0;
        //  mMatViewProj = mMatLightViews[index] * mMatLightProjs[index];
 
+        // TODO: 이건 새로운 유형의 버퍼(Dynamic)를 만들어야 하지 않을까?
         if (!mLinesBuffer)
         {
             // debug - frustum
