@@ -18,7 +18,6 @@ namespace renderer
         , mMatRotation(XMMatrixIdentity())
         , mMatScale(XMMatrixIdentity())
         , mLight(nullptr)
-        , mSamplerState(nullptr)
         , mbHighlight(false)
         , mbActiveEmissive(false)
     {
@@ -53,7 +52,6 @@ namespace renderer
 
 
 
-        SAFETY_RELEASE(mSamplerState);
 
         mDeviceContext->Release();
         mDeviceContext = nullptr;
@@ -124,7 +122,7 @@ namespace renderer
         Renderer::GetInstance()->BindCbToVsByType(3U, 1U, Renderer::eCbType::CbCameraPosition);
         Renderer::GetInstance()->BindCbToVsByType(4U, 1U, Renderer::eCbType::CbViewProj);
 
-        mDeviceContext->PSSetSamplers(0U, 1U, &mSamplerState);
+        Renderer::GetInstance()->BindSamplerToPsByType(0, renderer::Renderer::eSamplerType::AnisotropicWrap);
 
         Renderer::GetInstance()->BindCbToPs(0U, 1U, Renderer::eCbType::CbMaterial);
 
@@ -297,26 +295,6 @@ namespace renderer
         HRESULT result = S_OK;
 
 
-        // sampler
-        D3D11_SAMPLER_DESC samplerDesc = {};
-        // D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR  D3D11_FILTER_MIN_MAG_MIP_POINT
-        samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
-        samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER; // 아직 정확히는 잘 모름.
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-        if (!mSamplerState)
-        {
-            result = mDevice->CreateSamplerState(&samplerDesc, &mSamplerState);
-            if (FAILED(result))
-            {
-                ASSERT(false, "SamplerState 생성 실패");
-                return E_FAIL;
-            }
-        }
 
         return result;
     }

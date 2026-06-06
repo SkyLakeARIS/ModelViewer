@@ -73,8 +73,6 @@ namespace renderer
 
         scene::Light* mLight;
 
-        // texture
-        ID3D11SamplerState* mSamplerState;
 
 
         bool mbHighlight;
