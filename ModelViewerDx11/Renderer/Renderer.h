@@ -70,6 +70,13 @@ namespace renderer
             NumRaster,
         };
 
+        enum class eSamplerType
+        {
+            AnisotropicWrap,
+            // TODO: Num->Count로 네이밍 통일하는 게 좋을 것 같다.
+            SamplerCount
+        };
+
         enum class eInputLayout : uint8_t
         {
             PTN,    // pos, normal, tex
@@ -241,11 +248,14 @@ namespace renderer
         void BindVertexBuffer(uint32_t stride, uint32_t offset);
         void BindIndexBuffer(uint32_t offset);
 
+        void BindSamplerToPsByType(uint32_t slot, eSamplerType type) const;
+
         void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology) const;
 
         void SetRenderTargetTo(eRenderTarget type);
         void SetInputLayoutTo(eInputLayout type) const;
         void SetShaderTo(eShader type);
+        // TODO: bind로 네이밍 변경, 다른 부분도 있는지 체크 필요함.
         void SetRasterState(eRasterType type);
 
         void SetDepthStencilState(bool bSkybox); // 현재는 스카이박스만 사용하므로
@@ -271,6 +281,8 @@ namespace renderer
         HRESULT compileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
 
         HRESULT createRasterState();
+
+        HRESULT createSamplerState();
 
         HRESULT setupShaders();
 
@@ -321,6 +333,8 @@ namespace renderer
         // raster state
         ID3D11RasterizerState*      mRasterStates[static_cast<uint32>(eRasterType::NumRaster)]; // 0: back cull, 1: front cull
 
+        // sampler state
+        ID3D11SamplerState* mSamplerState[static_cast<uint8_t>(eSamplerType::SamplerCount)];
         // CB
         ID3D11Buffer* mCbList[static_cast<uint8_t>(eCbType::NumConstantBuffer)];
     

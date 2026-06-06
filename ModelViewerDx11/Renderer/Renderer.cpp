@@ -109,6 +109,11 @@ namespace renderer
             SAFETY_RELEASE(mRasterStates[i]);
         }
 
+        for(uint32 i = 0; i < static_cast<uint32>(eSamplerType::SamplerCount); ++i)
+        {
+            SAFETY_RELEASE(mSamplerState[i]);
+        }
+
         for (uint32 i = 0; i < static_cast<uint32>(eVertexShader::NumVertexShader); ++i)
         {
             SAFETY_RELEASE(mVertexShadersList[i]);
@@ -228,6 +233,25 @@ namespace renderer
         }
 
         return result;
+    }
+
+    HRESULT Renderer::createSamplerState()
+    {
+        const D3D11_SAMPLER_DESC SamplerDescTable[static_cast<uint8_t>(eSamplerType::SamplerCount)] =
+        {
+                {D3D11_FILTER_ANISOTROPIC, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, 0, 0, D3D11_COMPARISON_NEVER, {}, 0, D3D11_FLOAT32_MAX}
+        };
+
+        for (uint8_t sampler = 0; sampler < static_cast<uint8_t>(eSamplerType::SamplerCount); ++sampler)
+        {
+            if (FAILED(mDevice->CreateSamplerState(&SamplerDescTable[sampler], &mSamplerState[sampler])))
+            {
+                ASSERT(false, "Failed to create SamplerState. check the desc options. failedIndex(%u)", sampler);
+                return E_FAIL;
+            }
+        }
+
+        return S_OK;
     }
 
 
@@ -422,6 +446,8 @@ namespace renderer
         result = setupShaders();
         ASSERT(SUCCEEDED(result), "FAIL : setupShaders");
 
+        result = createSamplerState();
+        ASSERT(SUCCEEDED(result), "FAIL : createSamplerState");
 
         // initialize constant buffer
         constexpr ConstantBufferMap cbMapTable[static_cast<uint8_t>(eCbType::NumConstantBuffer)] =
@@ -846,6 +872,11 @@ namespace renderer
         ID3D11Buffer* const indexBuffer = mBufferManager->GetIndexBuffer();
         // TODO: 나중에 BufferManager가 format을 가지도록 하는게 관리에 좋을 것으로 보임.
         mDeviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, offset);
+    }
+
+    void Renderer::BindSamplerToPsByType(uint32_t slot, eSamplerType type) const
+    {
+        mDeviceContext->PSSetSamplers(slot, 1, &mSamplerState[static_cast<int32_t>(type)]);
     }
 
     void Renderer::SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology) const
