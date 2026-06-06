@@ -56,22 +56,6 @@ namespace renderer
 
 
 
-        // sampler
-        D3D11_SAMPLER_DESC samplerDesc = {};
-        // D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR  D3D11_FILTER_MIN_MAG_MIP_POINT
-        samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
-        samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER; // 아직 정확히는 잘 모름.
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-        result = device->CreateSamplerState(&samplerDesc, &mSamplerState);
-        if (FAILED(result))
-        {
-            ASSERT(false, "SamplerState 생성 실패");
-        }
 
 
         device->Release();
@@ -84,7 +68,6 @@ namespace renderer
         bufferManager->RemoveIndexData(mModelHash);
 
         SAFETY_RELEASE(mTexture);
-        SAFETY_RELEASE(mSamplerState);
     }
 
 
@@ -127,7 +110,7 @@ namespace renderer
             texDefault = Renderer::GetInstance()->GetDefaultTexture();
             texDefault->Release();
         }
-        deviceContext->PSSetSamplers(0U, 1U, &mSamplerState);
+        Renderer::GetInstance()->BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
         deviceContext->PSSetShaderResources(0U, 1U, &texDefault);
 
         deviceContext->DrawIndexed(6, 0U, 0U);
@@ -160,7 +143,7 @@ namespace renderer
         Renderer::GetInstance()->BindCbToVsByType(0, 1, Renderer::eCbType::CbWorld);
         Renderer::GetInstance()->BindCbToVsByType(1, 1, Renderer::eCbType::CbViewProj);
 
-        deviceContext->PSSetSamplers(0U, 1U, &mSamplerState);
+        Renderer::GetInstance()->BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
         SetTexture(Renderer::GetInstance()->GetShadowTexture());
 
         deviceContext->PSSetShaderResources(0U, 1U, &mTexture);
