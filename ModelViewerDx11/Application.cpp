@@ -165,13 +165,13 @@ bool Application::initializeScene()
         , XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f)
         , XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
 
-    mImporter = new renderer::ModelImporter(renderer::Renderer::GetInstance()->GetDevice());
+    mImporter = new renderer::ModelImporter();
     mImporter->Initialize();
 
     mCharacter = new renderer::Model(mCamera, reinterpret_cast<int8_t*>("/AssetData/models/unagi.fbx"));
 
     // TODO: 로드 시점과 처리에 대한 내용도 고민이 필요함. (모델이 로드를 요청할 것인지? - 요청하면 언제 로드되었음을 확인하고 처리할 것인지? - Importer와는 hash id로 통신)
-    mImporter->LoadFbxModel("/AssetData/models/unagi.fbx");
+    mImporter->LoadFbxModel("/AssetData/models/unagi.fbx", renderer::Renderer::GetInstance());
 
     mSkybox = new scene::Sky(*mCamera);
     mSkybox->Initialize(10, 10);

@@ -1,5 +1,6 @@
 #include "ModelImporter.h"
 #include <fstream>
+#include "../Renderer.h"
 #include "../../Util/Macro.h"
 
 namespace renderer
@@ -8,9 +9,8 @@ namespace renderer
     const wchar_t* ModelImporter::TEXTURE_FILE_PATH = L"./AssetData/textures/";
     const wchar_t* ModelImporter::TEXTURE_FILE_EXTENSION = L".png";
 
-    ModelImporter::ModelImporter(ID3D11Device* device)
-        : mDevice(device)
-        , mFbxManager(nullptr)
+    ModelImporter::ModelImporter()
+        : mFbxManager(nullptr)
         , mImporter(nullptr)
         , mFbxScene(nullptr)
         , mSetting(nullptr)
@@ -38,7 +38,6 @@ namespace renderer
 
     void ModelImporter::Release()
     {
-        SAFETY_RELEASE(mDevice);
 
         if (!mFbxScene)
         {
@@ -61,7 +60,7 @@ namespace renderer
         }
     }
 
-    void ModelImporter::LoadFbxModel(const char* fileName)
+    void ModelImporter::LoadFbxModel(const char* fileName, Renderer* const renderer)
     {
 
         if (!mImporter->Initialize(fileName, -1, mFbxManager->GetIOSettings()))
@@ -86,7 +85,7 @@ namespace renderer
 
         parseMesh();
 
-        parseTextureInfo();
+        parseTextureInfo(renderer);
 
 
         parseMaterial();
@@ -319,7 +318,7 @@ namespace renderer
         }
     }
 
-    void ModelImporter::parseTextureInfo()
+    void ModelImporter::parseTextureInfo(Renderer* const renderer)
     {
         OutputDebugStringA("========== Texture Info Extraction start ==========\n");
 
@@ -397,7 +396,7 @@ namespace renderer
 
                             wsprintf(textureFullPath, L"%s%s%s", TEXTURE_FILE_PATH, textureName, TEXTURE_FILE_EXTENSION);
 
-                            if (FAILED(loadTextureFromFileAndCreateResource(textureFullPath, desc, &mFbxObjects[objectIndex].Mesh.Texture)))
+                            if (FAILED(loadTextureFromFileAndCreateResource(textureFullPath, renderer, desc, &mFbxObjects[objectIndex].Mesh.Texture)))
                             {
                                 ASSERT(FALSE, "failed to create texture");
                             }
@@ -418,7 +417,7 @@ namespace renderer
                             textureName[nameLen - 1] = NORMAL_TEXTURE_FILE_SUFFIX[1];
                             wsprintf(textureFullPath, L"%s%s%s", TEXTURE_FILE_PATH, textureName, TEXTURE_FILE_EXTENSION);
 
-                            if (FAILED(loadTextureFromFileAndCreateResource(textureFullPath, desc, &mFbxObjects[objectIndex].Mesh.TextureNormal)))
+                            if (FAILED(loadTextureFromFileAndCreateResource(textureFullPath, renderer, desc, &mFbxObjects[objectIndex].Mesh.TextureNormal)))
                             {
                                 ASSERT(FALSE, "failed to create texture for normal mapping");
                             }
@@ -453,7 +452,7 @@ namespace renderer
                 desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
                 desc.Texture2D.MipLevels = 1;
                 desc.Texture2D.MostDetailedMip = 0;
-                if (FAILED(loadTextureFromFileAndCreateResource(textureFullPath, desc, &mesh.Mesh.TextureNormal)))
+                if (FAILED(loadTextureFromFileAndCreateResource(textureFullPath, renderer, desc, &mesh.Mesh.TextureNormal)))
                 {
                     ASSERT(FALSE, "failed to create texture for lightmapping");
                     return;
@@ -824,12 +823,12 @@ namespace renderer
     }
 
     HRESULT ModelImporter::loadTextureFromFileAndCreateResource(
-        const WCHAR* fileName,
-        const D3D11_SHADER_RESOURCE_VIEW_DESC& srvDesc,
-        ID3D11ShaderResourceView** outShaderResourceView)
+        const WCHAR*                           fileName,
+        Renderer* const                        renderer,
+        const D3D11_SHADER_RESOURCE_VIEW_DESC& srvDesc, ID3D11ShaderResourceView** outShaderResourceView)
     {
         ASSERT(*outShaderResourceView == nullptr, "nullptr가 아닌 ID3D11ShaderResourceView가 전달 되었습니다.");
-
+        ID3D11Device* device = renderer->GetDevice();
         ScratchImage image;
         ID3D11Resource* textureResource = nullptr;
         HRESULT result = LoadFromWICFile(fileName, WIC_FLAGS_NONE, nullptr, image);
@@ -840,7 +839,7 @@ namespace renderer
             goto FAILED;
         }
 
-        result = CreateTexture(mDevice, image.GetImages(), image.GetImageCount(), image.GetMetadata(), &textureResource);
+        result = CreateTexture(device, image.GetImages(), image.GetImageCount(), image.GetMetadata(), &textureResource);
         if (FAILED(result))
         {
             OutputDebugStringW(L"ModelImporter::loadTextureFromFileAndCreateResource - CreateTexture 생성 실패");
@@ -848,7 +847,7 @@ namespace renderer
             goto FAILED;
         }
 
-        result = mDevice->CreateShaderResourceView(textureResource, &srvDesc, &(*outShaderResourceView));
+        result = device->CreateShaderResourceView(textureResource, &srvDesc, &(*outShaderResourceView));
         if (FAILED(result))
         {
             ASSERT(false, "ModelImporter::loadTextureFromFileAndCreateResource - outShaderResourceView 생성 실패");
@@ -860,6 +859,7 @@ namespace renderer
     FAILED:
         image.Release();
         SAFETY_RELEASE(textureResource);
+        SAFETY_RELEASE(device);
 
         return result;
 

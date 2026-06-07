@@ -6,7 +6,9 @@
 
 namespace renderer
 {
-    class ModelImporter
+class Renderer;
+
+class ModelImporter
     {
 
         struct MeshForImport
@@ -18,13 +20,13 @@ namespace renderer
 
     public:
 
-        ModelImporter(ID3D11Device* device);
+        ModelImporter();
         ~ModelImporter();
 
         void                            Initialize();
         void                            Release();
 
-        void                            LoadFbxModel(const char* fileName);
+        void                            LoadFbxModel(const char* fileName, Renderer* const renderer);
 
         renderer::Mesh* GetMesh(size_t meshIndex);
         size_t                          GetMeshCount() const;
@@ -38,7 +40,8 @@ namespace renderer
 
         void    parseMesh();
 
-        void    parseTextureInfo();
+        // TODO: 파일 경로 문자열을(해시를) 넘겨서 TextureManager가 로드해서 관리하도록 (데이터 로드는 또 다른 매니저가 처리하는 게 좋을지?)
+        void    parseTextureInfo(Renderer* const renderer);
 
         //  sdk 문서에서 가져온 정보 출력용 함수
         void    parseMaterial();
@@ -46,9 +49,9 @@ namespace renderer
         static const FbxImplementation* LookForImplementation(FbxSurfaceMaterial* pMaterial);
 
         HRESULT loadTextureFromFileAndCreateResource(
-            const WCHAR* fileName,
-            const D3D11_SHADER_RESOURCE_VIEW_DESC& srvDesc,
-            ID3D11ShaderResourceView** outShaderResourceView);
+            const WCHAR*                           fileName,
+            Renderer* const                        renderer,
+            const D3D11_SHADER_RESOURCE_VIEW_DESC& srvDesc, ID3D11ShaderResourceView** outShaderResourceView);
 
         // temp. will be destroy / sdk 문서에서 가져온 정보 출력용 함수
         void DisplayString(const char* pHeader, const char* pValue = "", const char* pSuffix = "");
@@ -67,7 +70,6 @@ namespace renderer
         static const wchar_t* NORMAL_TEXTURE_FILE_SUFFIX;
         static const wchar_t* TEXTURE_FILE_EXTENSION;
 
-        ID3D11Device* mDevice;
 
 
         FbxManager* mFbxManager;
