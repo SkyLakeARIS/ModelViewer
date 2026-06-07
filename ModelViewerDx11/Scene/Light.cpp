@@ -16,7 +16,7 @@ namespace scene
         , mNearPlane(nearPlane)
         , mFarPlane(farPlane)
         , mCamera(camera)
-        , mLinesBuffer(nullptr)
+        //, mLinesBuffer(nullptr)
     {
         mMesh = new renderer::Plane();
         mMesh->SetPosition(mPosition);
@@ -43,7 +43,7 @@ namespace scene
             mMesh = nullptr;
         }
 
-        SAFETY_RELEASE(mLinesBuffer);
+        //SAFETY_RELEASE(mLinesBuffer);
 
 
     }
@@ -117,39 +117,39 @@ namespace scene
         mMesh->Draw();
     }
 
-    void Light::DrawDebug()
-    {
-        renderer::Renderer::GetInstance()->SetInputLayoutTo(renderer::Renderer::eInputLayout::P);
-        renderer::Renderer::GetInstance()->SetShaderTo(renderer::Renderer::eShader::Color);
+    //void Light::DrawDebug()
+    //{
+    //    renderer::Renderer::GetInstance()->SetInputLayoutTo(renderer::Renderer::eInputLayout::P);
+    //    renderer::Renderer::GetInstance()->SetShaderTo(renderer::Renderer::eShader::Color);
 
-        renderer::Renderer::CbColor cbColor = {  };
-        cbColor.Float3 = XMFLOAT3(1.0f, 1.0f, 0.0f);
+    //    renderer::Renderer::CbColor cbColor = {  };
+    //    cbColor.Float3 = XMFLOAT3(1.0f, 1.0f, 0.0f);
 
-        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbColor, &cbColor);
-        renderer::Renderer::GetInstance()->BindCbToPs(0, 1, renderer::Renderer::eCbType::CbColor);
+    //    renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbColor, &cbColor);
+    //    renderer::Renderer::GetInstance()->BindCbToPs(0, 1, renderer::Renderer::eCbType::CbColor);
 
-        renderer::Renderer::CbWorld cbWorld;
-        cbWorld.Matrix = XMMatrixTranspose(XMMatrixIdentity());
-        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWorld);
+    //    renderer::Renderer::CbWorld cbWorld;
+    //    cbWorld.Matrix = XMMatrixTranspose(XMMatrixIdentity());
+    //    renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWorld);
 
-        renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
-        renderer::Renderer::GetInstance()->BindCbToVsByType(1, 1, renderer::Renderer::eCbType::CbViewProj);
+    //    renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
+    //    renderer::Renderer::GetInstance()->BindCbToVsByType(1, 1, renderer::Renderer::eCbType::CbViewProj);
 
-        ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
-        const UINT stride = sizeof(XMFLOAT3);
-        const UINT offset = 0;
-        deviceContext->IASetVertexBuffers(0, 1, &mLinesBuffer, &stride, &offset);
+    //    ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
+    //    const UINT stride = sizeof(XMFLOAT3);
+    //    const UINT offset = 0;
+    //    deviceContext->IASetVertexBuffers(0, 1, &mLinesBuffer, &stride, &offset);
 
-        D3D11_PRIMITIVE_TOPOLOGY origTopology;
-        deviceContext->IAGetPrimitiveTopology(&origTopology);
-        deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+    //    D3D11_PRIMITIVE_TOPOLOGY origTopology;
+    //    deviceContext->IAGetPrimitiveTopology(&origTopology);
+    //    deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
-        deviceContext->Draw(mLines.size(), 0);
+    //    deviceContext->Draw(mLines.size(), 0);
 
-        deviceContext->IASetPrimitiveTopology(origTopology);
+    //    deviceContext->IASetPrimitiveTopology(origTopology);
 
-        deviceContext->Release();
-    }
+    //    deviceContext->Release();
+    //}
 
     void Light::Move(double deltaTime, float direction)
     {
@@ -177,33 +177,33 @@ namespace scene
        //  mMatViewProj = mMatLightViews[index] * mMatLightProjs[index];
 
         // TODO: 이건 새로운 유형의 버퍼(Dynamic)를 만들어야 하지 않을까?
-        if (!mLinesBuffer)
+        //if (!mLinesBuffer)
+        //{
+        //    // debug - frustum
+        //    D3D11_BUFFER_DESC bufferDesc = {  };
+        //    bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        //    bufferDesc.ByteWidth = sizeof(XMFLOAT3) * mLines.size();
+        //    bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+        //    bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+        //    D3D11_SUBRESOURCE_DATA data;
+        //    data.pSysMem = mLines.data();
+
+        //    ID3D11Device* device = renderer::Renderer::GetInstance()->GetDevice();
+        //    device->CreateBuffer(&bufferDesc, &data, &mLinesBuffer);
+        //    device->Release();
+        //}
+        //else
         {
-            // debug - frustum
-            D3D11_BUFFER_DESC bufferDesc = {  };
-            bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-            bufferDesc.ByteWidth = sizeof(XMFLOAT3) * mLines.size();
-            bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-            bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+            //ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
+            //D3D11_MAPPED_SUBRESOURCE subresource = {  };
+            //subresource.pData = mLines.data();
+            //subresource.RowPitch = sizeof(XMFLOAT3) * mLines.size();
+            //deviceContext->Map(mLinesBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &subresource);
+            ////  D3D11_MAP_FLAG::D3D11_MAP_FLAG_DO_NOT_WAIT
 
-            D3D11_SUBRESOURCE_DATA data;
-            data.pSysMem = mLines.data();
-
-            ID3D11Device* device = renderer::Renderer::GetInstance()->GetDevice();
-            device->CreateBuffer(&bufferDesc, &data, &mLinesBuffer);
-            device->Release();
-        }
-        else
-        {
-            ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
-            D3D11_MAPPED_SUBRESOURCE subresource = {  };
-            subresource.pData = mLines.data();
-            subresource.RowPitch = sizeof(XMFLOAT3) * mLines.size();
-            deviceContext->Map(mLinesBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &subresource);
-            //  D3D11_MAP_FLAG::D3D11_MAP_FLAG_DO_NOT_WAIT
-
-            deviceContext->Unmap(mLinesBuffer, 0);
-            deviceContext->Release();
+            //deviceContext->Unmap(mLinesBuffer, 0);
+            //deviceContext->Release();
         }
 
         updateMatrices();

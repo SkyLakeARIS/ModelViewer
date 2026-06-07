@@ -24,7 +24,7 @@ namespace scene
         void Initialize();
         void Update(Camera* camera);
         void Draw();
-        void DrawDebug();
+        //void DrawDebug();
 
         void Move(double deltaTime, float direction);
 
@@ -64,7 +64,8 @@ namespace scene
         //  XMFLOAT3 mLines[24];
         std::vector<XMFLOAT3> mLines;
         // TODO: 디버그용 버퍼도 처리해야 한다.
-        ID3D11Buffer* mLinesBuffer;
+        // TODO: 우선 주석으로 제거하고 정리 작업 끝난 다음에 DynamicBuffer 관리 방안까지 결정 후 다시 진행
+        //ID3D11Buffer* mLinesBuffer;
 
         float mNearPlane;
         float mFarPlane;

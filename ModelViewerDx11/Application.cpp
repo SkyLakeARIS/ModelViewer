@@ -332,7 +332,7 @@ void Application::renderScene()
 
     mLight->Update(mCamera);
     mLight->Draw();
-    mLight->DrawDebug();
+    //mLight->DrawDebug();
 
     mPlane->Update();
     //gPlane->DrawTexture(gLight);
