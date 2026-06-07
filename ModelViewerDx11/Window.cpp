@@ -67,6 +67,11 @@ bool Window::ProcessMessages()
     return false;
 }
 
+HWND Window::GetHandle() const
+{
+    return mHandleWindow;
+}
+
 LRESULT Window::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)

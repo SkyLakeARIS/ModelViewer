@@ -14,6 +14,9 @@ public:
 
     bool ProcessMessages();
 
+    HWND GetHandle() const;
+
+public:
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 public:

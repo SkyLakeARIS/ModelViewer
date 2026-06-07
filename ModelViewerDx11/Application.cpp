@@ -292,7 +292,7 @@ void Application::updateScene(double deltaTime)
 
     if (gKeyboard[DIK_ESCAPE] & 0x80)
     {
-        SendMessage(renderer::Renderer::GetInstance()->GetWindowHandle(), WM_DESTROY, 0, 0);
+        SendMessage(mWindow->GetHandle(), WM_DESTROY, 0, 0);
     }
 
 
