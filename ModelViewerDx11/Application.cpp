@@ -168,12 +168,12 @@ bool Application::initializeScene()
     mImporter = new renderer::ModelImporter(renderer::Renderer::GetInstance()->GetDevice());
     mImporter->Initialize();
 
-    mCharacter = new renderer::Model(renderer::Renderer::GetInstance(), mCamera, reinterpret_cast<int8_t*>("/AssetData/models/unagi.fbx"));
+    mCharacter = new renderer::Model(mCamera, reinterpret_cast<int8_t*>("/AssetData/models/unagi.fbx"));
 
     // TODO: 로드 시점과 처리에 대한 내용도 고민이 필요함. (모델이 로드를 요청할 것인지? - 요청하면 언제 로드되었음을 확인하고 처리할 것인지? - Importer와는 hash id로 통신)
     mImporter->LoadFbxModel("/AssetData/models/unagi.fbx");
 
-    mSkybox = new scene::Sky(*renderer::Renderer::GetInstance(), *mCamera);
+    mSkybox = new scene::Sky(*mCamera);
     mSkybox->Initialize(10, 10);
 
     // TODO: 실패시 프로그램 종료말고, 나중에 Object List를 만들어서 관리하도록 변경(성공하면 drawable 리스트에 추가)

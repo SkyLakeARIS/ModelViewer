@@ -7,20 +7,13 @@
 
 namespace scene
 {
-    Sky::Sky(renderer::Renderer& renderer, Camera& camera)
-        : mRenderer(&renderer)
-        , mCamera(&camera)
-        , mDevice(nullptr)
-        , mDeviceContext(nullptr)
+    Sky::Sky(Camera& camera)
+        : mCamera(&camera)
         , mModelHash(0)
         , mWorld(XMMatrixIdentity())
         , mLatLines(0)
         , mLonLines(0)
     {
-        renderer.AddRef();
-
-        mDevice = renderer.GetDevice();
-        mDeviceContext = renderer.GetDeviceContext();
 
         // TODO: 이런 상수 값들도 따로 모아놓을 파일을 만드는 게 좋아 보임
         enum
@@ -36,16 +29,10 @@ namespace scene
 
     Sky::~Sky()
     {
-        mRenderer->Release();
-        mRenderer = nullptr;
+
 
         mCamera = nullptr;
 
-        mDevice->Release();
-        mDevice = nullptr;
-
-        mDeviceContext->Release();
-        mDeviceContext = nullptr;
 
 
 
@@ -70,7 +57,7 @@ namespace scene
         srvDesc.TextureCube.MipLevels = 1;
         srvDesc.TextureCube.MostDetailedMip = 0;
         
-        result = mRenderer->CreateDdsTextureResource(L"./AssetData/textures/skybox.dds", DDS_FLAGS_NONE, srvDesc, &mMesh.Texture);
+        result = renderer::Renderer::GetInstance()->CreateDdsTextureResource(L"./AssetData/textures/skybox.dds", DDS_FLAGS_NONE, srvDesc, &mMesh.Texture);
         if (FAILED(result))
         {
             ASSERT(false, "Skybox - fail to create texture");
@@ -88,7 +75,7 @@ namespace scene
     void Sky::Draw()
     {
         // render
-        mRenderer->SetInputLayoutTo(renderer::Renderer::eInputLayout::PT);
+        renderer::Renderer::GetInstance()->SetInputLayoutTo(renderer::Renderer::eInputLayout::PT);
 
         renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
         const renderer::BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
@@ -104,9 +91,9 @@ namespace scene
         renderer::Renderer::GetInstance()->BindVertexBuffer(stride, offset);
         renderer::Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
 
-        mRenderer->SetRasterState(renderer::Renderer::eRasterType::Skybox);
+        renderer::Renderer::GetInstance()->SetRasterState(renderer::Renderer::eRasterType::Skybox);
 
-        mRenderer->SetShaderTo(renderer::Renderer::eShader::Skybox);
+        renderer::Renderer::GetInstance()->SetShaderTo(renderer::Renderer::eShader::Skybox);
 
         renderer::Renderer::GetInstance()->BindSamplerToPsByType(0, renderer::Renderer::eSamplerType::AnisotropicWrap);
 
@@ -114,13 +101,16 @@ namespace scene
         renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
         renderer::Renderer::GetInstance()->BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
 
-        mRenderer->SetDepthStencilState(true);
+        renderer::Renderer::GetInstance()->SetDepthStencilState(true);
 
-        mDeviceContext->PSSetShaderResources(0, 1, &mMesh.Texture);
+        // TODO: Renderer로 Bind하도록 이동하기.
+        ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
+        deviceContext->PSSetShaderResources(0, 1, &mMesh.Texture);
 
-        mDeviceContext->DrawIndexed(static_cast<uint32_t>(mMesh.IndexList.size()), 0, 0);
+        deviceContext->DrawIndexed(static_cast<uint32_t>(mMesh.IndexList.size()), 0, 0);
+        SAFETY_RELEASE(deviceContext);
 
-        mRenderer->SetDepthStencilState(false);
+        renderer::Renderer::GetInstance()->SetDepthStencilState(false);
 
     }
 

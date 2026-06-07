@@ -15,7 +15,7 @@ namespace scene
     {
     public:
 
-        Sky(renderer::Renderer& renderer, Camera& camera);
+        Sky(Camera& camera);
         ~Sky();
 
         HRESULT Initialize(uint32 latLines, uint32 lonLines);
@@ -28,10 +28,7 @@ namespace scene
 
     private:
 
-        renderer::Renderer* mRenderer;
         Camera* mCamera;
-        ID3D11Device* mDevice;
-        ID3D11DeviceContext* mDeviceContext;
 
         HashID mModelHash;
         XMMATRIX mWorld;

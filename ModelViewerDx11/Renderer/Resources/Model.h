@@ -22,7 +22,7 @@ namespace renderer
     class Model
     {
     public:
-        Model(Renderer* renderer, scene::Camera* camera, int8_t* filePath);
+        Model(scene::Camera* camera, int8_t* filePath);
         ~Model();
 
         void                Draw();
@@ -51,9 +51,6 @@ namespace renderer
 
     private:
 
-        Renderer* mRenderer;
-        ID3D11Device* mDevice;
-        ID3D11DeviceContext* mDeviceContext;
         scene::Camera* mCamera; // 나중에 모델에 카메라를 붙이도록(상호참조해야 할 것 같음. 아니면 다른 방법)
 
         HashID mModelHash;

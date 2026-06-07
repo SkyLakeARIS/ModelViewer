@@ -6,9 +6,8 @@
 
 namespace renderer
 {
-    Model::Model(Renderer* renderer, scene::Camera* camera, int8_t* filePath)
-        : mRenderer(renderer)
-        , mCamera(camera)
+    Model::Model(scene::Camera* camera, int8_t* filePath)
+        : mCamera(camera)
         , mModelHash(0)
         , mNumMesh(0)
         , mNumVertex(0)
@@ -21,16 +20,10 @@ namespace renderer
         , mbHighlight(false)
         , mbActiveEmissive(false)
     {
-        ASSERT(renderer != nullptr, "do not pass nullptr");
         ASSERT(camera != nullptr, "do not pass nullptr");
 
-        mRenderer->AddRef();
 
-        mDevice = mRenderer->GetDevice();
-        ASSERT(mDevice != nullptr, "renderer was not initialized ");
 
-        mDeviceContext = mRenderer->GetDeviceContext();
-        ASSERT(mDeviceContext != nullptr, "renderer was not initialized");
 
         mMatWorld = XMMatrixIdentity();
 
@@ -53,14 +46,8 @@ namespace renderer
 
 
 
-        mDeviceContext->Release();
-        mDeviceContext = nullptr;
-        mDevice->Release();
-        mDevice = nullptr;
 
 
-        mRenderer->Release();
-        mRenderer = nullptr;
 
         delete[] mVertices;
         delete[] mIndices;
@@ -69,7 +56,7 @@ namespace renderer
 
     void Model::Draw()
     {
-        mRenderer->SetInputLayoutTo(Renderer::eInputLayout::PTN);
+        Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::PTN);
 
         BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
         const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
@@ -88,13 +75,14 @@ namespace renderer
         int32_t vertexOffset = 0;
         uint32_t indexOffset = 0U;
 
+        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
 
         if (mbHighlight)
         {
 
             Renderer::GetInstance()->SetRasterState(Renderer::eRasterType::CullBack);
 
-            mRenderer->SetShaderTo(Renderer::eShader::Outline);
+            Renderer::GetInstance()->SetShaderTo(Renderer::eShader::Outline);
             Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
             Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbOutlineProperty);
             Renderer::GetInstance()->BindCbToVsByType(2U, 1U, Renderer::eCbType::CbViewProj);
@@ -102,7 +90,7 @@ namespace renderer
 
             for (uint32_t index = 0U; index < mNumMesh; ++index)
             {
-                mDeviceContext->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexList.size()), indexOffset, vertexOffset);
+                deviceContext->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexList.size()), indexOffset, vertexOffset);
 
                 vertexOffset += static_cast<int32_t>(mMeshes[index].Vertex.size());
                 indexOffset += static_cast<uint32_t>(mMeshes[index].IndexList.size());
@@ -114,7 +102,7 @@ namespace renderer
 
         Renderer::GetInstance()->SetRasterState(Renderer::eRasterType::Basic);
 
-        mRenderer->SetShaderTo(Renderer::eShader::BasicWithShadow);
+        Renderer::GetInstance()->SetShaderTo(Renderer::eShader::BasicWithShadow);
 
         Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
         Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
@@ -127,7 +115,7 @@ namespace renderer
         Renderer::GetInstance()->BindCbToPs(0U, 1U, Renderer::eCbType::CbMaterial);
 
         auto* texShadow = Renderer::GetInstance()->GetShadowTexture();
-        mDeviceContext->PSSetShaderResources(2U, 1U, &texShadow);
+        deviceContext->PSSetShaderResources(2U, 1U, &texShadow);
         texShadow->Release();
 
         // Draw
@@ -136,8 +124,8 @@ namespace renderer
         indexOffset = 0U;
         for (size_t index = 0U; index < mNumMesh; ++index)
         {
-            mDeviceContext->PSSetShaderResources(0U, 1U, &mMeshes[index].Texture);
-            mDeviceContext->PSSetShaderResources(1U, 1U, &mMeshes[index].TextureNormal);
+            deviceContext->PSSetShaderResources(0U, 1U, &mMeshes[index].Texture);
+            deviceContext->PSSetShaderResources(1U, 1U, &mMeshes[index].TextureNormal);
             CbMaterial cbMaterial;
             ZeroMemory(&cbMaterial, sizeof(CbMaterial));
 
@@ -148,7 +136,7 @@ namespace renderer
             }
             Renderer::GetInstance()->UpdateCB(Renderer::eCbType::CbMaterial, &cbMaterial);
 
-            mDeviceContext->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexList.size()), indexOffset, vertexOffset);
+            deviceContext->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexList.size()), indexOffset, vertexOffset);
 
             vertexOffset += static_cast<int32_t>(mMeshes[index].Vertex.size());
             indexOffset += static_cast<uint32_t>(mMeshes[index].IndexList.size());
@@ -156,12 +144,13 @@ namespace renderer
         }
 
         ID3D11ShaderResourceView* unbind = nullptr;
-        mDeviceContext->PSSetShaderResources(2U, 1U, &unbind);
+        deviceContext->PSSetShaderResources(2U, 1U, &unbind);
+        SAFETY_RELEASE(deviceContext);
     }
 
     void Model::DrawShadow()
     {
-        mRenderer->SetInputLayoutTo(Renderer::eInputLayout::P);
+        Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::P);
 
         BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
         const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
@@ -177,22 +166,24 @@ namespace renderer
         Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
 
         Renderer::GetInstance()->SetRasterState(Renderer::eRasterType::Outline);
-        mRenderer->SetShaderTo(Renderer::eShader::Shadow);
+        Renderer::GetInstance()->SetShaderTo(Renderer::eShader::Shadow);
 
-        mRenderer->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
-        mRenderer->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
+        Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
+        Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
 
 
         // Draw
         int32_t vertexOffset = 0;
         uint32_t indexOffset = 0U;
+        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
         for (size_t index = 0U; index < mNumMesh; ++index)
         {
-            mDeviceContext->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexList.size()), indexOffset, vertexOffset);
+            deviceContext->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexList.size()), indexOffset, vertexOffset);
 
             vertexOffset += static_cast<int32_t>(mMeshes[index].Vertex.size());
             indexOffset += static_cast<uint32_t>(mMeshes[index].IndexList.size());
         }
+        SAFETY_RELEASE(deviceContext);
     }
 
     void Model::Update()
