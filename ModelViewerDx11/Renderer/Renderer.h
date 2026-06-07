@@ -153,6 +153,7 @@ namespace renderer
     public:
 
         static Renderer* GetInstance();
+        // MEMO: BlendState의 다양한 옵션을 대응하기 위해 비트 슬라이싱을 통해 해시 계산
         static inline HashID GetBlendStateHash(D3D11_BLEND_DESC& desc);
 
         // D3D

@@ -76,7 +76,6 @@ namespace scene
         blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
         blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
         blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        // TODO: 좀 더 조사가 필요한 부분: 이런 정해지지 않은 것들은 어떻게 깔끔하게 처리할 수 있을지? 동적 생성은 피할 수 없는 부분인지?
         renderer::Renderer::GetInstance()->CreateBlendState(blendDesc, mBlendHash);
 
 
