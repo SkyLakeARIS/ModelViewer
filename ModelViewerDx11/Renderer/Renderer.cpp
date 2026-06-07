@@ -85,60 +85,9 @@ namespace renderer
 
     Renderer::~Renderer()
     {
-        for (uint32 i = 0; i < static_cast<uint32>(eCbType::NumConstantBuffer); ++i)
-        {
-            SAFETY_RELEASE(mCbList[i]);
-        }
-
-        for(uint32 i = 0; i < static_cast<uint32>(eRasterType::NumRaster); ++i)
-        {
-            SAFETY_RELEASE(mRasterStates[i]);
-        }
-
-        for(uint32 i = 0; i < static_cast<uint32>(eSamplerType::SamplerCount); ++i)
-        {
-            SAFETY_RELEASE(mSamplerState[i]);
-        }
-
-        for (auto& it : mBlendStateMap)
-        {
-            SAFETY_RELEASE(it.second);
-        }
-        mBlendStateMap.clear();
-
-        for (uint32 i = 0; i < static_cast<uint32>(eVertexShader::NumVertexShader); ++i)
-        {
-            SAFETY_RELEASE(mVertexShadersList[i]);
-        }
-
-        for (uint32 i = 0; i < static_cast<uint32>(ePixelShader::NumPixelShader); ++i)
-        {
-            SAFETY_RELEASE(mPixelShaderList[i]);
-        }
-
-        for (uint32 i = 0; i < static_cast<uint32>(eInputLayout::NumInputlayout); ++i)
-        {
-            SAFETY_RELEASE(mInputLayoutList[i]);
-        }
-
-        for (uint32 i = 0; i < static_cast<uint8_t>(eRenderTarget::NumRenderTarget); ++i)
-        {
-            SAFETY_RELEASE(mRenderTargetViewList[i]);
-            SAFETY_RELEASE(mDepthStencilViewList[i]);
-        }
-
         delete mBufferManager;
 
-        SAFETY_RELEASE(mDefaultTexture);
-        SAFETY_RELEASE(mTexShadow);
-        SAFETY_RELEASE(mTexColor);
-        SAFETY_RELEASE(mShadowSrv);
-        SAFETY_RELEASE(mDepthStencilTexture);
-        SAFETY_RELEASE(mSkyboxDepthStencil);
-        SAFETY_RELEASE(mSwapChain);
-        SAFETY_RELEASE(mDeviceContext);
-        SAFETY_RELEASE(mDevice);
-
+        Cleanup();
     }
 
     HRESULT Renderer::compileShaderFromFile(
@@ -246,6 +195,37 @@ namespace renderer
         return S_OK;
     }
 
+    HRESULT Renderer::createPresetConstantBuffers()
+    {
+        constexpr ConstantBufferMap cbMapTable[static_cast<uint8_t>(eCbType::NumConstantBuffer)] =
+            {
+                {eCbType::CbWorld, sizeof(CbWorld)},
+                {eCbType::CbViewProj, sizeof(CbViewProj)},
+                {eCbType::CbLightViewProjMatrix, sizeof(CbLightViewProjMatrix)},
+                {eCbType::CbCameraPosition, sizeof(CbCameraPosition)},
+                {eCbType::CbOutlineProperty, sizeof(CbOutlineProperty)},
+                {eCbType::CbLightProperty, sizeof(CbLightProperty)},
+                {eCbType::CbMaterial, sizeof(CbMaterial)},
+                {eCbType::CbColor, sizeof(CbMaterial)},
+            };
+
+        D3D11_BUFFER_DESC desc = {};
+        desc.Usage = D3D11_USAGE_DEFAULT;
+        desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        desc.CPUAccessFlags = 0;
+        HRESULT result = {};
+        for (uint8_t index = 0; index < static_cast<uint8_t>(eCbType::NumConstantBuffer); ++index)
+        {
+            desc.ByteWidth = cbMapTable[index].ByteWidth;
+            result = CreateConstantBuffer(desc, &mCbList[index]);
+            if (FAILED(result))
+            {
+                break;
+            }
+        }
+        return result;
+    }
+
 
     Renderer* Renderer::GetInstance()
     {
@@ -273,10 +253,9 @@ namespace renderer
 
     HRESULT Renderer::CreateDeviceAndSetup(
         DXGI_SWAP_CHAIN_DESC& swapChainDesc
-        , HWND hWnd
-        , uint32 height
-        , uint32 width
-        , bool bDebugMode)
+        , uint32              width
+        , uint32              height
+        , bool                bDebugMode)
     {
 
 
@@ -425,13 +404,37 @@ namespace renderer
         return S_OK;
     }
 
-    HRESULT Renderer::PrepareRender()
+    bool Renderer::initialize(HWND handleWindow, int16_t width, int16_t height, int16_t frameRate)
     {
         HRESULT result = S_OK;
 
-        mBufferManager = new BufferManager(mDevice, mDeviceContext);
-        mBufferManager->Initialize(sVertexBufferDefaultSize, sIndexBufferDefaultSize);
+        // TODO: 개선 경고 메세지 관련하여 조사하고 개선 필요 함
+        DXGI_SWAP_CHAIN_DESC swapDesc;
+        ZeroMemory(&swapDesc, sizeof(swapDesc));
+        swapDesc.BufferCount = 1;
+        swapDesc.BufferDesc.Width = width;
+        swapDesc.BufferDesc.Height = height;
+        swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        swapDesc.BufferDesc.RefreshRate.Numerator = frameRate;
+        swapDesc.BufferDesc.RefreshRate.Denominator = 1;
+        swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        swapDesc.OutputWindow = handleWindow;
+        swapDesc.SampleDesc.Count = 1;
+        swapDesc.SampleDesc.Quality = 0;
+        swapDesc.Windowed = TRUE;
 
+        result = CreateDeviceAndSetup(swapDesc, width, height, true);
+        if (FAILED(result))
+        {
+            ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
+            return false;
+        }
+
+        mBufferManager = new BufferManager(mDevice, mDeviceContext);
+        if (!mBufferManager->Initialize(sVertexBufferDefaultSize, sIndexBufferDefaultSize))
+        {
+            return false;
+        }
         // set default resources
 
         D3D11_SHADER_RESOURCE_VIEW_DESC texDefaultDesc;
@@ -440,46 +443,44 @@ namespace renderer
         texDefaultDesc.Texture2D.MipLevels = 1;
         texDefaultDesc.Texture2D.MostDetailedMip = 0;
 
-        CreateTextureResource(L"AssetData/textures/default.png", WIC_FLAGS_NONE, texDefaultDesc, &mDefaultTexture);
+        // TODO: HRESULT를 에러 메세지로 변환하여 출력해주는 로그 클래스도 만드는 게 좋을 것 같다.(그래야 result를 받는 의미가 있을 듯)
+        result = CreateTextureResource(L"AssetData/textures/default.png", WIC_FLAGS_NONE, texDefaultDesc, &mDefaultTexture);
+        if (FAILED(result))
+        {
+            ASSERT(false, "FAIL : CreateTextureResource - default texture");
+            return false;
+        }
         SET_PRIVATE_DATA(mDefaultTexture, "DefaultTexture");
 
-        // 
         result = CreateShadowRenderTarget();
-        ASSERT(SUCCEEDED(result), "FAIL : CreateShadowRenderTarget");
-
-        result = setupShaders();
-        ASSERT(SUCCEEDED(result), "FAIL : setupShaders");
-
-        result = createSamplerState();
-        ASSERT(SUCCEEDED(result), "FAIL : createSamplerState");
-
-        // initialize constant buffer
-        constexpr ConstantBufferMap cbMapTable[static_cast<uint8_t>(eCbType::NumConstantBuffer)] =
+        if (FAILED(result))
         {
-            {eCbType::CbWorld, sizeof(CbWorld)},
-            {eCbType::CbViewProj, sizeof(CbViewProj)},
-            {eCbType::CbLightViewProjMatrix, sizeof(CbLightViewProjMatrix) },
-            {eCbType::CbCameraPosition, sizeof(CbCameraPosition) },
-            {eCbType::CbOutlineProperty, sizeof(CbOutlineProperty) },
-            {eCbType::CbLightProperty, sizeof(CbLightProperty)},
-            {eCbType::CbMaterial, sizeof(CbMaterial)},
-            {eCbType::CbColor, sizeof(CbMaterial)},
-        };
-
-        D3D11_BUFFER_DESC desc={};
-        desc.Usage = D3D11_USAGE_DEFAULT;
-        desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        desc.CPUAccessFlags = 0;
-        for(uint8_t index = 0; index < static_cast<uint8_t>(eCbType::NumConstantBuffer); ++index)
-        {
-            desc.ByteWidth = cbMapTable[index].ByteWidth;
-            ASSERT(S_OK == CreateConstantBuffer(desc, &mCbList[index]), "Fail To Create CB");
+            ASSERT(false, "FAIL : FAIL : CreateShadowRenderTarget");
+            return false;
         }
 
+        result = setupShaders();
+        if (FAILED(result))
+        {
+            ASSERT(false, "FAIL : FAIL : setupShaders");
+            return false;
+        }
 
-        // TODO main 함수와 다른 Create함수에 껴있는 초기화 함수들 여기로 옮겨놓기.
-        return result;
+        result = createSamplerState();
+        if (FAILED(result))
+        {
+            ASSERT(false, "FAIL : FAIL : createSamplerState");
+            return false;
+        }
 
+        result = createPresetConstantBuffers();
+        if (FAILED(result))
+        {
+            ASSERT(false, "FAIL : FAIL : createPresetConstantBuffers");
+            return false;
+        }
+
+        return true;
     }
 
     HRESULT Renderer::CreateVertexShaderAndInputLayout(
@@ -1141,11 +1142,54 @@ namespace renderer
 
     void Renderer::Cleanup()
     {
+        for (uint32 i = 0; i < static_cast<uint32>(eCbType::NumConstantBuffer); ++i)
+        {
+            SAFETY_RELEASE(mCbList[i]);
+        }
 
-        SAFETY_RELEASE(mDevice);
-        SAFETY_RELEASE(mDevice);
+        for (uint32 i = 0; i < static_cast<uint32>(eRasterType::NumRaster); ++i)
+        {
+            SAFETY_RELEASE(mRasterStates[i]);
+        }
+
+        for (uint32 i = 0; i < static_cast<uint32>(eSamplerType::SamplerCount); ++i)
+        {
+            SAFETY_RELEASE(mSamplerState[i]);
+        }
+
+        for (auto& it : mBlendStateMap)
+        {
+            SAFETY_RELEASE(it.second);
+        }
+        mBlendStateMap.clear();
+
+        for (uint32 i = 0; i < static_cast<uint32>(eVertexShader::NumVertexShader); ++i)
+        {
+            SAFETY_RELEASE(mVertexShadersList[i]);
+        }
+
+        for (uint32 i = 0; i < static_cast<uint32>(ePixelShader::NumPixelShader); ++i)
+        {
+            SAFETY_RELEASE(mPixelShaderList[i]);
+        }
+
+        for (uint32 i = 0; i < static_cast<uint32>(eInputLayout::NumInputlayout); ++i)
+        {
+            SAFETY_RELEASE(mInputLayoutList[i]);
+        }
+
+        for (uint32 i = 0; i < static_cast<uint8_t>(eRenderTarget::NumRenderTarget); ++i)
+        {
+            SAFETY_RELEASE(mRenderTargetViewList[i]);
+            SAFETY_RELEASE(mDepthStencilViewList[i]);
+        }
+
         SAFETY_RELEASE(mDefaultTexture);
+        SAFETY_RELEASE(mTexShadow);
+        SAFETY_RELEASE(mTexColor);
+        SAFETY_RELEASE(mShadowSrv);
         SAFETY_RELEASE(mDepthStencilTexture);
+        SAFETY_RELEASE(mSkyboxDepthStencil);
         SAFETY_RELEASE(mSwapChain);
         SAFETY_RELEASE(mDeviceContext);
         SAFETY_RELEASE(mDevice);

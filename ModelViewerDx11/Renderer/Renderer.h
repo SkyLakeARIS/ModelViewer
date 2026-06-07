@@ -156,7 +156,7 @@ namespace renderer
         static inline HashID GetBlendStateHash(D3D11_BLEND_DESC& desc);
 
         // D3D
-        HRESULT CreateDeviceAndSetup(DXGI_SWAP_CHAIN_DESC& swapChainDesc, HWND hWnd, uint32 height, uint32 width, bool bDebugMode);
+        HRESULT CreateDeviceAndSetup(DXGI_SWAP_CHAIN_DESC& swapChainDesc, uint32 width, uint32 height, bool bDebugMode);
 
         HRESULT CreateRenderTargetView(ID3D11Texture2D* const texture, D3D11_RENDER_TARGET_VIEW_DESC* const desc, ID3D11RenderTargetView** outRtv, const char* const debugTag = "NO_INFO");
 
@@ -174,7 +174,7 @@ namespace renderer
 
         // init - program
 
-        HRESULT PrepareRender();
+        bool initialize(HWND handleWindow, int16_t width, int16_t height, int16_t frameRate);
 
 
         // Cate : shader
@@ -285,6 +285,8 @@ namespace renderer
         HRESULT createRasterState();
 
         HRESULT createSamplerState();
+
+        HRESULT createPresetConstantBuffers();
 
         HRESULT setupShaders();
 

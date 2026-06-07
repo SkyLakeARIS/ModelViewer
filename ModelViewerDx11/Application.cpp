@@ -67,29 +67,8 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     mWindow->DisplayWindow(nCmdShow);
     mWindow->RefreshWindow();
 
-    // 백버퍼와 프론트 버퍼를 스왑하는 방식, 백버퍼에서 프론트로 카피하는 방식 두 개가 존재함.
-    DXGI_SWAP_CHAIN_DESC swapDesc;
-    ZeroMemory(&swapDesc, sizeof(swapDesc));
-    swapDesc.BufferCount = 1;
-    swapDesc.BufferDesc.Width = mWindowWidth;
-    swapDesc.BufferDesc.Height = mWindowHeight;
-    swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    swapDesc.BufferDesc.RefreshRate.Numerator = mAppFrameRate;
-    swapDesc.BufferDesc.RefreshRate.Denominator = 1;
-    swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapDesc.OutputWindow = handleWindow;
-    swapDesc.SampleDesc.Count = 1;
-    swapDesc.SampleDesc.Quality = 0;
-    swapDesc.Windowed = TRUE;
 
-    if (FAILED(renderer::Renderer::GetInstance()->CreateDeviceAndSetup(
-            swapDesc, handleWindow, mWindowHeight, mWindowWidth, true)))
-    {
-        ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
-        return false;
-    }
-
-    if (FAILED(renderer::Renderer::GetInstance()->PrepareRender()))
+    if (FAILED(renderer::Renderer::GetInstance()->initialize(handleWindow, mWindowWidth, mWindowHeight, mAppFrameRate)))
     {
         ASSERT(false, "Fail to initialize shaders");
         return false;
