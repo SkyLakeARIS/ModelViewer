@@ -271,9 +271,6 @@ namespace renderer
 
         BufferManager* const GetBufferManager() const;
 
-        void                    GetWindowSize(uint32& outWidth, uint32& outHeight) const;
-        HWND                    GetWindowHandle() const;
-
 
         // tex resource
         ID3D11ShaderResourceView*        GetShadowTexture();
@@ -345,11 +342,6 @@ namespace renderer
         std::unordered_map<HashID, ID3D11BlendState*> mBlendStateMap;
         // CB
         ID3D11Buffer* mCbList[static_cast<uint8_t>(eCbType::NumConstantBuffer)];
-    
-        // window
-        HWND        mhWindow;
-        uint32      mWindowHeight;
-        uint32      mWindowWidth;
 
         // Managers
         BufferManager* mBufferManager;

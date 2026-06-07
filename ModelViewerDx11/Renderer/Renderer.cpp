@@ -45,17 +45,6 @@ namespace renderer
         return mBufferManager;
     }
 
-    void Renderer::GetWindowSize(uint32& outWidth, uint32& outHeight) const
-    {
-        outWidth = mWindowWidth;
-        outHeight = mWindowHeight;
-    }
-
-    HWND Renderer::GetWindowHandle() const
-    {
-        return mhWindow;
-    }
-
     ID3D11ShaderResourceView* Renderer::GetShadowTexture()
     {
         mShadowSrv->AddRef();
@@ -91,9 +80,6 @@ namespace renderer
         , mViewportFull()
         , mViewportTex()
         , mRasterStates{ nullptr }
-        , mhWindow()
-        , mWindowHeight()
-        , mWindowWidth(0)
         , mBufferManager(nullptr)
     {}
 
@@ -293,9 +279,6 @@ namespace renderer
         , bool bDebugMode)
     {
 
-        mhWindow = hWnd;
-        mWindowHeight = height;
-        mWindowWidth = width;
 
         D3D_DRIVER_TYPE driverTypes[] =
         {
@@ -375,8 +358,8 @@ namespace renderer
          * 이부분 렌더타겟에 바인딩 되지 않는데 왜 호출했는지 다시 조사 필요함
          */
 
-        mViewportFull.Width = (FLOAT)mWindowWidth;
-        mViewportFull.Height = (FLOAT)mWindowHeight;
+        mViewportFull.Width = (FLOAT)width;
+        mViewportFull.Height = (FLOAT)height;
         // 보통 0~1 값으로 지정한다.
         mViewportFull.MinDepth = 0.0f;
         mViewportFull.MaxDepth = 1.0f;
@@ -387,8 +370,8 @@ namespace renderer
         mDeviceContext->RSSetViewports(1, &mViewportFull);
 
         D3D11_TEXTURE2D_DESC depthDesc = {};
-        depthDesc.Width = mWindowWidth;
-        depthDesc.Height = mWindowHeight;
+        depthDesc.Width = width;
+        depthDesc.Height = height;
         depthDesc.MipLevels = 1;
         depthDesc.ArraySize = 1;
         depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -1125,32 +1108,33 @@ namespace renderer
 
             Cleanup();
 
-            DXGI_SWAP_CHAIN_DESC swapDesc;
-            ZeroMemory(&swapDesc, sizeof(swapDesc));
-            swapDesc.BufferCount = 1;
-            swapDesc.BufferDesc.Width = mWindowWidth;
-            swapDesc.BufferDesc.Height = mWindowHeight;
-            swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-            swapDesc.BufferDesc.RefreshRate.Numerator = 60;
-            swapDesc.BufferDesc.RefreshRate.Denominator = 1;
-            swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-            swapDesc.OutputWindow = mhWindow;
-            swapDesc.SampleDesc.Count = 1;
-            swapDesc.SampleDesc.Quality = 0;
-            swapDesc.Windowed = TRUE;
+            // TODO: 여기서 처리하지말고 Application에서 재초기화를 하도록 하는 것이 깔끔해 보임
+            //DXGI_SWAP_CHAIN_DESC swapDesc;
+            //ZeroMemory(&swapDesc, sizeof(swapDesc));
+            //swapDesc.BufferCount = 1;
+            //swapDesc.BufferDesc.Width = mWindowWidth;
+            //swapDesc.BufferDesc.Height = mWindowHeight;
+            //swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            //swapDesc.BufferDesc.RefreshRate.Numerator = 60;
+            //swapDesc.BufferDesc.RefreshRate.Denominator = 1;
+            //swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+            //swapDesc.OutputWindow = mhWindow;
+            //swapDesc.SampleDesc.Count = 1;
+            //swapDesc.SampleDesc.Quality = 0;
+            //swapDesc.Windowed = TRUE;
 
-            if (FAILED(CreateDeviceAndSetup(swapDesc, mhWindow, mWindowWidth, mWindowHeight, true)))
-            {
-                SendMessage(mhWindow, WM_DESTROY, 0, 0);
-                return E_FAIL;
-            }
+            //if (FAILED(CreateDeviceAndSetup(swapDesc, mWindowHeight, mWindowWidth, true)))
+            //{
+            //    SendMessage(mhWindow, WM_DESTROY, 0, 0);
+            //    return E_FAIL;
+            //}
 
             return S_OK;
         case DXGI_ERROR_DEVICE_REMOVED:
         case DXGI_ERROR_DRIVER_INTERNAL_ERROR:
         case DXGI_ERROR_INVALID_CALL:
         default:
-            SendMessage(mhWindow, WM_DESTROY, 0, 0);
+            //SendMessage(mhWindow, WM_DESTROY, 0, 0);
             return E_FAIL;
         }
     }

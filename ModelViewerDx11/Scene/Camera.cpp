@@ -4,13 +4,14 @@
 
 namespace scene
 {
-    Camera::Camera(XMVECTOR vEye, XMVECTOR vLookAt, XMVECTOR vUp)
-        : mRadiusOfSphere(2.0f)
-        , mvEye(vEye)
-        , mvLookAtCenter(vLookAt)
-        , mvUp(vUp)
+    Camera::Camera(XMVECTOR vEye, XMVECTOR vLookAt, XMVECTOR vUp, int16_t windowWidth, int16_t windowHeight)
+    : mRadiusOfSphere(2.0f)
+    , mvEye(vEye)
+    , mvLookAtCenter(vLookAt)
+    , mvUp(vUp)
+    , mScreenWidth(windowWidth)
+    , mScreenHeight(windowHeight)
     {
-        renderer::Renderer::GetInstance()->GetWindowSize(mScreenWidth, mScreenHeight);
 
         /*
          * 직교좌표에서 구면좌표로 역계산.

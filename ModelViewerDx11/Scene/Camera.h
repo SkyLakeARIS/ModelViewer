@@ -8,7 +8,7 @@ namespace scene
     {
 
     public:
-        Camera(XMVECTOR vEye, XMVECTOR vLookAt, XMVECTOR vUp);
+        Camera(XMVECTOR vEye, XMVECTOR vLookAt, XMVECTOR vUp, int16_t windowWidth, int16_t windowHeight);
         virtual ~Camera();
 
         void RotateAxis(float yawRad, float pitchRad);

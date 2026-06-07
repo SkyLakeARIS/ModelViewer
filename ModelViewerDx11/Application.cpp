@@ -163,7 +163,9 @@ bool Application::initializeScene()
     mCamera = new scene::Camera(
         XMVectorSet(0.0f, 10.0f, -15.0f, 0.0f)
         , XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f)
-        , XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+        , XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+        mWindowWidth,
+        mWindowHeight);
 
     mImporter = new renderer::ModelImporter();
     mImporter->Initialize();
