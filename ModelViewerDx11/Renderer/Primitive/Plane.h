@@ -47,6 +47,7 @@ namespace renderer
         XMFLOAT3 mRotation;
 
         XMMATRIX mMatWorld;
+        // TODO: TextureManager 생성 시 이동해야 한다.
         ID3D11ShaderResourceView* mTexture;
     };
 }

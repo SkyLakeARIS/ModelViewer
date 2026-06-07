@@ -57,6 +57,7 @@ namespace renderer
         size_t mNumMesh;
         size_t mNumVertex;
 
+        // TODO: TextureManager 생성 시 이동해야 한다. Mesh 구조체 내부에 SRV를 가지고 있으므로 이것도 수정이 필요함.
         std::vector<renderer::Mesh> mMeshes;
 
         renderer::Vertex* mVertices;

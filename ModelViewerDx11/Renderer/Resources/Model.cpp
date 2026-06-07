@@ -144,6 +144,7 @@ namespace renderer
         }
 
         ID3D11ShaderResourceView* unbind = nullptr;
+        // TODO: textureManager 만들면 Bind 함수만들어서 이동
         deviceContext->PSSetShaderResources(2U, 1U, &unbind);
         SAFETY_RELEASE(deviceContext);
     }

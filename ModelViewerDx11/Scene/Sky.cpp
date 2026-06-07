@@ -107,6 +107,7 @@ namespace scene
         ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
         deviceContext->PSSetShaderResources(0, 1, &mMesh.Texture);
 
+        // TODO: draw 구조가 잡히면 나중에 한번에 처리
         deviceContext->DrawIndexed(static_cast<uint32_t>(mMesh.IndexList.size()), 0, 0);
         SAFETY_RELEASE(deviceContext);
 
