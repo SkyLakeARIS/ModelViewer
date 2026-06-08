@@ -226,7 +226,7 @@ namespace renderer
 
         void    Cleanup();
 
-        HRESULT        CheckDeviceLost();
+        bool CheckDeviceLost(bool& outIsReInitialize) const;
 
         // Debug
         static void    CheckLiveObjects();

@@ -96,8 +96,16 @@ void Application::Run()
     double lastFrameTime = core::Timer::GetNowMS();
     double lastFPSTime = core::Timer::GetNowMS();
     int16_t frameCount = 0;
+    bool bReinitDevice = false;
     while (true)
     {
+        if (bReinitDevice)
+        {
+            renderer::Renderer::GetInstance()->Cleanup();
+            renderer::Renderer::GetInstance()->initialize(mWindow->GetHandle(), mWindowWidth, mWindowHeight, mAppFrameRate);
+            bReinitDevice = false;
+        }
+
         if(mWindow->ProcessMessages())
         {
             break;
@@ -131,6 +139,11 @@ void Application::Run()
             OutputDebugString(L"\n");
             lastFPSTime += 1000.0;
             frameCount = 0;
+        }
+
+        if (renderer::Renderer::GetInstance()->CheckDeviceLost(bReinitDevice))
+        {
+            break;
         }
     }
 }

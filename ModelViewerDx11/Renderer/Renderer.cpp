@@ -1095,49 +1095,38 @@ namespace renderer
         return result;
     }
 
-    HRESULT Renderer::CheckDeviceLost()
+    bool Renderer::CheckDeviceLost(bool& outIsReInitialize) const
     {
-        HRESULT result = mDevice->GetDeviceRemovedReason();
-
-        switch (result)
+        bool bTerminateProgram = false;
+        switch (mDevice->GetDeviceRemovedReason())
         {
-        case S_OK:
-            return S_OK;
-
         case DXGI_ERROR_DEVICE_HUNG:
         case DXGI_ERROR_DEVICE_RESET:
-
-            Cleanup();
-
-            // TODO: 여기서 처리하지말고 Application에서 재초기화를 하도록 하는 것이 깔끔해 보임
-            //DXGI_SWAP_CHAIN_DESC swapDesc;
-            //ZeroMemory(&swapDesc, sizeof(swapDesc));
-            //swapDesc.BufferCount = 1;
-            //swapDesc.BufferDesc.Width = mWindowWidth;
-            //swapDesc.BufferDesc.Height = mWindowHeight;
-            //swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-            //swapDesc.BufferDesc.RefreshRate.Numerator = 60;
-            //swapDesc.BufferDesc.RefreshRate.Denominator = 1;
-            //swapDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-            //swapDesc.OutputWindow = mhWindow;
-            //swapDesc.SampleDesc.Count = 1;
-            //swapDesc.SampleDesc.Quality = 0;
-            //swapDesc.Windowed = TRUE;
-
-            //if (FAILED(CreateDeviceAndSetup(swapDesc, mWindowHeight, mWindowWidth, true)))
-            //{
-            //    SendMessage(mhWindow, WM_DESTROY, 0, 0);
-            //    return E_FAIL;
-            //}
-
-            return S_OK;
+        {
+            outIsReInitialize = true;
+            break;
+        }
+        case S_OK:
+        {
+            outIsReInitialize = false;
+            break;
+        }
         case DXGI_ERROR_DEVICE_REMOVED:
         case DXGI_ERROR_DRIVER_INTERNAL_ERROR:
         case DXGI_ERROR_INVALID_CALL:
-        default:
-            //SendMessage(mhWindow, WM_DESTROY, 0, 0);
-            return E_FAIL;
+        {
+            bTerminateProgram = true;
+            outIsReInitialize = false;
+            break;
         }
+        default:
+        {
+            // MEMO: 다른 에러는 일단 돌게 만드는데, 계속 써보면서 다른 에러처리를 추가하도록 함
+            outIsReInitialize = false;
+            break;
+        }
+        }
+        return bTerminateProgram;
     }
 
     void Renderer::Cleanup()
