@@ -18,6 +18,7 @@ namespace renderer
 
         bool Initialize(int32_t vertexBufferByteSize, int32_t indexBufferByteSize);
 
+        // TODO: consider - 유니크 포인터를 쓴다면 소유권 문제와 유효성 문제가 있을 것 같은데 나중에 비동기 상황에 문제가 되지 않을까?
         void AddVertexData(int8_t* const pData, int32_t dataByteSize, HashID hash);
         void AddIndexData(int8_t* const pData, int32_t dataByteSize, HashID hash);
 
