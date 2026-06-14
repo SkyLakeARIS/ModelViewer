@@ -90,6 +90,12 @@
     <ClInclude Include="Window.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Renderer\Resources\TextureManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Resources\TextureData.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="Util\Define.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -138,6 +144,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Window.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Resources\TextureManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
