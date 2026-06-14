@@ -3,6 +3,7 @@
 
 namespace renderer
 {
+    class TextureManager;
     class Plane;
 }
 
@@ -22,6 +23,7 @@ namespace scene
         ~Light();
 
         void Initialize();
+        void InitializeNew(renderer::TextureManager* const texManager);
         void Update(Camera* camera);
         void Draw();
         //void DrawDebug();
@@ -61,6 +63,7 @@ namespace scene
         XMMATRIX mMatWorld;
         HashID mBlendHash;
 
+        HashID mIconTexHash;
         //  XMFLOAT3 mLines[24];
         std::vector<XMFLOAT3> mLines;
         // TODO: 디버그용 버퍼도 처리해야 한다.

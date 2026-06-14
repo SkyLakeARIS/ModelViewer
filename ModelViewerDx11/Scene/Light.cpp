@@ -3,6 +3,7 @@
 #include "../Util/Macro.h"
 #include "../Renderer/Primitive/Plane.h"
 #include "../Renderer/Renderer.h"
+#include "../Renderer/Resources/TextureManager.h"
 
 namespace scene
 {
@@ -13,6 +14,7 @@ namespace scene
         , mMatProj(XMMatrixIdentity())
         , mMatViewProj(XMMatrixIdentity())
         , mMatWorld(XMMatrixIdentity())
+        , mIconTexHash(0)
         , mNearPlane(nearPlane)
         , mFarPlane(farPlane)
         , mCamera(camera)
@@ -83,6 +85,27 @@ namespace scene
         SAFETY_RELEASE(texLightIcon);
     }
 
+    void Light::InitializeNew(renderer::TextureManager* const texManager)
+    {
+        const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/lightIcon.png");
+        texManager->AddTexture(filePath, mIconTexHash);
+        ASSERT(mIconTexHash, "icon texture fail to add");
+
+        mMesh->SetTexHash(mIconTexHash);
+
+        // alpha blend 
+        D3D11_BLEND_DESC blendDesc = {};
+        blendDesc.RenderTarget[0].BlendEnable = true;
+        blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+        blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+        blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+        blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+        blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+        blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+        blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+        renderer::Renderer::GetInstance()->CreateBlendState(blendDesc, mBlendHash);
+    }
+
     void Light::Update(Camera* camera)
     {
         mMesh->Update();
@@ -113,7 +136,7 @@ namespace scene
         renderer::Renderer::GetInstance()->BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
 
         //mMesh->Draw();
-        mMesh->Draw();
+        mMesh->DrawNew();
     }
 
     //void Light::DrawDebug()
