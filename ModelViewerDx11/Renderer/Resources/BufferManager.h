@@ -39,6 +39,9 @@ namespace renderer
         // TODO: 하나로 합쳐도 좋을 것 같고, 분리해도 좋을 것 같고.
         void resizeVertexBuffer(uint32_t newSize);
         void resizeIndexBuffer(uint32_t newSize);
+    public:
+        static constexpr int32_t sVertexBufferDefaultSize = 4096;
+        static constexpr int32_t sIndexBufferDefaultSize = 4096;
     private:
         ID3D11Device* mDevice;
         ID3D11DeviceContext* mDeviceContext;

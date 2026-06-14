@@ -291,10 +291,6 @@ namespace renderer
 
         HRESULT setupShaders();
 
-    public:
-
-        static constexpr int32_t sVertexBufferDefaultSize = 4096;
-        static constexpr int32_t sIndexBufferDefaultSize = 4096;
     private:
         // TODO texture resource manager 생기면 이동 시키기.
         ID3D11ShaderResourceView*   mDefaultTexture;
