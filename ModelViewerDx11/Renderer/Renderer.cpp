@@ -2,6 +2,7 @@
 #include <string>
 #include "../Util/Macro.h"
 #include "Resources/BufferManager.h"
+#include "Resources/TextureManager.h"
 
 namespace renderer
 {
@@ -81,12 +82,11 @@ namespace renderer
         , mViewportTex()
         , mRasterStates{ nullptr }
         , mBufferManager(nullptr)
+        , mTextureManager(nullptr)
     {}
 
     Renderer::~Renderer()
     {
-        delete mBufferManager;
-
         Cleanup();
     }
 
@@ -249,6 +249,14 @@ namespace renderer
         hash |= (desc.RenderTarget[0].BlendOpAlpha << 29);
 
         return hash;
+    }
+
+    void Renderer::SetManagers(BufferManager* const bufferManager, TextureManager* const textureManager)
+    {
+        ASSERT(bufferManager, "bufferManager is nullptr");
+        ASSERT(textureManager, "textureManager is nullptr");
+        mBufferManager = bufferManager;
+        mTextureManager = textureManager;
     }
 
     HRESULT Renderer::CreateDeviceAndSetup(
@@ -430,11 +438,6 @@ namespace renderer
             return false;
         }
 
-        mBufferManager = new BufferManager(mDevice, mDeviceContext);
-        if (!mBufferManager->Initialize(sVertexBufferDefaultSize, sIndexBufferDefaultSize))
-        {
-            return false;
-        }
         // set default resources
 
         D3D11_SHADER_RESOURCE_VIEW_DESC texDefaultDesc;
@@ -917,6 +920,32 @@ namespace renderer
         {
             ASSERT(false, "no blendState to bind. Hash(%u)", hash);
         }
+    }
+
+    void Renderer::BindTextureToPs(uint32_t slot, HashID textureHash) const
+    {
+        ASSERT(textureHash > 0, "invalid hash. hash(%u)", textureHash);
+        ID3D11ShaderResourceView* srv = mTextureManager->GetTextureByHash(textureHash);
+        if(srv)
+        {
+            mDeviceContext->PSSetShaderResources(slot, 1, &srv);
+        }
+    }
+
+    void Renderer::BindShadowTextureToPs(uint32_t slot) const
+    {
+        mDeviceContext->PSSetShaderResources(slot, 1, &mShadowSrv);
+    }
+
+    void Renderer::BindDefaultTextureToPs(uint32_t slot) const
+    {
+        mDeviceContext->PSSetShaderResources(slot, 1, &mDefaultTexture);
+    }
+
+    void Renderer::UnbindTexturePs(uint32_t slot) const
+    {
+        ID3D11ShaderResourceView* unbindSRV = nullptr;
+        mDeviceContext->PSSetShaderResources(slot, 1, &unbindSRV);
     }
 
     void Renderer::SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology) const

@@ -4,6 +4,7 @@
 namespace renderer
 {
     class BufferManager;
+    class TextureManager;
 
     class Renderer final : IUnknown
     {
@@ -156,6 +157,7 @@ namespace renderer
         // MEMO: BlendState의 다양한 옵션을 대응하기 위해 비트 슬라이싱을 통해 해시 계산
         static inline HashID GetBlendStateHash(D3D11_BLEND_DESC& desc);
 
+        void SetManagers(BufferManager* const bufferManager, TextureManager* const textureManager);
         // D3D
         HRESULT CreateDeviceAndSetup(DXGI_SWAP_CHAIN_DESC& swapChainDesc, uint32 width, uint32 height, bool bDebugMode);
 
@@ -256,6 +258,15 @@ namespace renderer
 
         void BindBlendStateByHash(HashID hash, const float* const blendFactors, uint32_t mask);
 
+        void BindTextureToPs(uint32_t slot, HashID textureHash) const;
+
+        // TODO: improve - eTextureType과 충돌이 없으면서 preset을 쓸 방법을 나중에 고민해 보자(default/shadow). 우선은 texture분리를 위해 이렇게
+        void BindShadowTextureToPs(uint32_t slot) const;
+
+        void BindDefaultTextureToPs(uint32_t slot) const;
+
+        void UnbindTexturePs(uint32_t slot) const;
+
         void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology) const;
 
         void SetRenderTargetTo(eRenderTarget type);
@@ -344,5 +355,6 @@ namespace renderer
 
         // Managers
         BufferManager* mBufferManager;
+        TextureManager* mTextureManager;
     };
 }
