@@ -22,26 +22,31 @@ namespace renderer
     class Model
     {
     public:
-        Model(scene::Camera* camera, int8_t* filePath);
+        Model(scene::Camera* camera, const int8_t* const filePath);
         ~Model();
 
         void                Draw();
         void                DrawShadow();
+        void                DrawNew();
+        void                DrawShadowNew();
 
         void Update();
 
         // TODO: LightManager 만들면 제거.
         void SetLight(scene::Light* light);
 
-        HRESULT             SetupMesh(ModelImporter& importer);
+        HRESULT SetupMesh(ModelImporter& importer);
+        void    SetMeshes(std::vector<MeshNew>& meshes);
+        void    SetCenterPoint(XMFLOAT4& centerPoint);
 
         void                SetHighlight(bool bSelection);
 
         size_t              GetMeshCount() const;
-        const WCHAR* GetMeshName(size_t meshIndex) const;
+        // TODO: cleanup - 안쓰는 함수는 제거
+        //const WCHAR* GetMeshName(size_t meshIndex) const;
 
-        size_t              GetVertexCount(size_t meshIndex) const;
-        size_t              GetIndexListCount(size_t meshIndex) const;
+        //size_t              GetVertexCount(size_t meshIndex) const;
+        //size_t              GetIndexListCount(size_t meshIndex) const;
 
         XMFLOAT3            GetCenterPoint() const;
     private:
@@ -59,6 +64,7 @@ namespace renderer
 
         // TODO: TextureManager 생성 시 이동해야 한다. Mesh 구조체 내부에 SRV를 가지고 있으므로 이것도 수정이 필요함.
         std::vector<renderer::Mesh> mMeshes;
+        std::vector<renderer::MeshNew> mMeshesNew;
 
         renderer::Vertex* mVertices;
         uint32* mIndices;

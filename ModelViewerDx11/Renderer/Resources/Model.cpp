@@ -6,7 +6,7 @@
 
 namespace renderer
 {
-    Model::Model(scene::Camera* camera, int8_t* filePath)
+    Model::Model(scene::Camera* camera, const int8_t* const filePath)
         : mCamera(camera)
         , mModelHash(0)
         , mNumMesh(0)
@@ -36,12 +36,7 @@ namespace renderer
         bufferManager->RemoveVertexData(mModelHash);
         bufferManager->RemoveIndexData(mModelHash);
 
-        for (renderer::Mesh& mesh : mMeshes)
-        {
-            SAFETY_RELEASE(mesh.Texture);
-            SAFETY_RELEASE(mesh.TextureNormal);
-        }
-
+        mMeshes.clear();
 
 
 
@@ -187,6 +182,119 @@ namespace renderer
         SAFETY_RELEASE(deviceContext);
     }
 
+    void Model::DrawNew()
+    {
+        Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::PTN);
+
+        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
+        const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
+        const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
+
+        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
+        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
+
+        // TODO: cleanup - 더이상 필요 없어진 자잘한 코드들 정리 필요
+        const uint32 stride = sizeof(renderer::Vertex);
+        const uint32 offset = vertexRange.StartIndex;
+
+        Renderer::GetInstance()->BindVertexBuffer(stride, 0);
+        Renderer::GetInstance()->BindIndexBuffer(0);
+
+        // outline
+        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
+
+        if (mbHighlight)
+        {
+            Renderer::GetInstance()->SetRasterState(Renderer::eRasterType::CullBack);
+
+            Renderer::GetInstance()->SetShaderTo(Renderer::eShader::Outline);
+            Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
+            Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbOutlineProperty);
+            Renderer::GetInstance()->BindCbToVsByType(2U, 1U, Renderer::eCbType::CbViewProj);
+
+            for (uint32_t index = 0U; index < mMeshesNew.size(); ++index)
+            {
+                deviceContext->DrawIndexed(static_cast<uint32_t>(mMeshesNew[index].IndexRange.Count), mMeshesNew[index].IndexRange.StartIndex, mMeshesNew[index].VertexRange.StartIndex);
+            }
+            // reset for basic draw
+            Renderer::GetInstance()->ClearDepthBuffer();
+        }
+
+        Renderer::GetInstance()->SetRasterState(Renderer::eRasterType::Basic);
+
+        Renderer::GetInstance()->SetShaderTo(Renderer::eShader::BasicWithShadow);
+
+        Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
+        Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
+        Renderer::GetInstance()->BindCbToVsByType(2U, 1U, Renderer::eCbType::CbLightProperty);
+        Renderer::GetInstance()->BindCbToVsByType(3U, 1U, Renderer::eCbType::CbCameraPosition);
+        Renderer::GetInstance()->BindCbToVsByType(4U, 1U, Renderer::eCbType::CbViewProj);
+
+        Renderer::GetInstance()->BindSamplerToPsByType(0, renderer::Renderer::eSamplerType::AnisotropicWrap);
+
+        Renderer::GetInstance()->BindCbToPs(0U, 1U, Renderer::eCbType::CbMaterial);
+
+        Renderer::GetInstance()->BindShadowTextureToPs(2);
+
+        // Draw
+        for (size_t index = 0U; index < mMeshesNew.size(); ++index)
+        {
+            // TODO: Bind 할 수 있도록 Renderer에 추가 필요함. Hash/Slot 전달하면 렌더러가 TextureManager에서 찾아서 바인드하도록.
+            Renderer::GetInstance()->BindTextureToPs(0, mMeshesNew[index].TextureHashes[static_cast<int8_t>(eTextureType::Diffuse)]);
+            if(mMeshesNew[index].TextureHashes[static_cast<int8_t>(eTextureType::Normal)])
+            {
+                Renderer::GetInstance()->BindTextureToPs(1, mMeshesNew[index].TextureHashes[static_cast<int8_t>(eTextureType::Normal)]);
+            }
+            CbMaterial cbMaterial;
+            ZeroMemory(&cbMaterial, sizeof(CbMaterial));
+
+            memcpy(&cbMaterial, &mMeshesNew[index].Material, sizeof(renderer::Material));
+            if (!mbActiveEmissive)
+            {
+                cbMaterial.Emissive = XMFLOAT3(0.0f, 0.0f, 0.0f);
+            }
+            Renderer::GetInstance()->UpdateCB(Renderer::eCbType::CbMaterial, &cbMaterial);
+
+            deviceContext->DrawIndexed(static_cast<uint32_t>(mMeshesNew[index].IndexRange.Count), mMeshesNew[index].IndexRange.StartIndex, mMeshesNew[index].VertexRange.StartIndex);
+        }
+
+        Renderer::GetInstance()->UnbindTexturePs(2);
+        SAFETY_RELEASE(deviceContext);
+    }
+
+    void Model::DrawShadowNew()
+    {
+        Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::P);
+
+        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
+        const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
+        const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
+
+        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
+        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
+
+        // TODO: cleanup - 더이상 필요 없어진 자잘한 코드들 정리 필요
+        const uint32 stride = sizeof(renderer::Vertex);
+        const uint32 offset = vertexRange.StartIndex;
+
+        Renderer::GetInstance()->BindVertexBuffer(stride, 0);
+        Renderer::GetInstance()->BindIndexBuffer(0);
+
+        Renderer::GetInstance()->SetRasterState(Renderer::eRasterType::Outline);
+        Renderer::GetInstance()->SetShaderTo(Renderer::eShader::Shadow);
+
+        Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
+        Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
+
+        // Draw
+        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
+        for (size_t index = 0U; index < mMeshesNew.size(); ++index)
+        {
+            deviceContext->DrawIndexed(static_cast<uint32_t>(mMeshesNew[index].IndexRange.Count), mMeshesNew[index].IndexRange.StartIndex, mMeshesNew[index].VertexRange.StartIndex);
+        }
+        SAFETY_RELEASE(deviceContext);
+    }
+
     void Model::Update()
     {
         Renderer::CbWorld cbWorld;
@@ -288,7 +396,18 @@ namespace renderer
 
 
 
-        return result;
+        return S_OK;
+    }
+
+    void Model::SetMeshes(std::vector<MeshNew>& meshes)
+    {
+        ASSERT(mMeshesNew.empty(), "mMeshes is not empty.");
+        mMeshesNew.swap(meshes);
+    }
+
+    void Model::SetCenterPoint(XMFLOAT4& centerPoint)
+    {
+        mCenterPosition = XMFLOAT3(centerPoint.x, centerPoint.y, centerPoint.z);
     }
 
     void Model::SetHighlight(bool bSelection)
@@ -343,24 +462,18 @@ namespace renderer
 
     }
 
-    const WCHAR* Model::GetMeshName(size_t meshIndex) const
-    {
-        ASSERT(meshIndex < mMeshes.size(), "인덱스 범위를 벗어났습니다.");
+    // TODO: cleanup - 안쓰는 함수는 제거
+    //size_t Model::GetVertexCount(size_t meshIndex) const
+    //{
+    //    ASSERT(meshIndex < mMeshes.size(), "인덱스 범위를 벗어났습니다.");
+    //    return mMeshes[meshIndex].VertexInfo.Count;
+    //}
 
-        return mMeshes[meshIndex].Name;
-    }
-
-    size_t Model::GetVertexCount(size_t meshIndex) const
-    {
-        ASSERT(meshIndex < mMeshes[meshIndex].Vertex.size(), "인덱스 범위를 벗어났습니다.");
-        return mMeshes[meshIndex].Vertex.size();
-    }
-
-    size_t Model::GetIndexListCount(size_t meshIndex) const
-    {
-        ASSERT(meshIndex < mMeshes[meshIndex].Vertex.size(), "인덱스 범위를 벗어났습니다.");
-        return mMeshes[meshIndex].IndexList.size();
-    }
+    //size_t Model::GetIndexListCount(size_t meshIndex) const
+    //{
+    //    ASSERT(meshIndex < mMeshes.size(), "인덱스 범위를 벗어났습니다.");
+    //    return mMeshes[meshIndex].IndexInfo.Count;
+    //}
 
     XMFLOAT3 Model::GetCenterPoint() const
     {
