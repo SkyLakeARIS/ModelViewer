@@ -16,6 +16,9 @@ namespace renderer
     class Plane;
     class Model;
     class ModelImporter;
+    class TextureManager;
+    class BufferManager;
+    class ResourceManager;
 }
 
 class Application
@@ -31,6 +34,8 @@ public:
 
 private:
     bool initializeScene();
+    bool initializeSceneNew();
+    bool initializeManagers();
 
     void updateScene(double deltaTime);
 
@@ -51,6 +56,8 @@ private:
     scene::Light* mLight;
     renderer::Plane* mPlane;
     scene::Floor* mFloor;
-
+    renderer::BufferManager* mBufferManager;
+    renderer::TextureManager* mTextureManager;
+    renderer::ResourceManager* mResourceManager;
     core::DirectInput* mDirectInput;
 };

@@ -4,7 +4,10 @@
 #include "Renderer/Renderer.h"
 #include "Renderer/Importer/ModelImporter.h"
 #include "Renderer/Primitive/Plane.h"
+#include "Renderer/Resources/BufferManager.h"
 #include "Renderer/Resources/Model.h"
+#include "Renderer/Resources/ResourceManager.h"
+#include "Renderer/Resources/TextureManager.h"
 #include "Scene/Camera.h"
 #include "Scene/Floor.h"
 #include "Scene/Light.h"
@@ -24,6 +27,8 @@ Application::Application()
     , mLight(nullptr)
     , mPlane(nullptr)
     , mFloor(nullptr)
+    , mBufferManager(nullptr)
+    , mTextureManager(nullptr)
     , mDirectInput(nullptr)
 {}
 
@@ -42,6 +47,9 @@ Application::~Application()
     delete mCamera;
 
     delete mWindow;
+    delete mBufferManager;
+    delete mTextureManager;
+    delete mResourceManager;
     // MEMO device가 가장 마지막에 해제되도록.
     renderer::Renderer::GetInstance()->Release();
 #ifdef _DEBUG
@@ -82,7 +90,15 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
         return false;
     }
 
-    initializeScene();
+    mImporter = new renderer::ModelImporter();
+    mImporter->Initialize();
+
+    if(!initializeManagers())
+    {
+        ASSERT(false, "fail to initialize managers");
+    }
+
+    initializeSceneNew();
 
     return true;
 }
@@ -197,6 +213,72 @@ bool Application::initializeScene()
     return true;
 }
 
+bool Application::initializeSceneNew()
+{
+    core::Timer::Initialize();
+
+    mCamera = new scene::Camera(
+        XMVectorSet(0.0f, 10.0f, -15.0f, 0.0f)
+        , XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f)
+        , XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+        mWindowWidth,
+        mWindowHeight);
+
+
+
+
+    const int8_t* const modelFilePath = reinterpret_cast<int8_t*>("/AssetData/models/unagi.fbx");
+    // TODO: 나중에 Object List를 만들어서 관리하도록 변경(성공하면 drawable 리스트에 추가)
+    mCharacter = new renderer::Model(mCamera, modelFilePath);
+
+    mResourceManager->LoadModel(modelFilePath, mCharacter);
+
+    mSkybox = new scene::Sky(*mCamera);
+    mSkybox->Initialize(10, 10);
+
+    renderer::Renderer::GetInstance()->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    mCamera->ChangeFocus(mCharacter->GetCenterPoint());
+    // MEMO Light 위치값 막 바꾸면 안됨. 그림자 제대로 안그려질 수 있음. 나중에 개선해야 할 항목 중 하나(cascade)
+  //  gLight = new Light(XMFLOAT3(0.0f, 50.0f, 70.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), gCamera, 0.1f, 300.0f);
+
+    mLight = new scene::Light(XMFLOAT3(0.0f, 20.0f, 50.0f), mCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), mCamera, 0.1f, 500.0f);
+    mLight->InitializeNew(mTextureManager);
+    mLight->SetupCascade();
+    mCharacter->SetLight(mLight);
+
+    // debug quad
+    // 깊이 텍스쳐 확인용
+    mPlane = new renderer::Plane();
+    mPlane->SetPosition(XMFLOAT3(0.0, 0.0, -1.0));
+
+    mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
+
+    return true;
+}
+
+bool Application::initializeManagers()
+{
+    ID3D11Device* device = renderer::Renderer::GetInstance()->GetDevice();
+    ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
+    mBufferManager = new renderer::BufferManager(device, deviceContext);
+    if (!mBufferManager->Initialize(renderer::BufferManager::sVertexBufferDefaultSize, renderer::BufferManager::sIndexBufferDefaultSize))
+    {
+        ASSERT(false, "buffer manager init failed.")
+        SAFETY_RELEASE(device);
+        SAFETY_RELEASE(deviceContext);
+        return false;
+    }
+
+    mTextureManager = new renderer::TextureManager(device);
+    mResourceManager = new renderer::ResourceManager(device, mTextureManager, mImporter, mBufferManager);
+
+    // TODO: device/deviceContext ref-up을 제거하는 게 좋을 것 같다.(중간에 release하는 일이 없게 하는게 맞지 않나.)
+    renderer::Renderer::GetInstance()->SetManagers(mBufferManager, mTextureManager);
+    SAFETY_RELEASE(device);
+    SAFETY_RELEASE(deviceContext);
+    return true;
+}
+
 void Application::updateScene(double deltaTime)
 {
     float speed = 10.0f;
@@ -304,7 +386,7 @@ void Application::preprocess()
     renderer::Renderer::GetInstance()->SetViewport(false);
     renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Shadow);
     mCharacter->Update();
-    mCharacter->DrawShadow();
+    mCharacter->DrawShadowNew();
 }
 
 void Application::renderScene()
@@ -322,7 +404,7 @@ void Application::renderScene()
     // gFloor->Draw();
     mFloor->Draw();
     mCharacter->Update();
-    mCharacter->Draw();
+    mCharacter->DrawNew();
 
     mLight->Update(mCamera);
     mLight->Draw();
@@ -330,6 +412,6 @@ void Application::renderScene()
 
     mPlane->Update();
     //gPlane->DrawTexture(gLight);
-    mPlane->DrawTexture(mLight);
+    mPlane->DrawTextureNew(mLight);
     renderer::Renderer::GetInstance()->Present();
 }
