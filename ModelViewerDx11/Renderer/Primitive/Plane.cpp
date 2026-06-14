@@ -1,5 +1,6 @@
 #include "Plane.h"
 #include "../Renderer.h"
+#include "../../Util/Define.h"
 #include "../../Util/Macro.h"
 #include "../../Util/Util.h"
 #include "../Resources/BufferManager.h"
@@ -37,11 +38,9 @@ namespace renderer
 
         sObjectCount.fetch_add(1);
 
-        // TODO: 이런 상수 값들도 따로 모아놓을 파일을 만드는 게 좋아 보임
-        enum { MAX_FILE_PATH = 260 };
-        int8_t virtualFilePath[MAX_FILE_PATH] = {};
-        sprintf_s(reinterpret_cast<char*>(virtualFilePath), MAX_FILE_PATH, "%sPrimitive_Plane_%d.mesh",
-            reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), sObjectCount.load());
+        int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
+        sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Plane_%d.mesh",
+                  reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), sObjectCount.load());
 
         mModelHash = util::GetDjb2Hash(virtualFilePath);
 
