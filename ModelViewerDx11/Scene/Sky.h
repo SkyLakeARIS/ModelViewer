@@ -33,7 +33,7 @@ namespace scene
         HashID mModelHash;
         XMMATRIX mWorld;
 
-
+        // TODO - cleanup - 아직 걷어내지 못한 부분 발견. 다음 커밋에서 제거
         renderer::Mesh mMesh; // sphere model
 
         uint32 mLatLines;

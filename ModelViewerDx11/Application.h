@@ -33,7 +33,6 @@ public:
     void Run();
 
 private:
-    bool initializeScene();
     bool initializeSceneNew();
     bool initializeManagers();
 

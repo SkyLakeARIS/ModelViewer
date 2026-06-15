@@ -38,7 +38,6 @@ namespace scene
 
     Light::~Light()
     {
-        mMesh->UnbindTexture();
         if (mMesh)
         {
             delete mMesh;
@@ -48,41 +47,6 @@ namespace scene
         //SAFETY_RELEASE(mLinesBuffer);
 
 
-    }
-
-    void Light::Initialize()
-    {
-        D3D11_SHADER_RESOURCE_VIEW_DESC desc;
-        //   desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-        desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-        desc.Texture2D.MipLevels = 1;
-        desc.Texture2D.MostDetailedMip = 0;
-        ID3D11ShaderResourceView* texLightIcon = nullptr;
-
-        HRESULT result = renderer::Renderer::GetInstance()->CreateTextureResource(L"./AssetData/textures/lightIcon.png", WIC_FLAGS_NONE, desc, &texLightIcon);
-        ASSERT(SUCCEEDED(result), "Light Init - failed to ready texture");
-        SET_PRIVATE_DATA(texLightIcon, "TexLightIcon");
-
-        mMesh->SetTexture(texLightIcon);
-        texLightIcon->AddRef();
-
-        ID3D11Device* device = renderer::Renderer::GetInstance()->GetDevice();
-
-        // alpha blend 
-        D3D11_BLEND_DESC blendDesc = {};
-        blendDesc.RenderTarget[0].BlendEnable = true;
-        blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-        blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-        blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-        blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-        blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-        blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-        blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        renderer::Renderer::GetInstance()->CreateBlendState(blendDesc, mBlendHash);
-
-
-        device->Release();
-        SAFETY_RELEASE(texLightIcon);
     }
 
     void Light::InitializeNew(renderer::TextureManager* const texManager)
@@ -135,7 +99,6 @@ namespace scene
         renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
         renderer::Renderer::GetInstance()->BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
 
-        //mMesh->Draw();
         mMesh->DrawNew();
     }
 

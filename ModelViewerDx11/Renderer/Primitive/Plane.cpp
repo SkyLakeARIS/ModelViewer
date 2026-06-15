@@ -16,7 +16,6 @@ namespace renderer
         , mScale(XMFLOAT3(1.6f, 1.6f, 0.6f))
         , mRotation(XMFLOAT3(0.0f, 0.0f, 0.0f))
         , mMatWorld(XMMatrixIdentity())
-        , mTexture(nullptr)
     {
         VertexTex vertices[] =
         {
@@ -67,7 +66,6 @@ namespace renderer
         bufferManager->RemoveVertexData(mModelHash);
         bufferManager->RemoveIndexData(mModelHash);
 
-        SAFETY_RELEASE(mTexture);
     }
 
 
@@ -84,38 +82,6 @@ namespace renderer
     void Plane::GetWorldMatrix(XMMATRIX& outMat) const
     {
         outMat = mMatWorld;
-    }
-
-    void Plane::Draw()
-    {
-        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
-
-        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
-        const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
-        const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
-
-        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
-        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
-
-        const uint32 stride = sizeof(VertexTex);
-        const uint32 offset = vertexRange.StartIndex;
-
-        Renderer::GetInstance()->BindVertexBuffer(stride, offset);
-        Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
-
-        ID3D11ShaderResourceView* texDefault = mTexture;
-
-        if (!mTexture)
-        {
-            texDefault = Renderer::GetInstance()->GetDefaultTexture();
-            texDefault->Release();
-        }
-        Renderer::GetInstance()->BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
-        deviceContext->PSSetShaderResources(0U, 1U, &texDefault);
-
-        deviceContext->DrawIndexed(6, 0U, 0U);
-
-        deviceContext->Release();
     }
 
     void Plane::DrawNew()
@@ -147,44 +113,6 @@ namespace renderer
 
         deviceContext->DrawIndexed(6, 0U, 0U);
 
-        deviceContext->Release();
-    }
-
-    void Plane::DrawTexture(scene::Light* const light)
-    {
-        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
-
-        Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::PT);
-        Renderer::GetInstance()->SetShaderTo(Renderer::eShader::RenderToTexture);
-
-        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
-        const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
-        const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
-
-        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
-        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
-
-        const uint32 stride = sizeof(VertexTex);
-        const uint32 offset = vertexRange.StartIndex;
-
-        Renderer::GetInstance()->BindVertexBuffer(stride, offset);
-        Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
-
-        XMMATRIX matWorld = XMMatrixTranspose(mMatWorld);
-        Renderer::GetInstance()->UpdateCB(Renderer::eCbType::CbWorld, &matWorld);
-        Renderer::GetInstance()->BindCbToVsByType(0, 1, Renderer::eCbType::CbWorld);
-        Renderer::GetInstance()->BindCbToVsByType(1, 1, Renderer::eCbType::CbViewProj);
-
-        Renderer::GetInstance()->BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
-        SetTexture(Renderer::GetInstance()->GetShadowTexture());
-
-        deviceContext->PSSetShaderResources(0U, 1U, &mTexture);
-
-        deviceContext->DrawIndexed(6, 0U, 0U);
-
-        ID3D11ShaderResourceView* const unbindSrv = nullptr;
-        deviceContext->PSSetShaderResources(0U, 1U, &unbindSrv);
-        UnbindTexture();
         deviceContext->Release();
     }
 
@@ -239,21 +167,10 @@ namespace renderer
         mScale = scale;
     }
 
-    void Plane::SetTexture(ID3D11ShaderResourceView* const tex)
-    {
-        ASSERT(tex != nullptr, "Plane ) do not pass nullptr.");
-        mTexture = tex;
-
-    }
 
     void Plane::SetTexHash(HashID textureHash)
     {
         mTexHash = textureHash;
     }
 
-    void Plane::UnbindTexture()
-    {
-        SAFETY_RELEASE(mTexture);
-        mTexture = nullptr;
-    }
 }

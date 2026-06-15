@@ -164,54 +164,6 @@ void Application::Run()
     }
 }
 
-bool Application::initializeScene()
-{
-    core::Timer::Initialize();
-
-    mCamera = new scene::Camera(
-        XMVectorSet(0.0f, 10.0f, -15.0f, 0.0f)
-        , XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f)
-        , XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
-        mWindowWidth,
-        mWindowHeight);
-
-    mImporter = new renderer::ModelImporter();
-    mImporter->Initialize();
-
-    mCharacter = new renderer::Model(mCamera, reinterpret_cast<int8_t*>("/AssetData/models/unagi.fbx"));
-
-    // TODO: 로드 시점과 처리에 대한 내용도 고민이 필요함. (모델이 로드를 요청할 것인지? - 요청하면 언제 로드되었음을 확인하고 처리할 것인지? - Importer와는 hash id로 통신)
-    mImporter->LoadFbxModel("/AssetData/models/unagi.fbx", renderer::Renderer::GetInstance());
-
-    mSkybox = new scene::Sky(*mCamera);
-    mSkybox->Initialize(10, 10);
-
-    // TODO: 실패시 프로그램 종료말고, 나중에 Object List를 만들어서 관리하도록 변경(성공하면 drawable 리스트에 추가)
-    if (FAILED(mCharacter->SetupMesh(*mImporter)))
-    {
-        ASSERT(false, "gCharacter::SetupMesh 모델데이터 혹은 D3D개체 초기화 실패 _ could not initialize mesh or d3d obj");
-        return false;
-    }
-
-    renderer::Renderer::GetInstance()->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    mCamera->ChangeFocus(mCharacter->GetCenterPoint());
-    // MEMO Light 위치값 막 바꾸면 안됨. 그림자 제대로 안그려질 수 있음. 나중에 개선해야 할 항목 중 하나(cascade)
-  //  gLight = new Light(XMFLOAT3(0.0f, 50.0f, 70.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), gCamera, 0.1f, 300.0f);
-
-    mLight = new scene::Light(XMFLOAT3(0.0f, 20.0f, 50.0f), mCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), mCamera, 0.1f, 500.0f);
-    mLight->Initialize();
-    mLight->SetupCascade();
-    mCharacter->SetLight(mLight);
-
-    // debug quad
-    // 깊이 텍스쳐 확인용
-    mPlane = new renderer::Plane();
-    mPlane->SetPosition(XMFLOAT3(0.0, 0.0, -1.0));
-
-    mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
-
-    return true;
-}
 
 bool Application::initializeSceneNew()
 {
@@ -244,7 +196,6 @@ bool Application::initializeSceneNew()
     mLight = new scene::Light(XMFLOAT3(0.0f, 20.0f, 50.0f), mCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), mCamera, 0.1f, 500.0f);
     mLight->InitializeNew(mTextureManager);
     mLight->SetupCascade();
-    mCharacter->SetLight(mLight);
 
     // debug quad
     // 깊이 텍스쳐 확인용
@@ -411,7 +362,6 @@ void Application::renderScene()
     //mLight->DrawDebug();
 
     mPlane->Update();
-    //gPlane->DrawTexture(gLight);
     mPlane->DrawTextureNew(mLight);
     renderer::Renderer::GetInstance()->Present();
 }

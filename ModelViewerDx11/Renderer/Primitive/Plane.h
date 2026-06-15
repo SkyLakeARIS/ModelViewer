@@ -14,6 +14,7 @@ namespace renderer
     class Plane final
     {
     public:
+        // TODO: cleanup, improve - RenderType으로 이동하고, 버텍스 속성 유형별로 이름을 변경하기
         struct VertexTex // 4bytes align
         {
             XMFLOAT3 Position;
@@ -24,19 +25,14 @@ namespace renderer
         Plane();
         ~Plane();
 
-        void Draw();
         void DrawNew();
-        void DrawTexture(scene::Light* const light);
         void DrawTextureNew(scene::Light* const light);
         void Update();
 
         void SetPosition(XMFLOAT3& pos);
         void SetScale(XMFLOAT3& scale);
-        // tex ref count is increased internally
-        void SetTexture(ID3D11ShaderResourceView* const tex);
         // TODO: improve - Plane 역할을 분리하기 전까지 기존 구조 방식에 Hash를 주입받아 쓰는 것으로 바꿈
         void SetTexHash(HashID textureHash);
-        void UnbindTexture();
 
         XMFLOAT3 GetPosition() const;
         XMFLOAT3 GetScale() const;
@@ -54,7 +50,5 @@ namespace renderer
         XMFLOAT3 mRotation;
 
         XMMATRIX mMatWorld;
-        // TODO: TextureManager 생성 시 이동해야 한다.
-        ID3D11ShaderResourceView* mTexture;
     };
 }

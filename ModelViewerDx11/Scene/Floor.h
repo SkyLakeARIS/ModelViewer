@@ -13,7 +13,7 @@ namespace scene
 
         void Draw();
     private:
-
+        // TODO: cleanup - 걷어내기
         XMFLOAT3* mVertices;
         uint32_t mNumVertices;
 
