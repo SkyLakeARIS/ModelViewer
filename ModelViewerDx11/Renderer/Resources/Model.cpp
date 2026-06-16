@@ -124,6 +124,7 @@ namespace renderer
         Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::P);
 
         BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
+        // TODO: cleanup - 미사용 코드 제거
         const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
         const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
 

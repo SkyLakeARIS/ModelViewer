@@ -2,6 +2,7 @@
 #include "Camera.h"
 #include "../Renderer/Renderer.h"
 #include "../Renderer/Resources/BufferManager.h"
+#include "../Renderer/Resources/TextureManager.h"
 #include "../Util/Macro.h"
 #include "../Util/Util.h"
 
@@ -37,11 +38,10 @@ namespace scene
 
 
 
-        SAFETY_RELEASE(mMesh.Texture);
 
     }
 
-    HRESULT Sky::Initialize(uint32 latLines, uint32 lonLines)
+    HRESULT Sky::Initialize(uint32 latLines, uint32 lonLines, renderer::TextureManager* const texManager)
     {
 
         // init mesh info
@@ -52,20 +52,13 @@ namespace scene
             return result;
         }
 
-        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-        srvDesc.TextureCube.MipLevels = 1;
-        srvDesc.TextureCube.MostDetailedMip = 0;
-        
-        result = renderer::Renderer::GetInstance()->CreateDdsTextureResource(L"./AssetData/textures/skybox.dds", DDS_FLAGS_NONE, srvDesc, &mMesh.Texture);
+        const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/skybox.dds");
+        texManager->AddDTextureDDS(filePath, mTextureHash);
         if (FAILED(result))
         {
             ASSERT(false, "Skybox - fail to create texture");
             return result;
         }
-        mMesh.bLightMap = false;
-        mMesh.NumTexuture = 1;
-        wcscpy_s(mMesh.Name, L"skybox");
 
 
 
@@ -78,6 +71,9 @@ namespace scene
         renderer::Renderer::GetInstance()->SetInputLayoutTo(renderer::Renderer::eInputLayout::PT);
 
         renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        // TODO: improve- Model이 아니라 Mesh별로 해시를 가지는 게 더 좋을 것 같은 느낌과 ElementOffset도 추가로 저장하는 게 좋을 것 같다.
+        // 그렇지 않으면 굳이 BufferManager가 Range 정보까지 가지고 있을 이유가 크게 사라짐.
+        // 그래도 Buffer를 바인드할 때 offset을 0으로 두는 것이 나중에 렌더 큐 구조를 잡을 때 버퍼 바인드를 한번만 수행할 수 있다.
         const renderer::BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
         const renderer::BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
 
@@ -105,10 +101,11 @@ namespace scene
 
         // TODO: Renderer로 Bind하도록 이동하기.
         ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
-        deviceContext->PSSetShaderResources(0, 1, &mMesh.Texture);
+        renderer::Renderer::GetInstance()->BindTextureToPs(0, mTextureHash);
 
         // TODO: draw 구조가 잡히면 나중에 한번에 처리
-        deviceContext->DrawIndexed(static_cast<uint32_t>(mMesh.IndexList.size()), 0, 0);
+        // TODO: improve - BufferManager에게 Range를 얻어서 쓰도록 전체적인 Draw 함수 로직 통일하기(ElementOffset 추가하고 나서)
+        deviceContext->DrawIndexed(static_cast<uint32_t>(indexRange.Count), 0, 0);
         SAFETY_RELEASE(deviceContext);
 
         renderer::Renderer::GetInstance()->SetDepthStencilState(false);
@@ -235,8 +232,6 @@ namespace scene
         bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices.data()), sizeof(renderer::Vertex) * vertices.size(), mModelHash);
         bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices.data()), sizeof(uint32_t) * indices.size(), mModelHash);
 
-        mMesh.Vertex.swap(vertices);
-        mMesh.IndexList.swap(indices);
         return S_OK;
     }
 }

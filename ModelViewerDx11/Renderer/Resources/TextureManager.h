@@ -11,6 +11,7 @@ namespace renderer
         ~TextureManager();
 
         void AddTexture(const int8_t* const filePath, HashID& outTexHash);
+        void AddDTextureDDS(const int8_t* const filePath, HashID& outTexHash);
 
         void RemoveTexture(HashID hash);
 

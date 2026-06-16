@@ -186,7 +186,7 @@ bool Application::initializeSceneNew()
     mResourceManager->LoadModel(modelFilePath, mCharacter);
 
     mSkybox = new scene::Sky(*mCamera);
-    mSkybox->Initialize(10, 10);
+    mSkybox->Initialize(10, 10, mTextureManager);
 
     renderer::Renderer::GetInstance()->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     mCamera->ChangeFocus(mCharacter->GetCenterPoint());

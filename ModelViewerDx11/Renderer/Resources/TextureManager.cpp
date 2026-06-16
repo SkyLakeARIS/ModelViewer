@@ -80,6 +80,60 @@ namespace renderer
         }
     }
 
+    void TextureManager::AddDTextureDDS(const int8_t* const filePath, HashID& outTexHash)
+    {
+        outTexHash = 0;
+
+        wchar_t texFilePath[util::MAX_PATH_LENGTH];
+        const uint32_t filePathLength = strlen(reinterpret_cast<char const*>(filePath));
+        size_t  numConverted = 0;
+        (void)mbstowcs_s(&numConverted, texFilePath, util::MAX_PATH_LENGTH, reinterpret_cast<char const*>(filePath), filePathLength);
+        ASSERT(numConverted == (filePathLength + 1), "conversion result is incorrect. converted(%u) pathLength(%u)", numConverted, filePathLength);
+
+        ScratchImage image;
+        if (FAILED(LoadFromDDSFile(texFilePath, DDS_FLAGS_NONE, nullptr, image)))
+        {
+            ASSERT(false, "failed to load DDS file : DDS 로드 실패");
+            return;
+        }
+
+        ID3D11Texture2D* textureResource = nullptr;
+        if (FAILED(CreateTexture(mDevice, image.GetImages(), image.GetImageCount(), image.GetMetadata(), (ID3D11Resource**)&textureResource)))
+        {
+            image.Release();
+            ASSERT(false, "failed to create TextureResource : gTextureResource 생성 실패");
+            return;
+        }
+        D3D11_TEXTURE2D_DESC desc;
+        textureResource->GetDesc(&desc);
+
+        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+        srvDesc.TextureCube.MipLevels = 1;
+        srvDesc.TextureCube.MostDetailedMip = 0;
+        srvDesc.Format = desc.Format;
+        srvDesc.TextureCube.MipLevels = desc.MipLevels;
+
+        ID3D11ShaderResourceView* srv = nullptr;
+        if (FAILED(mDevice->CreateShaderResourceView(textureResource, &srvDesc, &srv)))
+        {
+            ASSERT(false, "failed to create outShaderResourceView : outShaderResourceView 생성 실패");
+            image.Release();
+            SAFETY_RELEASE(textureResource);
+            return;
+        }
+
+        const HashID texHash = util::GetDjb2Hash(filePath);
+        TextureData newTexData = {};
+        newTexData.Hash = texHash;
+        newTexData.SRV = srv;
+        mTextures.insert(std::make_pair(texHash, newTexData));
+        outTexHash = texHash;
+
+        image.Release();
+        SAFETY_RELEASE(textureResource);
+    }
+
     void TextureManager::RemoveTexture(HashID hash)
     {
         ASSERT(hash > 0, "Hash is invalid. may not initialized. Hash(%d)", hash);

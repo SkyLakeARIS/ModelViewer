@@ -4,6 +4,7 @@
 
 namespace renderer
 {
+    class TextureManager;
     class Renderer;
 }
 
@@ -18,7 +19,7 @@ namespace scene
         Sky(Camera& camera);
         ~Sky();
 
-        HRESULT Initialize(uint32 latLines, uint32 lonLines);
+        HRESULT Initialize(uint32 latLines, uint32 lonLines, renderer::TextureManager* const texManager);
 
         void Draw();
         void Update();
@@ -31,10 +32,9 @@ namespace scene
         Camera* mCamera;
 
         HashID mModelHash;
+        HashID mTextureHash;
         XMMATRIX mWorld;
 
-        // TODO - cleanup - 아직 걷어내지 못한 부분 발견. 다음 커밋에서 제거
-        renderer::Mesh mMesh; // sphere model
 
         uint32 mLatLines;
         uint32 mLonLines;
