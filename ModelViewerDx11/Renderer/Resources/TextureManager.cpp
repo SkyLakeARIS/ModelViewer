@@ -1,11 +1,10 @@
 #include "TextureManager.h"
-#include "../../Util/Util.h"
-#include "../../Util/Macro.h"
 #include "../../Util/Define.h"
+#include "../../Util/Macro.h"
+#include "../../Util/Util.h"
 
 namespace renderer
 {
-
     TextureManager::TextureManager(ID3D11Device* device)
         : mDevice(device)
     {

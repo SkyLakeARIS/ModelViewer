@@ -15,7 +15,6 @@ namespace scene
         , mLatLines(0)
         , mLonLines(0)
     {
-
         // TODO: 이런 상수 값들도 따로 모아놓을 파일을 만드는 게 좋아 보임
         enum
         {
@@ -30,20 +29,11 @@ namespace scene
 
     Sky::~Sky()
     {
-
-
         mCamera = nullptr;
-
-
-
-
-
-
     }
 
     HRESULT Sky::Initialize(uint32 latLines, uint32 lonLines, renderer::TextureManager* const texManager)
     {
-
         // init mesh info
         HRESULT result;
         result = createSphere(latLines, lonLines);
@@ -59,9 +49,6 @@ namespace scene
             ASSERT(false, "Skybox - fail to create texture");
             return result;
         }
-
-
-
         return S_OK;
     }
 
@@ -109,7 +96,6 @@ namespace scene
         SAFETY_RELEASE(deviceContext);
 
         renderer::Renderer::GetInstance()->SetDepthStencilState(false);
-
     }
 
     void Sky::Update()
@@ -134,10 +120,8 @@ namespace scene
      */
     HRESULT Sky::createSphere(uint32 latLines, uint32 lonLines)
     {
-
         const uint32 numVertex = ((latLines - 2) * lonLines) + 2;
         const uint32 numFace = ((latLines - 3) * (lonLines) * 2) + (lonLines * 2);
-
 
         std::vector<renderer::Vertex> vertices(numVertex);
 
@@ -170,8 +154,6 @@ namespace scene
         vertices[numVertex - 1U].Position.x = 0.0f;
         vertices[numVertex - 1U].Position.y = 0.0f;
         vertices[numVertex - 1U].Position.z = -1.0f;
-
-
 
         std::vector<uint32> indices(numFace * 3U);
 

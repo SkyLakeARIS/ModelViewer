@@ -23,7 +23,6 @@ namespace scene
         mMesh = new renderer::Plane();
         mMesh->SetPosition(mPosition);
 
-
         mLines.reserve(24 * eCascadeLevel::Level_4);
         mCascadePlaneDistances[0] = nearPlane; // 0.1
         mCascadePlaneDistances[1] = farPlane / 100.0f;   // 5
@@ -45,8 +44,6 @@ namespace scene
         }
 
         //SAFETY_RELEASE(mLinesBuffer);
-
-
     }
 
     void Light::InitializeNew(renderer::TextureManager* const texManager)
@@ -74,7 +71,6 @@ namespace scene
     {
         mMesh->Update();
         mMesh->GetWorldMatrix(mMatWorld);
-
 
         renderer::Renderer::CbWorld cbMatWorld;
         cbMatWorld.Matrix = XMMatrixTranspose(mMatWorld);
@@ -241,17 +237,14 @@ namespace scene
         mMatProj = XMMatrixOrthographicOffCenterLH(-1.0f, 1.0f, -1.0f, 1.0f, 69.0f, 100.0f);
         mMatViewProj = mMatView * mMatProj;
 
-
         // cascade test
         int32_t index = 0;
         mMatViewProj = mMatLightViews[index] * mMatLightProjs[index];
-
 
         renderer::Renderer::CbLightViewProjMatrix cbLightVpMat;
         cbLightVpMat.Matrix = XMMatrixTranspose(mMatViewProj);
         //deviceContext->UpdateSubresource(mCB, 0, nullptr, &cbWvp, 0U, 0U);
         renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbLightViewProjMatrix, &cbLightVpMat);
-
     }
 
     void Light::updateLightPropertyCB()
@@ -410,6 +403,5 @@ namespace scene
 
         mLines.push_back(XMFLOAT3(pointToWorld[6]));
         mLines.push_back(XMFLOAT3(pointToWorld[4]));
-
     }
 }

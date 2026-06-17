@@ -1,15 +1,11 @@
 #pragma once
 #include <unordered_map>
-
 #include "../../framework.h"
 
 namespace renderer
 {
     struct BufferRange;
-}
 
-namespace renderer
-{
     class BufferManager
     {
     public:
@@ -35,7 +31,6 @@ namespace renderer
         ID3D11Buffer* GetVertexBuffer() const;
         ID3D11Buffer* GetIndexBuffer() const;
     private:
-
         // TODO: 하나로 합쳐도 좋을 것 같고, 분리해도 좋을 것 같고.
         void resizeVertexBuffer(uint32_t newSize);
         void resizeIndexBuffer(uint32_t newSize);

@@ -11,7 +11,8 @@ namespace renderer
 {
     class ModelImporter;
 
-    typedef renderer::Material CbMaterial;
+    // TODO: cleanup - RenderTypes 헤더로 이동
+    typedef Material CbMaterial;
 
     // 1. 셰이더 정리 (각 형식대로 파일 네이밍 변경 및 inputlayout등 코드 수정) - 완료
     // 2. Shader 매니저, Light 클래스, 텍스쳐 매니저 제작 - 완료(임시로 Renderer에)
@@ -24,18 +25,17 @@ namespace renderer
         Model(scene::Camera* camera, const int8_t* const filePath);
         ~Model();
 
-        void                DrawNew();
-        void                DrawShadowNew();
+        void DrawNew();
+        void DrawShadowNew();
 
         void Update();
 
+        void SetMeshes(std::vector<MeshNew>& meshes);
+        void SetCenterPoint(XMFLOAT4& centerPoint);
 
-        void    SetMeshes(std::vector<MeshNew>& meshes);
-        void    SetCenterPoint(XMFLOAT4& centerPoint);
+        void SetHighlight(bool bSelection);
 
-        void                SetHighlight(bool bSelection);
-
-        XMFLOAT3            GetCenterPoint() const;
+        XMFLOAT3 GetCenterPoint() const;
 
     private:
 
@@ -44,17 +44,12 @@ namespace renderer
         size_t mNumVertex;
 
         // TODO: TextureManager 생성 시 이동해야 한다. Mesh 구조체 내부에 SRV를 가지고 있으므로 이것도 수정이 필요함.
-        std::vector<renderer::MeshNew> mMeshesNew;
-
-
+        std::vector<MeshNew> mMeshesNew;
 
         XMFLOAT3 mCenterPosition;
         XMMATRIX mMatWorld;
         XMMATRIX mMatRotation;
         XMMATRIX mMatScale;
-
-
-
 
         bool mbHighlight;
         bool mbActiveEmissive;

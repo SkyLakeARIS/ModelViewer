@@ -57,7 +57,6 @@ namespace scene
         XMMATRIX mMatProj;
         XMMATRIX mMatViewProj;
 
-
         renderer::Plane* mMesh;
         XMMATRIX mMatWorld;
         HashID mBlendHash;

@@ -6,7 +6,6 @@ namespace scene
     // TODO: 그림자 효과 추가하면 FPS로 동작하는 Camera를 분리하는것이 Light클래스 관리에 도움이 될 듯 함.
     class Camera final
     {
-
     public:
         Camera(XMVECTOR vEye, XMVECTOR vLookAt, XMVECTOR vUp, int16_t windowWidth, int16_t windowHeight);
         virtual ~Camera();
@@ -54,7 +53,6 @@ namespace scene
         XMMATRIX    mMatView;
         XMMATRIX    mMatProjection;
         XMMATRIX    mMatViewProjection;
-
         //  ID3D11Buffer* mCbViewProjection;    // 모델에서 가지게 될 듯.
     };
 

@@ -39,7 +39,6 @@ namespace renderer
 
     void ModelImporter::Release()
     {
-
         if (!mFbxScene)
         {
             mFbxScene->Destroy();
@@ -140,8 +139,7 @@ namespace renderer
         }
     }
 
-    void ModelImporter::parseMeshNew(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer, FbxVector4& outMinBound, FbxVector4&
-                                     outMaxBound)
+    void ModelImporter::parseMeshNew(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer, FbxVector4& outMinBound, FbxVector4& outMaxBound)
     {
         std::set<int> vertexDuplicationCheck;
         std::map<int, int> indexMap;
@@ -332,7 +330,6 @@ namespace renderer
                 }
             }
             outModelContainer.Meshes.emplace_back(std::move(newMeshData));
-
         }
         outMinBound = minBound;
         outMaxBound = maxBound;
@@ -392,16 +389,12 @@ namespace renderer
                             OutputDebugStringA(texture->GetName());
                             OutputDebugStringA("\n");
 
-
                             FbxString fileNameWithoutExtension = FbxPathUtils::GetFileName(texture->GetName(), false);
-
-
 
                             // MEMO: 직접 작업하지 않는 이상 로드한 텍스쳐를 diffuse/normal/... 종류를 구분할 수 없음.
                             // 우선 가지고 있는 fbx 기준으로 하드코드한다.
                             if (fileNameWithoutExtension.Find("_D") > 0)
                             {
-
                                 // TODO: improve - 파일이 있는지 없는지 체크 정도는 여기에서 하고 있는 경우에만 데이터를 구성하는 것도 좋을 것 같다.
                                 // PathFileExistsA
                                 outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Diffuse)].TextureType = eTextureType::Diffuse;
@@ -648,7 +641,6 @@ namespace renderer
         }
     }
 
-
     void ModelImporter::DisplayString(const char* pHeader, const char* pValue /* = "" */, const char* pSuffix /* = "" */)
     {
         FbxString lString;
@@ -658,6 +650,7 @@ namespace renderer
         lString += "\n";
         PrintString(lString);
     }
+
     void ModelImporter::DisplayBool(const char* pHeader, bool pValue, const char* pSuffix /* = "" */)
     {
         FbxString lString;
@@ -667,6 +660,7 @@ namespace renderer
         lString += "\n";
         PrintString(lString);
     }
+
     void ModelImporter::DisplayInt(const char* pHeader, int pValue, const char* pSuffix /* = "" */)
     {
         FbxString lString;
@@ -676,6 +670,7 @@ namespace renderer
         lString += "\n";
         PrintString(lString);
     }
+
     void ModelImporter::DisplayDouble(const char* pHeader, double pValue, const char* pSuffix /* = "" */)
     {
         FbxString lString;
@@ -688,6 +683,7 @@ namespace renderer
         lString += "\n";
         PrintString(lString);
     }
+
     void ModelImporter::Display2DVector(const char* pHeader, FbxVector2 pValue, const char* pSuffix  /* = "" */)
     {
         FbxString lString;
@@ -705,6 +701,7 @@ namespace renderer
         lString += "\n";
         PrintString(lString);
     }
+
     void ModelImporter::Display3DVector(const char* pHeader, FbxVector4 pValue, const char* pSuffix /* = "" */)
     {
         FbxString lString;
@@ -727,6 +724,7 @@ namespace renderer
         lString += "\n";
         PrintString(lString);
     }
+
     void ModelImporter::Display4DVector(const char* pHeader, FbxVector4 pValue, const char* pSuffix /* = "" */)
     {
         FbxString lString;
@@ -769,7 +767,6 @@ namespace renderer
         lString += "\n";
         PrintString(lString);
     }
-
 
     void ModelImporter::PrintString(FbxString& pString)
     {

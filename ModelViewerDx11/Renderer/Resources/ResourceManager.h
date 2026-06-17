@@ -1,8 +1,6 @@
 #pragma once
 #include "../../framework.h"
 
-
-
 namespace renderer
 {
     class Model;

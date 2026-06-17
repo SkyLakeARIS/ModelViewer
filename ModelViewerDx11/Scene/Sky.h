@@ -28,16 +28,13 @@ namespace scene
         HRESULT createSphere(uint32 latLines, uint32 lonLines);
 
     private:
-
         Camera* mCamera;
 
         HashID mModelHash;
         HashID mTextureHash;
         XMMATRIX mWorld;
 
-
         uint32 mLatLines;
         uint32 mLonLines;
-
     };
 }

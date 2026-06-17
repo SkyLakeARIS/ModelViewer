@@ -1,8 +1,8 @@
 #include "Floor.h"
-#include "../Util/Macro.h"
 #include "../Renderer/Renderer.h"
-#include "../Renderer/Resources/ModelData.h"
 #include "../Renderer/Resources/BufferManager.h"
+#include "../Renderer/Resources/ModelData.h"
+#include "../Util/Macro.h"
 #include "../Util/Util.h"
 
 namespace scene
@@ -40,8 +40,6 @@ namespace scene
             pos.y += gapEachLine;
 
         }
-
-
 
         renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
 

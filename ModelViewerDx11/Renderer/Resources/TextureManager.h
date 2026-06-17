@@ -1,6 +1,6 @@
 #pragma once
-#include "../../framework.h"
 #include "TextureData.h"
+#include "../../framework.h"
 
 namespace renderer
 {

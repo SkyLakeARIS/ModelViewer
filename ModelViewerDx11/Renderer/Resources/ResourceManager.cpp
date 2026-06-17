@@ -1,5 +1,4 @@
 #include "ResourceManager.h"
-
 #include "BufferManager.h"
 #include "Model.h"
 #include "TextureManager.h"

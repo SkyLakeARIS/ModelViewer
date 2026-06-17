@@ -17,28 +17,15 @@ namespace renderer
     {
         ASSERT(camera != nullptr, "do not pass nullptr");
 
-
-
-
         mMatWorld = XMMatrixIdentity();
-
         mModelHash = util::GetDjb2Hash(filePath);
     }
 
     Model::~Model()
     {
-        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
         bufferManager->RemoveVertexData(mModelHash);
         bufferManager->RemoveIndexData(mModelHash);
-
-
-
-
-
-
-
-
-
     }
 
     void Model::DrawNew()
@@ -52,7 +39,7 @@ namespace renderer
         ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
         ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
 
-        const uint32 stride = sizeof(renderer::Vertex);
+        const uint32 stride = sizeof(Vertex);
 
         Renderer::GetInstance()->BindVertexBuffer(stride, 0);
         Renderer::GetInstance()->BindIndexBuffer(0);
@@ -87,7 +74,7 @@ namespace renderer
         Renderer::GetInstance()->BindCbToVsByType(3U, 1U, Renderer::eCbType::CbCameraPosition);
         Renderer::GetInstance()->BindCbToVsByType(4U, 1U, Renderer::eCbType::CbViewProj);
 
-        Renderer::GetInstance()->BindSamplerToPsByType(0, renderer::Renderer::eSamplerType::AnisotropicWrap);
+        Renderer::GetInstance()->BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
 
         Renderer::GetInstance()->BindCbToPs(0U, 1U, Renderer::eCbType::CbMaterial);
 
@@ -105,7 +92,7 @@ namespace renderer
             CbMaterial cbMaterial;
             ZeroMemory(&cbMaterial, sizeof(CbMaterial));
 
-            memcpy(&cbMaterial, &mMeshesNew[index].Material, sizeof(renderer::Material));
+            memcpy(&cbMaterial, &mMeshesNew[index].Material, sizeof(Material));
             if (!mbActiveEmissive)
             {
                 cbMaterial.Emissive = XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -131,7 +118,7 @@ namespace renderer
         ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
         ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
 
-        const uint32 stride = sizeof(renderer::Vertex);
+        const uint32 stride = sizeof(Vertex);
 
         Renderer::GetInstance()->BindVertexBuffer(stride, 0);
         Renderer::GetInstance()->BindIndexBuffer(0);
@@ -157,9 +144,7 @@ namespace renderer
         cbWorld.Matrix = XMMatrixTranspose(mMatWorld);
 
         Renderer::GetInstance()->UpdateCB(Renderer::eCbType::CbWorld, &cbWorld);
-
     }
-
 
     void Model::SetMeshes(std::vector<MeshNew>& meshes)
     {
@@ -183,5 +168,4 @@ namespace renderer
         pos.y += 1.0f;
         return pos;
     }
-
 }

@@ -25,7 +25,6 @@ namespace renderer
             { XMFLOAT3(0.5f, -0.5f, 0.5f), XMFLOAT2(1.0f, 1.0f)},
         };
 
-
         DWORD indices[] =
         {
             0,
@@ -40,34 +39,21 @@ namespace renderer
 
         int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
         sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Plane_%d.mesh",
-                  reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), sObjectCount.load());
+                  reinterpret_cast<const char*>(VIRTUAL_ROOT_PATH), sObjectCount.load());
 
         mModelHash = util::GetDjb2Hash(virtualFilePath);
 
-        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
         bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices), sizeof(vertices), mModelHash);
         bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices), sizeof(indices), mModelHash);
-
-
-        // vertex buffer
-        HRESULT result;
-        ID3D11Device* device = Renderer::GetInstance()->GetDevice();
-
-
-
-
-
-        device->Release();
     }
 
     Plane::~Plane()
     {
-        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
         bufferManager->RemoveVertexData(mModelHash);
         bufferManager->RemoveIndexData(mModelHash);
-
     }
-
 
     XMFLOAT3 Plane::GetPosition() const
     {
@@ -167,10 +153,8 @@ namespace renderer
         mScale = scale;
     }
 
-
     void Plane::SetTexHash(HashID textureHash)
     {
         mTexHash = textureHash;
     }
-
 }
