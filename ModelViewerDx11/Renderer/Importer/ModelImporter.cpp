@@ -10,11 +10,7 @@
 
 namespace renderer
 {
-    const wchar_t* ModelImporter::NORMAL_TEXTURE_FILE_SUFFIX_W = L"_N";
-    const wchar_t* ModelImporter::TEXTURE_FILE_PATH_W = L"./AssetData/textures/";
-    const wchar_t* ModelImporter::TEXTURE_FILE_EXTENSION_W = L".png";
 
-    const int8_t* const ModelImporter::NORMAL_TEXTURE_FILE_SUFFIX_A = reinterpret_cast<const int8_t*>("_N");
     const int8_t* const ModelImporter::TEXTURE_FILE_PATH_A = reinterpret_cast<const int8_t*>("./AssetData/textures/");
     const int8_t* const ModelImporter::TEXTURE_FILE_EXTENSION_A = reinterpret_cast<const int8_t*>(".png");
 

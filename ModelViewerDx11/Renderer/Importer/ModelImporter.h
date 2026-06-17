@@ -52,11 +52,7 @@ namespace renderer
 
     private:
 
-        static const wchar_t* TEXTURE_FILE_PATH_W;
-        static const wchar_t* NORMAL_TEXTURE_FILE_SUFFIX_W;
-        static const wchar_t* TEXTURE_FILE_EXTENSION_W;
 
-        static const int8_t* const NORMAL_TEXTURE_FILE_SUFFIX_A;
         static const int8_t* const TEXTURE_FILE_PATH_A;
         static const int8_t* const TEXTURE_FILE_EXTENSION_A;
 
