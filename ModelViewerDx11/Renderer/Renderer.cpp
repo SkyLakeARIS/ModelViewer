@@ -46,19 +46,8 @@ namespace renderer
         return mBufferManager;
     }
 
-    ID3D11ShaderResourceView* Renderer::GetShadowTexture()
-    {
-        mShadowSrv->AddRef();
-        return mShadowSrv;
-    }
 
-    ID3D11ShaderResourceView* Renderer::GetDefaultTexture() const
-    {
-        ASSERT(mDefaultTexture != nullptr, "The DefaultTexture not initialized.");
 
-        mDefaultTexture->AddRef();
-        return mDefaultTexture;
-    }
 
     Renderer::Renderer()
         : mDefaultTexture(nullptr)
@@ -486,39 +475,6 @@ namespace renderer
         return true;
     }
 
-    HRESULT Renderer::CreateVertexShaderAndInputLayout(
-        const WCHAR* const path, D3D11_INPUT_ELEMENT_DESC* const desc, uint32 numDescElements,
-        ID3D11VertexShader** const outVertexShader, ID3D11InputLayout** const outInputLayout)
-    {
-        ASSERT(outInputLayout != nullptr, "do not pass nullptr");
-        ASSERT(outVertexShader != nullptr, "do not pass nullptr");
-
-        ID3DBlob* blob = nullptr;
-        HRESULT result = compileShaderFromFile(path, "main", "vs_5_0", &blob);
-        if(FAILED(result))
-        {
-            ASSERT(false, "failed to compile vertex shader : compileShaderFromFile");
-            return E_FAIL;
-        }
-
-        result = mDevice->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &(*outVertexShader));
-        if (FAILED(result))
-        {
-            ASSERT(false, "failed to create InputLayout : CreateInputLayout");
-            return E_FAIL;
-        }
-
-        result = mDevice->CreateInputLayout(desc, numDescElements, blob->GetBufferPointer(), blob->GetBufferSize(), &(*outInputLayout));
-        if (FAILED(result))
-        {
-            ASSERT(false, "failed to create InputLayout : CreateInputLayout");
-            return E_FAIL;
-        }
-        blob->Release();
-
-        return result;
-    }
-
     HRESULT Renderer::CreateInputLayout(const WCHAR* const path, D3D11_INPUT_ELEMENT_DESC* const desc,
         uint32 numDescElements, eInputLayout type, ID3D11InputLayout** const outInputLayout)
     {
@@ -665,46 +621,6 @@ namespace renderer
 
         return result;
         
-    }
-
-    HRESULT Renderer::CreateDdsTextureResource(const WCHAR* fileName, DDS_FLAGS flag,
-        D3D11_SHADER_RESOURCE_VIEW_DESC& srvDesc, ID3D11ShaderResourceView** outShaderResourceView)
-    {
-        ScratchImage image;
-        ID3D11Texture2D* textureResource = nullptr;
-
-        HRESULT result = LoadFromDDSFile(fileName, flag, nullptr, image);
-        if (FAILED(result))
-        {
-            ASSERT(false, "failed to load DDS file : DDS 로드 실패");
-            goto FAILED;
-        }
-        
-        result = CreateTexture(mDevice, image.GetImages(), image.GetImageCount(), image.GetMetadata(), (ID3D11Resource**)&textureResource);
-        if (FAILED(result))
-        {
-            ASSERT(false, "failed to create TextureResource : gTextureResource 생성 실패");
-            goto FAILED;
-        }
-        D3D11_TEXTURE2D_DESC desc;
-        textureResource->GetDesc(&desc);
-        srvDesc.Format = desc.Format;
-        srvDesc.TextureCube.MipLevels = desc.MipLevels;
-
-        result = mDevice->CreateShaderResourceView(textureResource, &srvDesc, &(*outShaderResourceView));
-        if (FAILED(result))
-        {
-            ASSERT(false, "failed to create outShaderResourceView : outShaderResourceView 생성 실패");
-            goto FAILED;
-        }
-
-        result = S_OK;
-
-    FAILED:
-        image.Release();
-        SAFETY_RELEASE(textureResource);
-
-        return result;
     }
 
     HRESULT Renderer::CreateRenderTargetView(ID3D11Texture2D* const texture, D3D11_RENDER_TARGET_VIEW_DESC* const desc,
@@ -1240,20 +1156,12 @@ namespace renderer
         mDeviceContext->UpdateSubresource(mCbList[static_cast<uint32_t>(type)], 0U, nullptr, data, 0U, 0U);
     }
 
-    void Renderer::UpdateCbTo(ID3D11Buffer* buffer, void* data) const
-    {
-        mDeviceContext->UpdateSubresource(buffer, 0U, nullptr, data, 0U, 0U);
-    }
 
     void Renderer::BindCbToVsByType(uint32_t slot, uint32_t numBuffer, eCbType type) const
     {
         mDeviceContext->VSSetConstantBuffers(slot, numBuffer, &mCbList[static_cast<uint32_t>(type)]);
     }
 
-    void Renderer::BindCbToVsByObj(uint32_t slot, uint32_t numBuffer, ID3D11Buffer** buffer) const
-    {
-        mDeviceContext->VSSetConstantBuffers(slot, numBuffer, buffer);
-    }
 
     void Renderer::BindCbToPs(uint32_t slot, uint32_t numBuffer, eCbType type) const
     {

@@ -181,14 +181,6 @@ namespace renderer
 
 
         // Cate : shader
-
-        HRESULT CreateVertexShaderAndInputLayout(
-            const WCHAR* const path
-            , D3D11_INPUT_ELEMENT_DESC* const desc
-            , uint32 numDescElements
-            , ID3D11VertexShader** const outVertexShader
-            , ID3D11InputLayout** const outInputLayout);
-
         HRESULT CreateInputLayout(
             const WCHAR* const path
             , D3D11_INPUT_ELEMENT_DESC* const desc
@@ -214,12 +206,6 @@ namespace renderer
             , D3D11_SHADER_RESOURCE_VIEW_DESC& srvDesc
             , ID3D11ShaderResourceView** outShaderResourceView);
 
-        // for skybox
-        HRESULT CreateDdsTextureResource(
-            const WCHAR* fileName
-            , DDS_FLAGS flag
-            , D3D11_SHADER_RESOURCE_VIEW_DESC& srvDesc
-            , ID3D11ShaderResourceView** outShaderResourceView);
 
         // Renderer 
         void ClearScreenAndDepth(eRenderTarget type);
@@ -243,11 +229,9 @@ namespace renderer
 
         void UpdateCB(eCbType type, void* data) const;
 
-        void UpdateCbTo(ID3D11Buffer* buffer, void* data) const;
 
         void BindCbToVsByType(uint32_t slot, uint32_t numBuffer, eCbType type) const;
 
-        void BindCbToVsByObj(uint32_t slot, uint32_t numBuffer, ID3D11Buffer** buffer) const;
 
         void BindCbToPs(uint32_t slot, uint32_t numBuffer, eCbType type) const;
 
@@ -284,10 +268,7 @@ namespace renderer
         BufferManager* const GetBufferManager() const;
 
 
-        // tex resource
-        ID3D11ShaderResourceView*        GetShadowTexture();
 
-        ID3D11ShaderResourceView*        GetDefaultTexture() const;
     private:
         Renderer();
         ~Renderer();
