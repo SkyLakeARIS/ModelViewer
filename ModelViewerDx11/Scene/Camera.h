@@ -8,7 +8,7 @@ namespace scene
     {
     public:
         Camera(XMVECTOR vEye, XMVECTOR vLookAt, XMVECTOR vUp, int16_t windowWidth, int16_t windowHeight);
-        virtual ~Camera();
+        ~Camera();
 
         void RotateAxis(float yawRad, float pitchRad);
 
@@ -53,7 +53,6 @@ namespace scene
         XMMATRIX    mMatView;
         XMMATRIX    mMatProjection;
         XMMATRIX    mMatViewProjection;
-        //  ID3D11Buffer* mCbViewProjection;    // 모델에서 가지게 될 듯.
     };
 
     inline XMMATRIX Camera::GetViewMatrix() const

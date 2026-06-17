@@ -1,6 +1,5 @@
 #include "Camera.h"
 #include "../Renderer/Renderer.h"
-#include "cmath"
 
 namespace scene
 {
@@ -35,8 +34,6 @@ namespace scene
 
     Camera::~Camera()
     {
-        // SAFETY_RELEASE(mCbViewProjection);
-
     }
 
     void Camera::RotateAxis(float yawRad, float pitchRad)

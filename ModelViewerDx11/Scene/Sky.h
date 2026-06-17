@@ -5,7 +5,6 @@
 namespace renderer
 {
     class TextureManager;
-    class Renderer;
 }
 
 namespace scene
