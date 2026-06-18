@@ -44,8 +44,6 @@ namespace renderer
         mVertexBufferTotalSize = vertexBufferByteSize;
         mIndexBufferTotalSize = indexBufferByteSize;
 
-        // TODO: 여기에서 ID3D11Buffer초기화. 즉, 무거운 생성 작업은 여기에서 전부 처리.
-        // TODO: 이 클래스의 객체는  Renderer 클래스가 관리한다.
         D3D11_BUFFER_DESC bufferDesc = {};
         bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
         bufferDesc.Usage = D3D11_USAGE_DEFAULT;

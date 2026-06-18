@@ -14,8 +14,8 @@ namespace scene
         ASSERT(gapEachLine >= 1, "gapEachLine must be 1 or greater");
 
         mNumVertices = (numLineX * 2) * (numLineY - 1) + (numLineY - 1);
-        mVertices = new XMFLOAT3[mNumVertices];
-        XMFLOAT3* cur = mVertices;
+        XMFLOAT3* vertices = new XMFLOAT3[mNumVertices];
+        XMFLOAT3* cur = vertices;
         XMFLOAT2 pos(startPoint);
         for (uint32_t lineY = 0; lineY < numLineY - 1; ++lineY)
         {
@@ -27,15 +27,9 @@ namespace scene
                 *cur = XMFLOAT3(pos.x, 0.0f, pos.y + gapEachLine);
                 ++cur;
                 pos.x += gapEachLine;
-
-                //mVertices[lineY * numLineX + lineX] = XMFLOAT3(pos.x, 0.0f, pos.y);
-                //mVertices[lineY * numLineX + lineX+1] = XMFLOAT3(pos.x, 0.0f, pos.y + gapEachLine);
             }
-            // dummy
-          //  mVertices[(lineY + 1) * numLineX] = mVertices[lineY * numLineX + (numLineX - 1)];
             *cur = *(cur - 1);
             ++cur;
-            //mVertices[(lineY * numLineX) + numLineX] = mVertices[lineY * numLineX + (numLineX - 1)];
             pos.x = startPoint.x;
             pos.y += gapEachLine;
 
@@ -49,7 +43,7 @@ namespace scene
                         reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), numLineX, numLineY);
 
         mModelHash = util::GetDjb2Hash(virtualFilePath);
-        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(mVertices), sizeof(XMFLOAT3) * mNumVertices, mModelHash);
+        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices), sizeof(XMFLOAT3) * mNumVertices, mModelHash);
     }
 
     Floor::~Floor()
@@ -57,7 +51,6 @@ namespace scene
         renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
         bufferManager->RemoveVertexData(mModelHash);
 
-        delete[] mVertices;
     }
 
     void Floor::Draw()

@@ -14,11 +14,6 @@ namespace renderer
     // TODO: cleanup - RenderTypes 헤더로 이동
     typedef Material CbMaterial;
 
-    // 1. 셰이더 정리 (각 형식대로 파일 네이밍 변경 및 inputlayout등 코드 수정) - 완료
-    // 2. Shader 매니저, Light 클래스, 텍스쳐 매니저 제작 - 완료(임시로 Renderer에)
-    // TODO 3. 모델 로드할 수 있는 기능 추가
-    // TODO 4. 모델 로드 및 텍스쳐 등 리소스 생성 실패시에도 돌 수 있도록 Default 리소스 준비 및 적용(기본 화면은 스카이박스 + 바닥면만 생성, 둘 중 안되면 단색상으로 초기화)
-
     class Model
     {
     public:
@@ -43,7 +38,6 @@ namespace renderer
         size_t mNumMesh;
         size_t mNumVertex;
 
-        // TODO: TextureManager 생성 시 이동해야 한다. Mesh 구조체 내부에 SRV를 가지고 있으므로 이것도 수정이 필요함.
         std::vector<MeshNew> mMeshesNew;
 
         XMFLOAT3 mCenterPosition;

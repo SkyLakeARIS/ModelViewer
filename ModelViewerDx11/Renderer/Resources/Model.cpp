@@ -32,13 +32,6 @@ namespace renderer
     {
         Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::PTN);
 
-        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
-        const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
-        const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
-
-        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
-        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
-
         const uint32 stride = sizeof(Vertex);
 
         Renderer::GetInstance()->BindVertexBuffer(stride, 0);
@@ -83,7 +76,6 @@ namespace renderer
         // Draw
         for (size_t index = 0U; index < mMeshesNew.size(); ++index)
         {
-            // TODO: Bind 할 수 있도록 Renderer에 추가 필요함. Hash/Slot 전달하면 렌더러가 TextureManager에서 찾아서 바인드하도록.
             Renderer::GetInstance()->BindTextureToPs(0, mMeshesNew[index].TextureHashes[static_cast<int8_t>(eTextureType::Diffuse)]);
             if(mMeshesNew[index].TextureHashes[static_cast<int8_t>(eTextureType::Normal)])
             {
@@ -109,14 +101,6 @@ namespace renderer
     void Model::DrawShadowNew()
     {
         Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::P);
-
-        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
-        // TODO: cleanup - 미사용 코드 제거
-        const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
-        const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
-
-        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
-        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
 
         const uint32 stride = sizeof(Vertex);
 

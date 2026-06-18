@@ -39,7 +39,6 @@ Application::~Application()
     mDirectInput = nullptr;
     delete mFloor;
     delete mPlane;
-    //   gImporter->Release();
     delete mSkybox;
     delete mImporter;
     delete mLight;
@@ -278,16 +277,11 @@ void Application::updateScene(double deltaTime)
     if (gKeyboard[DIK_Q] & 0x80)
     {
         mCamera->AddRadiusSphere(deltaTime);
-        // gLight->Move(0.001f, -1.0f);
-       //  gLight->SetDirection(gCharacter->GetCenterPoint());
-
     }
 
     if (gKeyboard[DIK_E] & 0x80)
     {
         mCamera->AddRadiusSphere(-deltaTime);
-        //     gLight->Move(-0.001f, 1.0f);
-         //    gLight->SetDirection(gCharacter->GetCenterPoint());
     }
 
     // 키보드<-> 마우스 조작 전환
@@ -352,7 +346,6 @@ void Application::renderScene()
     mSkybox->Update();
     mSkybox->Draw();
 
-    // gFloor->Draw();
     mFloor->Draw();
     mCharacter->Update();
     mCharacter->DrawNew();

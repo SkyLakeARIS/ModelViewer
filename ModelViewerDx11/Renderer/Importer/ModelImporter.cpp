@@ -83,7 +83,6 @@ namespace renderer
         nodes.reserve(16);
         preprocessNew(nullptr, rootNode, nodes);
 
-        // TODO: Nodes 수가 Mesh 갯수일까? - 체크하고 해당 코드를 적절히 조정 (아직 체크 안해봄 - 컴파일 가능하게 만든다음 기존 코드로 먼저 돌려서 체크해보자)
         modelContainer.Meshes.reserve(nodes.size());
 
         FbxVector4 minBound = {};

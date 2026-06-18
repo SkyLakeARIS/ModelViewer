@@ -7,7 +7,6 @@ namespace renderer
     struct ImportedModelContainer;
     class Renderer;
 
-    // TODO: 우선 모델을 하나만 로드하니까 원활한 리팩토링을 위해 최소한으로만 개선하고, 나중에 여러 개를 로드할 수 있도록 확장이 필요함
     class ModelImporter
     {
     public:
