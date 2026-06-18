@@ -55,7 +55,7 @@ namespace scene
     void Sky::Draw()
     {
         // render
-        renderer::Renderer::GetInstance()->SetInputLayoutTo(renderer::Renderer::eInputLayout::PT);
+        renderer::Renderer::GetInstance()->BindInputLayoutTo(renderer::Renderer::eInputLayout::PT);
 
         renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
         // TODO: improve- Model이 아니라 Mesh별로 해시를 가지는 게 더 좋을 것 같은 느낌과 ElementOffset도 추가로 저장하는 게 좋을 것 같다.
@@ -74,9 +74,9 @@ namespace scene
         renderer::Renderer::GetInstance()->BindVertexBuffer(stride, offset);
         renderer::Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
 
-        renderer::Renderer::GetInstance()->SetRasterState(renderer::Renderer::eRasterType::Skybox);
+        renderer::Renderer::GetInstance()->BindRasterStateByType(renderer::Renderer::eRasterType::Skybox);
 
-        renderer::Renderer::GetInstance()->SetShaderTo(renderer::Renderer::eShader::Skybox);
+        renderer::Renderer::GetInstance()->BindShaderTo(renderer::Renderer::eShader::Skybox);
 
         renderer::Renderer::GetInstance()->BindSamplerToPsByType(0, renderer::Renderer::eSamplerType::AnisotropicWrap);
 
@@ -84,7 +84,7 @@ namespace scene
         renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
         renderer::Renderer::GetInstance()->BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
 
-        renderer::Renderer::GetInstance()->SetDepthStencilState(true);
+        renderer::Renderer::GetInstance()->BindDepthStencilState(true);
 
         // TODO: Renderer로 Bind하도록 이동하기.
         ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
@@ -95,7 +95,7 @@ namespace scene
         deviceContext->DrawIndexed(static_cast<uint32_t>(indexRange.Count), 0, 0);
         SAFETY_RELEASE(deviceContext);
 
-        renderer::Renderer::GetInstance()->SetDepthStencilState(false);
+        renderer::Renderer::GetInstance()->BindDepthStencilState(false);
     }
 
     void Sky::Update()

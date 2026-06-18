@@ -106,8 +106,8 @@ namespace renderer
     {
         ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
 
-        Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::PT);
-        Renderer::GetInstance()->SetShaderTo(Renderer::eShader::RenderToTexture);
+        Renderer::GetInstance()->BindInputLayoutTo(Renderer::eInputLayout::PT);
+        Renderer::GetInstance()->BindShaderTo(Renderer::eShader::RenderToTexture);
 
         BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
         const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);

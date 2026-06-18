@@ -30,7 +30,7 @@ namespace renderer
 
     void Model::Draw()
     {
-        Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::PTN);
+        Renderer::GetInstance()->BindInputLayoutTo(Renderer::eInputLayout::PTN);
 
         const uint32 stride = sizeof(Vertex);
 
@@ -42,9 +42,9 @@ namespace renderer
 
         if (mbHighlight)
         {
-            Renderer::GetInstance()->SetRasterState(Renderer::eRasterType::CullBack);
+            Renderer::GetInstance()->BindRasterStateByType(Renderer::eRasterType::CullBack);
 
-            Renderer::GetInstance()->SetShaderTo(Renderer::eShader::Outline);
+            Renderer::GetInstance()->BindShaderTo(Renderer::eShader::Outline);
             Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
             Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbOutlineProperty);
             Renderer::GetInstance()->BindCbToVsByType(2U, 1U, Renderer::eCbType::CbViewProj);
@@ -57,9 +57,9 @@ namespace renderer
             Renderer::GetInstance()->ClearDepthBuffer();
         }
 
-        Renderer::GetInstance()->SetRasterState(Renderer::eRasterType::Basic);
+        Renderer::GetInstance()->BindRasterStateByType(Renderer::eRasterType::Basic);
 
-        Renderer::GetInstance()->SetShaderTo(Renderer::eShader::BasicWithShadow);
+        Renderer::GetInstance()->BindShaderTo(Renderer::eShader::BasicWithShadow);
 
         Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
         Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
@@ -100,15 +100,15 @@ namespace renderer
 
     void Model::DrawShadow()
     {
-        Renderer::GetInstance()->SetInputLayoutTo(Renderer::eInputLayout::P);
+        Renderer::GetInstance()->BindInputLayoutTo(Renderer::eInputLayout::P);
 
         const uint32 stride = sizeof(Vertex);
 
         Renderer::GetInstance()->BindVertexBuffer(stride, 0);
         Renderer::GetInstance()->BindIndexBuffer(0);
 
-        Renderer::GetInstance()->SetRasterState(Renderer::eRasterType::Outline);
-        Renderer::GetInstance()->SetShaderTo(Renderer::eShader::Shadow);
+        Renderer::GetInstance()->BindRasterStateByType(Renderer::eRasterType::Outline);
+        Renderer::GetInstance()->BindShaderTo(Renderer::eShader::Shadow);
 
         Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
         Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);

@@ -204,16 +204,15 @@ namespace renderer
         // TODO: improve - eTextureType과 충돌이 없으면서 preset을 쓸 방법을 나중에 고민해 보자(default/shadow). 우선은 texture분리를 위해 이렇게
         void BindShadowTextureToPs(uint32_t slot) const;
         void BindDefaultTextureToPs(uint32_t slot) const;
+        void BindRasterStateByType(eRasterType type);
+        void BindDepthStencilState(bool bSkybox); // 현재는 스카이박스만 사용하므로
 
         void UnbindTexturePs(uint32_t slot) const;
 
-        void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology) const;
-        void SetRenderTargetTo(eRenderTarget type);
-        void SetInputLayoutTo(eInputLayout type) const;
-        void SetShaderTo(eShader type);
-        // TODO: bind로 네이밍 변경, 다른 부분도 있는지 체크 필요함.
-        void SetRasterState(eRasterType type);
-        void SetDepthStencilState(bool bSkybox); // 현재는 스카이박스만 사용하므로
+        void BindPrimitiveTopologyTo(D3D_PRIMITIVE_TOPOLOGY topology) const;
+        void BindRenderTargetTo(eRenderTarget type);
+        void BindInputLayoutTo(eInputLayout type) const;
+        void BindShaderTo(eShader type);
 
         // getter
         ID3D11Device*           GetDevice() const;

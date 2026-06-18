@@ -82,11 +82,11 @@ namespace scene
         // MEMO: 임시로 CB 업데이트하도록 강제로 넣음. (cascade 테스트) update, rendering 주기가 달라서.
         Update(nullptr);
 
-        renderer::Renderer::GetInstance()->SetInputLayoutTo(renderer::Renderer::eInputLayout::PT);
-        renderer::Renderer::GetInstance()->SetShaderTo(renderer::Renderer::eShader::RenderToTexture);
+        renderer::Renderer::GetInstance()->BindInputLayoutTo(renderer::Renderer::eInputLayout::PT);
+        renderer::Renderer::GetInstance()->BindShaderTo(renderer::Renderer::eShader::RenderToTexture);
 
         ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
-        renderer::Renderer::GetInstance()->SetRasterState(renderer::Renderer::eRasterType::Basic);
+        renderer::Renderer::GetInstance()->BindRasterStateByType(renderer::Renderer::eRasterType::Basic);
         renderer::Renderer::GetInstance()->BindBlendStateByHash(mBlendHash, nullptr, 0xffffffff);
 
         deviceContext->Release();

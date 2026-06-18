@@ -669,19 +669,19 @@ namespace renderer
         return result;
     }
 
-    void Renderer::SetRenderTargetTo(eRenderTarget type)
+    void Renderer::BindRenderTargetTo(eRenderTarget type)
     {
         RtvDsMap& rtvDs = mRtvDsMapTable[static_cast<uint8_t>(type)];
 
         mDeviceContext->OMSetRenderTargets(rtvDs.NumViews, &mRenderTargetViewList[rtvDs.RenderTargetIndex], mDepthStencilViewList[rtvDs.DepthStencilIndex]);
     }
 
-    void Renderer::SetInputLayoutTo(eInputLayout type) const
+    void Renderer::BindInputLayoutTo(eInputLayout type) const
     {
         mDeviceContext->IASetInputLayout(mInputLayoutList[static_cast<uint32>(type)]);
     }
 
-    void Renderer::SetShaderTo(eShader type)
+    void Renderer::BindShaderTo(eShader type)
     {
         const ShaderMap& shaderMap = mShaderMapTable[static_cast<uint32_t>(type)];
         mDeviceContext->VSSetShader(mVertexShadersList[static_cast<uint32_t>(shaderMap.VsIndex)], nullptr, 0U);
@@ -864,17 +864,17 @@ namespace renderer
         mDeviceContext->PSSetShaderResources(slot, 1, &unbindSRV);
     }
 
-    void Renderer::SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology) const
+    void Renderer::BindPrimitiveTopologyTo(D3D_PRIMITIVE_TOPOLOGY topology) const
     {
         mDeviceContext->IASetPrimitiveTopology(topology);
     }
 
-    void Renderer::SetRasterState(eRasterType type)
+    void Renderer::BindRasterStateByType(eRasterType type)
     {
         mDeviceContext->RSSetState(mRasterStates[static_cast<uint32>(type)]);
     }
 
-    void Renderer::SetDepthStencilState(bool bSkybox)
+    void Renderer::BindDepthStencilState(bool bSkybox)
     {
         if(bSkybox)
         {

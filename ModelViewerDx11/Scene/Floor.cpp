@@ -55,9 +55,9 @@ namespace scene
 
     void Floor::Draw()
     {
-        renderer::Renderer::GetInstance()->SetRasterState(renderer::Renderer::eRasterType::Basic);
-        renderer::Renderer::GetInstance()->SetInputLayoutTo(renderer::Renderer::eInputLayout::P);
-        renderer::Renderer::GetInstance()->SetShaderTo(renderer::Renderer::eShader::Color);
+        renderer::Renderer::GetInstance()->BindRasterStateByType(renderer::Renderer::eRasterType::Basic);
+        renderer::Renderer::GetInstance()->BindInputLayoutTo(renderer::Renderer::eInputLayout::P);
+        renderer::Renderer::GetInstance()->BindShaderTo(renderer::Renderer::eShader::Color);
 
         renderer::Renderer::CbWorld cbWorld;
         cbWorld.Matrix = XMMatrixIdentity();
