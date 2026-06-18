@@ -157,7 +157,6 @@ namespace renderer
         HRESULT CreateDepthStencilView(ID3D11Texture2D* const texture, D3D11_DEPTH_STENCIL_VIEW_DESC* const desc, ID3D11DepthStencilView** outDs, const char* const debugTag = "NO_INFO");
         HRESULT CreateConstantBuffer(D3D11_BUFFER_DESC& desc, ID3D11Buffer** outCb);
 
-        // TODO : 정리필요. 
         // 그림자 매핑을 위한 설계
         void SetViewport(bool bFullScreen);
         HRESULT CreateShadowRenderTarget();

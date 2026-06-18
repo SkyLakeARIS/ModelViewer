@@ -86,7 +86,6 @@ namespace scene
 
         renderer::Renderer::GetInstance()->BindDepthStencilState(true);
 
-        // TODO: Renderer로 Bind하도록 이동하기.
         renderer::Renderer::GetInstance()->BindTextureToPs(0, mTextureHash);
 
         // TODO: draw 구조가 잡히면 나중에 한번에 처리
