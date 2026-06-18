@@ -22,7 +22,7 @@ namespace scene
         Light(XMFLOAT3 pos, XMFLOAT3 dir, XMFLOAT3 color, Camera* camera, float nearPlane, float farPlane);
         ~Light();
 
-        void InitializeNew(renderer::TextureManager* const texManager);
+        void Initialize(renderer::TextureManager* const texManager);
         void Update(Camera* camera);
         void Draw();
         //void DrawDebug();

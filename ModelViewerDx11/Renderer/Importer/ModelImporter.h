@@ -18,18 +18,18 @@ namespace renderer
         void Release();
 
         // MEMO: 우선은 동기식이니까 공간을 넘겨주고 Importer가 데이터를 채워주도록 하고, 나중에 고도화 하자.
-        void LoadFbxModelNew(const int8_t* const fileName, HashID& outModelHash, ImportedModelContainer& outModelContainer);
+        void LoadFbxModel(const int8_t* const fileName, HashID& outModelHash, ImportedModelContainer& outModelContainer);
 
     private:
 
-        void preprocessNew(FbxNode* parent, FbxNode* current, std::vector<FbxNode*>& outNodes);
+        void preprocess(FbxNode* parent, FbxNode* current, std::vector<FbxNode*>& outNodes);
 
-        void parseMeshNew(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer, FbxVector4& outMinBound, FbxVector4& outMaxBound);
+        void parseMesh(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer, FbxVector4& outMinBound, FbxVector4& outMaxBound);
 
-        void parseTextureInfoNew(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer);
+        void parseTextureInfo(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer);
 
         //  sdk 문서에서 가져온 정보 출력용 함수
-        void parseMaterialNew(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer);
+        void parseMaterial(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer);
 
         static const FbxImplementation* LookForImplementation(FbxSurfaceMaterial* pMaterial);
 

@@ -97,7 +97,7 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
         ASSERT(false, "fail to initialize managers");
     }
 
-    initializeSceneNew();
+    initializeScene();
 
     return true;
 }
@@ -164,7 +164,7 @@ void Application::Run()
 }
 
 
-bool Application::initializeSceneNew()
+bool Application::initializeScene()
 {
     core::Timer::Initialize();
 
@@ -193,7 +193,7 @@ bool Application::initializeSceneNew()
   //  gLight = new Light(XMFLOAT3(0.0f, 50.0f, 70.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), gCamera, 0.1f, 300.0f);
 
     mLight = new scene::Light(XMFLOAT3(0.0f, 20.0f, 50.0f), mCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), mCamera, 0.1f, 500.0f);
-    mLight->InitializeNew(mTextureManager);
+    mLight->Initialize(mTextureManager);
     mLight->SetupCascade();
 
     // debug quad
@@ -331,7 +331,7 @@ void Application::preprocess()
     renderer::Renderer::GetInstance()->SetViewport(false);
     renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Shadow);
     mCharacter->Update();
-    mCharacter->DrawShadowNew();
+    mCharacter->DrawShadow();
 }
 
 void Application::renderScene()
@@ -348,13 +348,13 @@ void Application::renderScene()
 
     mFloor->Draw();
     mCharacter->Update();
-    mCharacter->DrawNew();
+    mCharacter->Draw();
 
     mLight->Update(mCamera);
     mLight->Draw();
     //mLight->DrawDebug();
 
     mPlane->Update();
-    mPlane->DrawTextureNew(mLight);
+    mPlane->DrawTexture(mLight);
     renderer::Renderer::GetInstance()->Present();
 }

@@ -10,7 +10,7 @@ namespace renderer
 
     struct Vertex;
 
-    struct MeshNew
+    struct Mesh
     {
         HashID MeshHash;
         BufferRange VertexRange;

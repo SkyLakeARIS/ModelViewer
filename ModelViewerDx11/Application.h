@@ -33,7 +33,7 @@ public:
     void Run();
 
 private:
-    bool initializeSceneNew();
+    bool initializeScene();
     bool initializeManagers();
 
     void updateScene(double deltaTime);

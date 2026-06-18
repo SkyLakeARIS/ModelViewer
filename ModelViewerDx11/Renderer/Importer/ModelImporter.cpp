@@ -60,7 +60,7 @@ namespace renderer
         }
     }
 
-    void ModelImporter::LoadFbxModelNew(const int8_t* const fileName, HashID& outModelHash, ImportedModelContainer& outModelContainer)
+    void ModelImporter::LoadFbxModel(const int8_t* const fileName, HashID& outModelHash, ImportedModelContainer& outModelContainer)
     {
         if (!mImporter->Initialize(reinterpret_cast<const char*>(fileName), -1, mFbxManager->GetIOSettings()))
         {
@@ -81,14 +81,14 @@ namespace renderer
 
         std::vector<FbxNode*> nodes;
         nodes.reserve(16);
-        preprocessNew(nullptr, rootNode, nodes);
+        preprocess(nullptr, rootNode, nodes);
 
         modelContainer.Meshes.reserve(nodes.size());
 
         FbxVector4 minBound = {};
         FbxVector4 maxBound = {};
         FbxVector4 modelCenterPoint = {};
-        parseMeshNew(nodes, modelContainer, minBound, maxBound);
+        parseMesh(nodes, modelContainer, minBound, maxBound);
 
         modelCenterPoint = (minBound + maxBound) * 0.5;
         modelContainer.CenterPoint.x = static_cast<float>(modelCenterPoint.mData[0]);
@@ -98,16 +98,16 @@ namespace renderer
 
         modelContainer.ModelHash = modelHash;
 
-        parseTextureInfoNew(nodes, modelContainer);
+        parseTextureInfo(nodes, modelContainer);
 
-        parseMaterialNew(nodes, modelContainer);
+        parseMaterial(nodes, modelContainer);
 
         outModelContainer = std::move(modelContainer);
         outModelHash = modelHash;
         mImporter->Destroy();
     }
 
-    void ModelImporter::preprocessNew(FbxNode* parent, FbxNode* current, std::vector<FbxNode*>& outNodes)
+    void ModelImporter::preprocess(FbxNode* parent, FbxNode* current, std::vector<FbxNode*>& outNodes)
     {
         if (current->GetCamera() || current->GetLight())
         {
@@ -134,11 +134,11 @@ namespace renderer
         size_t numChild = current->GetChildCount();
         for (size_t child = 0; child < numChild; ++child)
         {
-            preprocessNew(current, current->GetChild(child), outNodes);
+            preprocess(current, current->GetChild(child), outNodes);
         }
     }
 
-    void ModelImporter::parseMeshNew(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer, FbxVector4& outMinBound, FbxVector4& outMaxBound)
+    void ModelImporter::parseMesh(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer, FbxVector4& outMinBound, FbxVector4& outMaxBound)
     {
         std::set<int> vertexDuplicationCheck;
         std::map<int, int> indexMap;
@@ -334,7 +334,7 @@ namespace renderer
         outMaxBound = maxBound;
     }
 
-    void ModelImporter::parseTextureInfoNew(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer)
+    void ModelImporter::parseTextureInfo(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer)
     {
         OutputDebugStringA("========== Texture Info Extraction start ==========\n");
 
@@ -438,7 +438,7 @@ namespace renderer
         return lImplementation;
     }
 
-    void ModelImporter::parseMaterialNew(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer)
+    void ModelImporter::parseMaterial(std::vector<FbxNode*>& outNodes, ImportedModelContainer& outModelContainer)
     {
         for (size_t nodeIndex = 0; nodeIndex < outNodes.size(); ++nodeIndex)
         {

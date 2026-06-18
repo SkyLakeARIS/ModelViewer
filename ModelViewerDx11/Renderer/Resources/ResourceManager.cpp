@@ -38,9 +38,9 @@ namespace renderer
         ImportedModelContainer modelContainer;
         // TODO: 동기식이므로 받아오고 받아온 데이터를 각 Manager에 할당시키는 것으로 처리하면 될듯.
         // TODO: IndexList가 비어있을 수 있지 않을까 생각하면 Importer에서 좀 더 로직을 엄격하게 체크해야 할 것으로 보임.
-        mModelImporter->LoadFbxModelNew(filePath, modelHash, modelContainer);
+        mModelImporter->LoadFbxModel(filePath, modelHash, modelContainer);
 
-        std::vector<MeshNew> meshes(modelContainer.Meshes.size());
+        std::vector<Mesh> meshes(modelContainer.Meshes.size());
         // TODO: 여기에서 로드한 Object를 처리해서 반환해 주는 게 좋을 것 같다.
         // 그리고 이곳에서 Imported 타입이 일단 Mesh 데이터로 바뀌는 시점.
         mBufferManager->AddVertexData(reinterpret_cast<int8_t*>(modelContainer.VertexBufferTotal.get()), sizeof(Vertex) * modelContainer.TotalVertexCount, modelContainer.ModelHash);

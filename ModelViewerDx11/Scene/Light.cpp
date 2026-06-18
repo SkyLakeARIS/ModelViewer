@@ -46,7 +46,7 @@ namespace scene
         //SAFETY_RELEASE(mLinesBuffer);
     }
 
-    void Light::InitializeNew(renderer::TextureManager* const texManager)
+    void Light::Initialize(renderer::TextureManager* const texManager)
     {
         const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/lightIcon.png");
         texManager->AddTexture(filePath, mIconTexHash);
@@ -95,7 +95,7 @@ namespace scene
         renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
         renderer::Renderer::GetInstance()->BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
 
-        mMesh->DrawNew();
+        mMesh->Draw();
     }
 
     //void Light::DrawDebug()

@@ -20,12 +20,12 @@ namespace renderer
         Model(scene::Camera* camera, const int8_t* const filePath);
         ~Model();
 
-        void DrawNew();
-        void DrawShadowNew();
+        void Draw();
+        void DrawShadow();
 
         void Update();
 
-        void SetMeshes(std::vector<MeshNew>& meshes);
+        void SetMeshes(std::vector<Mesh>& meshes);
         void SetCenterPoint(XMFLOAT4& centerPoint);
 
         void SetHighlight(bool bSelection);
@@ -38,7 +38,7 @@ namespace renderer
         size_t mNumMesh;
         size_t mNumVertex;
 
-        std::vector<MeshNew> mMeshesNew;
+        std::vector<Mesh> mMeshes;
 
         XMFLOAT3 mCenterPosition;
         XMMATRIX mMatWorld;

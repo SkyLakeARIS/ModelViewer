@@ -25,8 +25,8 @@ namespace renderer
         Plane();
         ~Plane();
 
-        void DrawNew();
-        void DrawTextureNew(scene::Light* const light);
+        void Draw();
+        void DrawTexture(scene::Light* const light);
         void Update();
 
         void SetPosition(XMFLOAT3& pos);
