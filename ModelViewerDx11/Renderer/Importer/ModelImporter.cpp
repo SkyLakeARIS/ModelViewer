@@ -1,9 +1,9 @@
 #include "ModelImporter.h"
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <set>
 #include "ImportedModelData.h"
-#include "Shlwapi.h"
 #include "../../Util/Define.h"
 #include "../../Util/Macro.h"
 #include "../../Util/Util.h"
@@ -13,6 +13,7 @@ namespace renderer
 
     const int8_t* const ModelImporter::TEXTURE_FILE_PATH_A = reinterpret_cast<const int8_t*>("./AssetData/textures/");
     const int8_t* const ModelImporter::TEXTURE_FILE_EXTENSION_A = reinterpret_cast<const int8_t*>(".png");
+    const int8_t ModelImporter::NORMAL_TEXTURE_FILE_SUFFIX_A = ('N');
 
     ModelImporter::ModelImporter()
         : mFbxManager(nullptr)
@@ -394,21 +395,41 @@ namespace renderer
                             // 우선 가지고 있는 fbx 기준으로 하드코드한다.
                             if (fileNameWithoutExtension.Find("_D") > 0)
                             {
-                                // TODO: improve - 파일이 있는지 없는지 체크 정도는 여기에서 하고 있는 경우에만 데이터를 구성하는 것도 좋을 것 같다.
-                                // PathFileExistsA
-                                outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Diffuse)].TextureType = eTextureType::Diffuse;
-                                (void)sprintf_s(reinterpret_cast<char* const>(outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Diffuse)].FilePath), util::MAX_PATH_LENGTH, "%s%s%s", reinterpret_cast<const char*>(TEXTURE_FILE_PATH_A), fileNameWithoutExtension.Buffer(), reinterpret_cast<const char*>(TEXTURE_FILE_EXTENSION_A));
+                                int8_t filePath[util::MAX_PATH_LENGTH] = {};
+                                (void)sprintf_s(reinterpret_cast<char* const>(filePath), util::MAX_PATH_LENGTH, "%s%s%s", reinterpret_cast<const char*>(TEXTURE_FILE_PATH_A), fileNameWithoutExtension.Buffer(), reinterpret_cast<const char*>(TEXTURE_FILE_EXTENSION_A));
 
-                                const HashID hash = util::GetDjb2Hash(outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Diffuse)].FilePath);
-                                outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Diffuse)].TextureHash = hash;
+                                std::filesystem::path fileChecker(reinterpret_cast<const char*>(filePath));
+                                if(std::filesystem::exists(fileChecker))
+                                {
+                                    memcpy(outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Diffuse)].FilePath, filePath, util::MAX_PATH_LENGTH);
+                                    outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Diffuse)].TextureType = eTextureType::Diffuse;
+
+                                    const HashID hash = util::GetDjb2Hash(filePath);
+                                    outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Diffuse)].TextureHash = hash;
+                                }
                             }
 
-                            // TODO: improve - Normal 텍스처를 하드코딩하여 일부 문자만 바꿔쓰는 방식으로 사용 중. Face는 Normal이 없으므로 이런 부분도 예외 처리가 필요
-                            outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Normal)].TextureType = eTextureType::Normal;
-                            (void)sprintf_s(reinterpret_cast<char* const>(outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Normal)].FilePath), util::MAX_PATH_LENGTH, "%s%s%s", reinterpret_cast<const char*>(TEXTURE_FILE_PATH_A), fileNameWithoutExtension.Buffer(), reinterpret_cast<const char*>(TEXTURE_FILE_EXTENSION_A));
+                            int8_t nameNormalTex[util::MAX_PATH_LENGTH] = {};
+                            const int32_t srcFileNameLen = fileNameWithoutExtension.GetLen();
 
-                            const HashID hash = util::GetDjb2Hash(outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Normal)].FilePath);
-                            outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Normal)].TextureHash = hash;
+                            ASSERT(srcFileNameLen < util::MAX_PATH_LENGTH, "srcFileNameLen too long. srcFileNameLen(%d)", srcFileNameLen);
+
+                            memcpy(nameNormalTex, fileNameWithoutExtension.Buffer(), srcFileNameLen);
+                            nameNormalTex[srcFileNameLen - 1] = NORMAL_TEXTURE_FILE_SUFFIX_A;
+
+                            int8_t pathNormalTex[util::MAX_PATH_LENGTH] = {};
+                            (void)sprintf_s(reinterpret_cast<char* const>(pathNormalTex), util::MAX_PATH_LENGTH, "%s%s%s", reinterpret_cast<const char*>(TEXTURE_FILE_PATH_A), nameNormalTex, reinterpret_cast<const char*>(TEXTURE_FILE_EXTENSION_A));
+
+                            std::filesystem::path fileChecker(reinterpret_cast<const char*>(pathNormalTex));
+                            if (std::filesystem::exists(fileChecker))
+                            {
+                                outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Normal)].TextureType = eTextureType::Normal;
+
+                                memcpy(outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Normal)].FilePath, pathNormalTex, util::MAX_PATH_LENGTH);
+
+                                const HashID hash = util::GetDjb2Hash(pathNormalTex);
+                                outModelContainer.Meshes[nodeIndex].Textures[static_cast<int32_t>(eTextureType::Normal)].TextureHash = hash;
+                            }
                         }
                         else
                         {

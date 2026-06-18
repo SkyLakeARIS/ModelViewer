@@ -49,6 +49,7 @@ namespace renderer
 
         static const int8_t* const TEXTURE_FILE_PATH_A;
         static const int8_t* const TEXTURE_FILE_EXTENSION_A;
+        static const int8_t NORMAL_TEXTURE_FILE_SUFFIX_A;
 
         FbxManager* mFbxManager;
         FbxImporter* mImporter;
