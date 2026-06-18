@@ -7,7 +7,6 @@
 
 namespace renderer
 {
-    Renderer* Renderer::mInstance = nullptr;
 
     void Renderer::CheckLiveObjects()
     {
@@ -220,14 +219,6 @@ namespace renderer
     }
 
 
-    Renderer* Renderer::GetInstance()
-    {
-        if(!mInstance)
-        {
-            mInstance = new Renderer();
-        }
-        return mInstance;
-    }
 
     HashID Renderer::GetBlendStateHash(D3D11_BLEND_DESC& desc)
     {

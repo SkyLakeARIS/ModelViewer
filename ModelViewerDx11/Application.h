@@ -19,6 +19,7 @@ namespace renderer
     class TextureManager;
     class BufferManager;
     class ResourceManager;
+    class Renderer;
 }
 
 class Application
@@ -48,6 +49,7 @@ private:
 
     Window* mWindow;
 
+    renderer::Renderer* mRenderer;
     renderer::ModelImporter* mImporter;
     renderer::Model* mCharacter;
     scene::Camera* mCamera;

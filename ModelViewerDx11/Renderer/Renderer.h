@@ -127,8 +127,9 @@ namespace renderer
         };
 
     public:
+        Renderer();
+        ~Renderer();
 
-        static Renderer* GetInstance();
         // MEMO: BlendState의 다양한 옵션을 대응하기 위해 비트 슬라이싱을 통해 해시 계산
         static inline HashID GetBlendStateHash(D3D11_BLEND_DESC& desc);
 
@@ -208,8 +209,6 @@ namespace renderer
         BufferManager* const GetBufferManager() const;
 
     private:
-        Renderer();
-        ~Renderer();
 
         HRESULT compileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
 
@@ -223,7 +222,6 @@ namespace renderer
         ID3D11ShaderResourceView*   mDefaultTexture;
     private:
 
-        static Renderer*            mInstance;
 
         ULONG                       mRefCount;
 

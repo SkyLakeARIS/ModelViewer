@@ -20,6 +20,7 @@ Application::Application()
     , mWindowHeight(720)
     , mAppFrameRate(120)
     , mWindow(nullptr)
+    , mRenderer(nullptr)
     , mImporter(nullptr)
     , mCharacter(nullptr)
     , mCamera(nullptr)
@@ -30,7 +31,9 @@ Application::Application()
     , mBufferManager(nullptr)
     , mTextureManager(nullptr)
     , mDirectInput(nullptr)
-{}
+{
+    mRenderer = new renderer::Renderer();
+}
 
 Application::~Application()
 {
@@ -49,8 +52,7 @@ Application::~Application()
     delete mBufferManager;
     delete mTextureManager;
     delete mResourceManager;
-    // MEMO device가 가장 마지막에 해제되도록.
-    renderer::Renderer::GetInstance()->Release();
+    delete mRenderer;
 #ifdef _DEBUG
     renderer::Renderer::CheckLiveObjects();
 #endif
