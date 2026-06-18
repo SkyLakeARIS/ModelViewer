@@ -340,7 +340,6 @@ void Application::renderScene()
     renderer::Renderer::GetInstance()->SetViewport(true);
     renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Default);
 
-    // 리소스뷰를 어떻게 괜찮은 방법으로 처리할 방법을 검색하기
 
     // TODO: 지금은 WorldCB를 공유하여 Update함수를 같이 붙여둬야 하지만, 나중에 렌더큐를 가면 내부적으로 자동으로 업데이트 되게끔 처리해보기
     mSkybox->Update();
