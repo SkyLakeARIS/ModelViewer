@@ -214,18 +214,13 @@ bool Application::initializeManagers()
     if (!mBufferManager->Initialize(renderer::BufferManager::sVertexBufferDefaultSize, renderer::BufferManager::sIndexBufferDefaultSize))
     {
         ASSERT(false, "buffer manager init failed.")
-        SAFETY_RELEASE(device);
-        SAFETY_RELEASE(deviceContext);
         return false;
     }
 
     mTextureManager = new renderer::TextureManager(device);
     mResourceManager = new renderer::ResourceManager(device, mTextureManager, mImporter, mBufferManager);
 
-    // TODO: device/deviceContext ref-up을 제거하는 게 좋을 것 같다.(중간에 release하는 일이 없게 하는게 맞지 않나.)
     renderer::Renderer::GetInstance()->SetManagers(mBufferManager, mTextureManager);
-    SAFETY_RELEASE(device);
-    SAFETY_RELEASE(deviceContext);
     return true;
 }
 

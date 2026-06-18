@@ -95,7 +95,6 @@ namespace renderer
         }
 
         Renderer::GetInstance()->UnbindTexturePs(2);
-        SAFETY_RELEASE(deviceContext);
     }
 
     void Model::DrawShadow()
@@ -119,7 +118,6 @@ namespace renderer
         {
             deviceContext->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
         }
-        SAFETY_RELEASE(deviceContext);
     }
 
     void Model::Update()

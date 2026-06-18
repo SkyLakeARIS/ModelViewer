@@ -93,6 +93,5 @@ namespace scene
 
         deviceContext->IASetPrimitiveTopology(orgTopology);
 
-        deviceContext->Release();
     }
 }

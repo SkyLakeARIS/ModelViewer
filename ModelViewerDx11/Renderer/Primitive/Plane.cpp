@@ -99,7 +99,6 @@ namespace renderer
 
         deviceContext->DrawIndexed(6, 0U, 0U);
 
-        deviceContext->Release();
     }
 
     void Plane::DrawTexture()
@@ -133,7 +132,6 @@ namespace renderer
         deviceContext->DrawIndexed(6, 0U, 0U);
 
         Renderer::GetInstance()->UnbindTexturePs(0);
-        deviceContext->Release();
     }
 
     void Plane::Update()

@@ -31,13 +31,11 @@ namespace renderer
 
     ID3D11Device* Renderer::GetDevice() const
     {
-        mDevice->AddRef();
         return mDevice;
     }
 
     ID3D11DeviceContext* Renderer::GetDeviceContext() const
     {
-        mDeviceContext->AddRef();
         return mDeviceContext;
     }
 

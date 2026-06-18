@@ -89,7 +89,6 @@ namespace scene
         renderer::Renderer::GetInstance()->BindRasterStateByType(renderer::Renderer::eRasterType::Basic);
         renderer::Renderer::GetInstance()->BindBlendStateByHash(mBlendHash, nullptr, 0xffffffff);
 
-        deviceContext->Release();
 
 
         renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
@@ -129,7 +128,6 @@ namespace scene
 
     //    deviceContext->IASetPrimitiveTopology(origTopology);
 
-    //    deviceContext->Release();
     //}
 
     void Light::Move(double deltaTime, float direction)
@@ -172,7 +170,6 @@ namespace scene
 
         //    ID3D11Device* device = renderer::Renderer::GetInstance()->GetDevice();
         //    device->CreateBuffer(&bufferDesc, &data, &mLinesBuffer);
-        //    device->Release();
         //}
         //else
         {
@@ -184,7 +181,6 @@ namespace scene
             ////  D3D11_MAP_FLAG::D3D11_MAP_FLAG_DO_NOT_WAIT
 
             //deviceContext->Unmap(mLinesBuffer, 0);
-            //deviceContext->Release();
         }
 
         updateMatrices();

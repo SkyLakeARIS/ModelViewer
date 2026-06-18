@@ -93,7 +93,6 @@ namespace scene
         // TODO: draw 구조가 잡히면 나중에 한번에 처리
         // TODO: improve - BufferManager에게 Range를 얻어서 쓰도록 전체적인 Draw 함수 로직 통일하기(ElementOffset 추가하고 나서)
         deviceContext->DrawIndexed(static_cast<uint32_t>(indexRange.Count), 0, 0);
-        SAFETY_RELEASE(deviceContext);
 
         renderer::Renderer::GetInstance()->BindDepthStencilState(false);
     }
