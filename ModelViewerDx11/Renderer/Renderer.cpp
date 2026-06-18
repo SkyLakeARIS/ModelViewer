@@ -39,6 +39,11 @@ namespace renderer
         return mDeviceContext;
     }
 
+    void Renderer::GetCurrentPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY& outTopology) const
+    {
+        mDeviceContext->IAGetPrimitiveTopology(&outTopology);
+    }
+
     BufferManager* const Renderer::GetBufferManager() const
     {
         return mBufferManager;
@@ -684,6 +689,16 @@ namespace renderer
         const ShaderMap& shaderMap = mShaderMapTable[static_cast<uint32_t>(type)];
         mDeviceContext->VSSetShader(mVertexShadersList[static_cast<uint32_t>(shaderMap.VsIndex)], nullptr, 0U);
         mDeviceContext->PSSetShader(mPixelShaderList[static_cast<uint32_t>(shaderMap.PsIndex)], nullptr, 0U);
+    }
+
+    void Renderer::Draw(uint32_t vertexCount, uint32_t startVertexLocation) const
+    {
+        mDeviceContext->Draw(vertexCount, startVertexLocation);
+    }
+
+    void Renderer::DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation) const
+    {
+        mDeviceContext->DrawIndexed(indexCount, startIndexLocation, baseVertexLocation);
     }
 
     void Renderer::SetViewport(bool bFullScreen)

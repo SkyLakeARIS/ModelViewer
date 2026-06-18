@@ -38,7 +38,6 @@ namespace renderer
         Renderer::GetInstance()->BindIndexBuffer(0);
 
         // outline
-        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
 
         if (mbHighlight)
         {
@@ -51,7 +50,7 @@ namespace renderer
 
             for (uint32_t index = 0U; index < mMeshes.size(); ++index)
             {
-                deviceContext->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
+                Renderer::GetInstance()->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
             }
             // reset for basic draw
             Renderer::GetInstance()->ClearDepthBuffer();
@@ -91,7 +90,7 @@ namespace renderer
             }
             Renderer::GetInstance()->UpdateCB(Renderer::eCbType::CbMaterial, &cbMaterial);
 
-            deviceContext->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
+            Renderer::GetInstance()->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
         }
 
         Renderer::GetInstance()->UnbindTexturePs(2);
@@ -113,10 +112,9 @@ namespace renderer
         Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
 
         // Draw
-        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
         for (size_t index = 0U; index < mMeshes.size(); ++index)
         {
-            deviceContext->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
+            Renderer::GetInstance()->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
         }
     }
 

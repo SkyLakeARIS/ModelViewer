@@ -72,8 +72,6 @@ namespace renderer
 
     void Plane::Draw()
     {
-        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
-
         BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
         const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
         const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
@@ -97,13 +95,12 @@ namespace renderer
         }
         Renderer::GetInstance()->BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
 
-        deviceContext->DrawIndexed(6, 0U, 0U);
+        Renderer::GetInstance()->DrawIndexed(6, 0U, 0U);
 
     }
 
     void Plane::DrawTexture()
     {
-        ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
 
         Renderer::GetInstance()->BindInputLayoutTo(Renderer::eInputLayout::PT);
         Renderer::GetInstance()->BindShaderTo(Renderer::eShader::RenderToTexture);
@@ -129,7 +126,7 @@ namespace renderer
         Renderer::GetInstance()->BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
 
         Renderer::GetInstance()->BindShadowTextureToPs(0);
-        deviceContext->DrawIndexed(6, 0U, 0U);
+        Renderer::GetInstance()->DrawIndexed(6, 0U, 0U);
 
         Renderer::GetInstance()->UnbindTexturePs(0);
     }

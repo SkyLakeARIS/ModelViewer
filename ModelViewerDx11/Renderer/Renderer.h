@@ -214,10 +214,15 @@ namespace renderer
         void BindInputLayoutTo(eInputLayout type) const;
         void BindShaderTo(eShader type);
 
+        // Draw
+        void Draw(uint32_t vertexCount, uint32_t startVertexLocation) const;
+        void DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation) const;
+
         // getter
         ID3D11Device*           GetDevice() const;
         ID3D11DeviceContext*    GetDeviceContext() const;
 
+        void GetCurrentPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY& outTopology) const;
         BufferManager* const GetBufferManager() const;
 
     private:

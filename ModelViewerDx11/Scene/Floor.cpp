@@ -73,7 +73,6 @@ namespace scene
         renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbColor, &cbColor);
 
 
-        ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
         renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
 
         const renderer::BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
@@ -85,13 +84,13 @@ namespace scene
         renderer::Renderer::GetInstance()->BindVertexBuffer(stride, offset);
 
         D3D11_PRIMITIVE_TOPOLOGY orgTopology;
-        deviceContext->IAGetPrimitiveTopology(&orgTopology);
+        renderer::Renderer::GetInstance()->GetCurrentPrimitiveTopology(orgTopology);
 
-        deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+        renderer::Renderer::GetInstance()->BindPrimitiveTopologyTo(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-        deviceContext->Draw(mNumVertices, 0);
+        renderer::Renderer::GetInstance()->Draw(mNumVertices, 0);
 
-        deviceContext->IASetPrimitiveTopology(orgTopology);
+        renderer::Renderer::GetInstance()->BindPrimitiveTopologyTo(orgTopology);
 
     }
 }

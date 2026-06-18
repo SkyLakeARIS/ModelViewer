@@ -85,7 +85,6 @@ namespace scene
         renderer::Renderer::GetInstance()->BindInputLayoutTo(renderer::Renderer::eInputLayout::PT);
         renderer::Renderer::GetInstance()->BindShaderTo(renderer::Renderer::eShader::RenderToTexture);
 
-        ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
         renderer::Renderer::GetInstance()->BindRasterStateByType(renderer::Renderer::eRasterType::Basic);
         renderer::Renderer::GetInstance()->BindBlendStateByHash(mBlendHash, nullptr, 0xffffffff);
 
