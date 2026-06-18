@@ -102,7 +102,7 @@ namespace renderer
         deviceContext->Release();
     }
 
-    void Plane::DrawTexture(scene::Light* const light)
+    void Plane::DrawTexture()
     {
         ID3D11DeviceContext* deviceContext = Renderer::GetInstance()->GetDeviceContext();
 
