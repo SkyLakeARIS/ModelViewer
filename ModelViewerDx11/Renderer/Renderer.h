@@ -26,23 +26,6 @@ namespace renderer
             XMFLOAT4    Second;
         }CbLightProperty;
 
-        // TODO: alignas 사용하도록 하기
-        typedef struct CbMaterial
-        {
-            XMFLOAT3 Diffuse;
-            float Reserve0;
-            XMFLOAT3 Ambient;
-            float Reserve1;
-            XMFLOAT3 Specular;
-            float Reserve2;
-            XMFLOAT3 Emissive;
-            float Reserve3;
-            float Opacity; // 알파값으로 사용
-            float Reflectivity;
-            float Shininess; // 스페큘러 거듭제곱 값
-            float Reserve4;
-        };
-
         enum class eCbType : uint8_t
         {
             CbWorld,

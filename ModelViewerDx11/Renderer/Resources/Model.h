@@ -11,8 +11,6 @@ namespace renderer
 {
     class ModelImporter;
 
-    // TODO: cleanup - RenderTypes 헤더로 이동
-    typedef Material CbMaterial;
 
     class Model
     {

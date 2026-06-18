@@ -1,5 +1,6 @@
 #pragma once
 #include "../../framework.h"
+#include "../Resources/RenderTypes.h"
 
 namespace scene
 {
@@ -13,13 +14,6 @@ namespace renderer
     // TODO: UI, debug panel 용도 분리 필요, Plane mesh 자체도 Generator가 담당하도록 
     class Plane final
     {
-    public:
-        // TODO: cleanup, improve - RenderType으로 이동하고, 버텍스 속성 유형별로 이름을 변경하기
-        struct VertexTex // 4bytes align
-        {
-            XMFLOAT3 Position;
-            XMFLOAT2 TexCoord;
-        };
     public:
 
         Plane();

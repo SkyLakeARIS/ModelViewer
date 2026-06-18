@@ -11,6 +11,12 @@ namespace renderer
         float    Reserve1;
     };
 
+    struct VertexTex // 4bytes align
+    {
+        XMFLOAT3 Position;
+        XMFLOAT2 TexCoord;
+    };
+
     // 모델링 프로그램에서 미리 계산된 값으로 사용
     struct Material // 16 bytes align
     {
@@ -27,6 +33,7 @@ namespace renderer
         float    Shininess;     // 스페큘러 거듭제곱 값
         float    Reserve4;
     };
+    typedef Material CbMaterial;
 
     struct BufferRange
     {
