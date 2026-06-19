@@ -10,8 +10,9 @@ namespace renderer
 {
     std::atomic_int32_t Plane::sObjectCount(0);
 
-    Plane::Plane()
-        : mTexHash(0)
+    Plane::Plane(BufferManager* const bufferManager, renderer::Renderer& renderer)
+        : mBufferManager(bufferManager)
+        , mTexHash(0)
         , mPosition(XMFLOAT3(0.0f, 0.0f, 0.0f))
         , mScale(XMFLOAT3(1.6f, 1.6f, 0.6f))
         , mRotation(XMFLOAT3(0.0f, 0.0f, 0.0f))
@@ -21,8 +22,8 @@ namespace renderer
         {
             {XMFLOAT3(-0.5f, -0.5f, 0.5f), XMFLOAT2(0.0f, 1.0f)},
             {XMFLOAT3(-0.5f, 0.5f, 0.5f), XMFLOAT2(0.0f, 0.0f)},
-            {XMFLOAT3(0.5f, 0.5f, 0.5f),  XMFLOAT2(1.0f, 0.0f)},
-            { XMFLOAT3(0.5f, -0.5f, 0.5f), XMFLOAT2(1.0f, 1.0f)},
+            {XMFLOAT3(0.5f, 0.5f, 0.5f), XMFLOAT2(1.0f, 0.0f)},
+            {XMFLOAT3(0.5f, -0.5f, 0.5f), XMFLOAT2(1.0f, 1.0f)},
         };
 
         DWORD indices[] =
@@ -43,16 +44,15 @@ namespace renderer
 
         mModelHash = util::GetDjb2Hash(virtualFilePath);
 
-        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
         bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices), sizeof(vertices), mModelHash);
         bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices), sizeof(indices), mModelHash);
     }
 
     Plane::~Plane()
     {
-        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
-        bufferManager->RemoveVertexData(mModelHash);
-        bufferManager->RemoveIndexData(mModelHash);
+        mBufferManager->RemoveVertexData(mModelHash);
+        mBufferManager->RemoveIndexData(mModelHash);
+        mBufferManager = nullptr;
     }
 
     XMFLOAT3 Plane::GetPosition() const
@@ -70,9 +70,9 @@ namespace renderer
         outMat = mMatWorld;
     }
 
-    void Plane::Draw()
+    void Plane::Draw(renderer::Renderer& renderer)
     {
-        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
+        BufferManager* const bufferManager = renderer.GetBufferManager();
         const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
         const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
 
@@ -82,30 +82,30 @@ namespace renderer
         const uint32 stride = sizeof(VertexTex);
         const uint32 offset = vertexRange.StartIndex;
 
-        Renderer::GetInstance()->BindVertexBuffer(stride, offset);
-        Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
+        renderer.BindVertexBuffer(stride, offset);
+        renderer.BindIndexBuffer(indexRange.StartIndex);
 
         if (!mTexHash)
         {
-            Renderer::GetInstance()->BindDefaultTextureToPs(0);
+            renderer.BindDefaultTextureToPs(0);
         }
         else
         {
-            Renderer::GetInstance()->BindTextureToPs(0, mTexHash);
+            renderer.BindTextureToPs(0, mTexHash);
         }
-        Renderer::GetInstance()->BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
+        renderer.BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
 
-        Renderer::GetInstance()->DrawIndexed(6, 0U, 0U);
+        renderer.DrawIndexed(6, 0U, 0U);
 
     }
 
-    void Plane::DrawTexture()
+    void Plane::DrawTexture(renderer::Renderer& renderer)
     {
 
-        Renderer::GetInstance()->BindInputLayoutTo(Renderer::eInputLayout::PT);
-        Renderer::GetInstance()->BindShaderTo(Renderer::eShader::RenderToTexture);
+        renderer.BindInputLayoutTo(Renderer::eInputLayout::PT);
+        renderer.BindShaderTo(Renderer::eShader::RenderToTexture);
 
-        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
+        BufferManager* const bufferManager = renderer.GetBufferManager();
         const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
         const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
 
@@ -115,20 +115,20 @@ namespace renderer
         const uint32 stride = sizeof(VertexTex);
         const uint32 offset = vertexRange.StartIndex;
 
-        Renderer::GetInstance()->BindVertexBuffer(stride, offset);
-        Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
+        renderer.BindVertexBuffer(stride, offset);
+        renderer.BindIndexBuffer(indexRange.StartIndex);
 
         XMMATRIX matWorld = XMMatrixTranspose(mMatWorld);
-        Renderer::GetInstance()->UpdateCB(Renderer::eCbType::CbWorld, &matWorld);
-        Renderer::GetInstance()->BindCbToVsByType(0, 1, Renderer::eCbType::CbWorld);
-        Renderer::GetInstance()->BindCbToVsByType(1, 1, Renderer::eCbType::CbViewProj);
+        renderer.UpdateCB(Renderer::eCbType::CbWorld, &matWorld);
+        renderer.BindCbToVsByType(0, 1, Renderer::eCbType::CbWorld);
+        renderer.BindCbToVsByType(1, 1, Renderer::eCbType::CbViewProj);
 
-        Renderer::GetInstance()->BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
+        renderer.BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
 
-        Renderer::GetInstance()->BindShadowTextureToPs(0);
-        Renderer::GetInstance()->DrawIndexed(6, 0U, 0U);
+        renderer.BindShadowTextureToPs(0);
+        renderer.DrawIndexed(6, 0U, 0U);
 
-        Renderer::GetInstance()->UnbindTexturePs(0);
+        renderer.UnbindTexturePs(0);
     }
 
     void Plane::Update()

@@ -7,8 +7,9 @@
 
 namespace renderer
 {
-    Model::Model(scene::Camera* camera, const int8_t* const filePath)
-        : mModelHash(0)
+    Model::Model(scene::Camera* camera, const int8_t* const filePath, BufferManager* bufferManager)
+        : mBufferManager(bufferManager)
+        , mModelHash(0)
         , mCenterPosition(0.0f, 0.0f, 0.0f)
         , mMatRotation(XMMatrixIdentity())
         , mMatScale(XMMatrixIdentity())
@@ -17,68 +18,68 @@ namespace renderer
     {
         ASSERT(camera != nullptr, "do not pass nullptr");
 
-        mMatWorld = XMMatrixIdentity();
+        mMatWorld  = XMMatrixIdentity();
         mModelHash = util::GetDjb2Hash(filePath);
     }
 
     Model::~Model()
     {
-        BufferManager* const bufferManager = Renderer::GetInstance()->GetBufferManager();
-        bufferManager->RemoveVertexData(mModelHash);
-        bufferManager->RemoveIndexData(mModelHash);
+        mBufferManager->RemoveVertexData(mModelHash);
+        mBufferManager->RemoveIndexData(mModelHash);
+        mBufferManager = nullptr;
     }
 
-    void Model::Draw()
+    void Model::Draw(renderer::Renderer& renderer)
     {
-        Renderer::GetInstance()->BindInputLayoutTo(Renderer::eInputLayout::PTN);
+        renderer.BindInputLayoutTo(Renderer::eInputLayout::PTN);
 
         const uint32 stride = sizeof(Vertex);
 
-        Renderer::GetInstance()->BindVertexBuffer(stride, 0);
-        Renderer::GetInstance()->BindIndexBuffer(0);
+        renderer.BindVertexBuffer(stride, 0);
+        renderer.BindIndexBuffer(0);
 
         // outline
 
         if (mbHighlight)
         {
-            Renderer::GetInstance()->BindRasterStateByType(Renderer::eRasterType::CullBack);
+            renderer.BindRasterStateByType(Renderer::eRasterType::CullBack);
 
-            Renderer::GetInstance()->BindShaderTo(Renderer::eShader::Outline);
-            Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
-            Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbOutlineProperty);
-            Renderer::GetInstance()->BindCbToVsByType(2U, 1U, Renderer::eCbType::CbViewProj);
+            renderer.BindShaderTo(Renderer::eShader::Outline);
+            renderer.BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
+            renderer.BindCbToVsByType(1U, 1U, Renderer::eCbType::CbOutlineProperty);
+            renderer.BindCbToVsByType(2U, 1U, Renderer::eCbType::CbViewProj);
 
             for (uint32_t index = 0U; index < mMeshes.size(); ++index)
             {
-                Renderer::GetInstance()->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
+                renderer.DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
             }
             // reset for basic draw
-            Renderer::GetInstance()->ClearDepthBuffer();
+            renderer.ClearDepthBuffer();
         }
 
-        Renderer::GetInstance()->BindRasterStateByType(Renderer::eRasterType::Basic);
+        renderer.BindRasterStateByType(Renderer::eRasterType::Basic);
 
-        Renderer::GetInstance()->BindShaderTo(Renderer::eShader::BasicWithShadow);
+        renderer.BindShaderTo(Renderer::eShader::BasicWithShadow);
 
-        Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
-        Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
-        Renderer::GetInstance()->BindCbToVsByType(2U, 1U, Renderer::eCbType::CbLightProperty);
-        Renderer::GetInstance()->BindCbToVsByType(3U, 1U, Renderer::eCbType::CbCameraPosition);
-        Renderer::GetInstance()->BindCbToVsByType(4U, 1U, Renderer::eCbType::CbViewProj);
+        renderer.BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
+        renderer.BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
+        renderer.BindCbToVsByType(2U, 1U, Renderer::eCbType::CbLightProperty);
+        renderer.BindCbToVsByType(3U, 1U, Renderer::eCbType::CbCameraPosition);
+        renderer.BindCbToVsByType(4U, 1U, Renderer::eCbType::CbViewProj);
 
-        Renderer::GetInstance()->BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
+        renderer.BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
 
-        Renderer::GetInstance()->BindCbToPs(0U, 1U, Renderer::eCbType::CbMaterial);
+        renderer.BindCbToPs(0U, 1U, Renderer::eCbType::CbMaterial);
 
-        Renderer::GetInstance()->BindShadowTextureToPs(2);
+        renderer.BindShadowTextureToPs(2);
 
         // Draw
         for (size_t index = 0U; index < mMeshes.size(); ++index)
         {
-            Renderer::GetInstance()->BindTextureToPs(0, mMeshes[index].TextureHashes[static_cast<int8_t>(eTextureType::Diffuse)]);
+            renderer.BindTextureToPs(0, mMeshes[index].TextureHashes[static_cast<int8_t>(eTextureType::Diffuse)]);
             if(mMeshes[index].TextureHashes[static_cast<int8_t>(eTextureType::Normal)])
             {
-                Renderer::GetInstance()->BindTextureToPs(1, mMeshes[index].TextureHashes[static_cast<int8_t>(eTextureType::Normal)]);
+                renderer.BindTextureToPs(1, mMeshes[index].TextureHashes[static_cast<int8_t>(eTextureType::Normal)]);
             }
             CbMaterial cbMaterial;
             ZeroMemory(&cbMaterial, sizeof(CbMaterial));
@@ -88,42 +89,42 @@ namespace renderer
             {
                 cbMaterial.Emissive = XMFLOAT3(0.0f, 0.0f, 0.0f);
             }
-            Renderer::GetInstance()->UpdateCB(Renderer::eCbType::CbMaterial, &cbMaterial);
+            renderer.UpdateCB(Renderer::eCbType::CbMaterial, &cbMaterial);
 
-            Renderer::GetInstance()->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
+            renderer.DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
         }
 
-        Renderer::GetInstance()->UnbindTexturePs(2);
+        renderer.UnbindTexturePs(2);
     }
 
-    void Model::DrawShadow()
+    void Model::DrawShadow(renderer::Renderer& renderer)
     {
-        Renderer::GetInstance()->BindInputLayoutTo(Renderer::eInputLayout::P);
+        renderer.BindInputLayoutTo(Renderer::eInputLayout::P);
 
         const uint32 stride = sizeof(Vertex);
 
-        Renderer::GetInstance()->BindVertexBuffer(stride, 0);
-        Renderer::GetInstance()->BindIndexBuffer(0);
+        renderer.BindVertexBuffer(stride, 0);
+        renderer.BindIndexBuffer(0);
 
-        Renderer::GetInstance()->BindRasterStateByType(Renderer::eRasterType::Outline);
-        Renderer::GetInstance()->BindShaderTo(Renderer::eShader::Shadow);
+        renderer.BindRasterStateByType(Renderer::eRasterType::Outline);
+        renderer.BindShaderTo(Renderer::eShader::Shadow);
 
-        Renderer::GetInstance()->BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
-        Renderer::GetInstance()->BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
+        renderer.BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
+        renderer.BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
 
         // Draw
         for (size_t index = 0U; index < mMeshes.size(); ++index)
         {
-            Renderer::GetInstance()->DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
+            renderer.DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
         }
     }
 
-    void Model::Update()
+    void Model::Update(renderer::Renderer& renderer)
     {
         Renderer::CbWorld cbWorld;
         cbWorld.Matrix = XMMatrixTranspose(mMatWorld);
 
-        Renderer::GetInstance()->UpdateCB(Renderer::eCbType::CbWorld, &cbWorld);
+        renderer.UpdateCB(Renderer::eCbType::CbWorld, &cbWorld);
     }
 
     void Model::SetMeshes(std::vector<Mesh>& meshes)

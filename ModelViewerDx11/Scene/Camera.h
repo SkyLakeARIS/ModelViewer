@@ -1,6 +1,11 @@
 #pragma once
 #include "../framework.h"
 
+namespace renderer
+{
+    class Renderer;
+}
+
 namespace scene
 {
     // TODO: 그림자 효과 추가하면 FPS로 동작하는 Camera를 분리하는것이 Light클래스 관리에 도움이 될 듯 함.
@@ -10,12 +15,12 @@ namespace scene
         Camera(XMVECTOR vEye, XMVECTOR vLookAt, XMVECTOR vUp, int16_t windowWidth, int16_t windowHeight);
         ~Camera();
 
-        void RotateAxis(float yawRad, float pitchRad);
+        void RotateAxis(float yawRad, float pitchRad, renderer::Renderer& renderer);
 
-        void AddRadiusSphere(float scaleFactor);
-        void AddHeight(float height);
+        void AddRadiusSphere(float scaleFactor, renderer::Renderer& renderer);
+        void AddHeight(float height, renderer::Renderer& renderer);
 
-        void ChangeFocus(XMFLOAT3 newFocus);
+        void ChangeFocus(XMFLOAT3 newFocus, renderer::Renderer& renderer);
 
         float GetFov() const;
         float GetAspectRatio() const;
@@ -27,7 +32,7 @@ namespace scene
         inline XMMATRIX GetProjectionMatrix() const;
     private:
 
-        void calcCameraPosition();
+        void calcCameraPosition(renderer::Renderer& renderer);
 
         void makeViewMatrix();
         void makeProjectionMatrix();

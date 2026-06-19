@@ -9,19 +9,21 @@ namespace scene
 
 namespace renderer
 {
+    class BufferManager;
+    class Renderer;
     class ModelImporter;
 
 
     class Model
     {
     public:
-        Model(scene::Camera* camera, const int8_t* const filePath);
+        Model(scene::Camera* camera, const int8_t* const filePath, BufferManager* bufferManager);
         ~Model();
 
-        void Draw();
-        void DrawShadow();
+        void Draw(renderer::Renderer& renderer);
+        void DrawShadow(renderer::Renderer& renderer);
 
-        void Update();
+        void Update(renderer::Renderer& renderer);
 
         void SetMeshes(std::vector<Mesh>& meshes);
         void SetCenterPoint(XMFLOAT4& centerPoint);
@@ -31,7 +33,7 @@ namespace renderer
         XMFLOAT3 GetCenterPoint() const;
 
     private:
-
+        BufferManager* mBufferManager;
         HashID mModelHash;
         size_t mNumMesh;
         size_t mNumVertex;

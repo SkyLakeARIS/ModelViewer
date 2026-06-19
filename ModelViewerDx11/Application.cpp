@@ -76,8 +76,8 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     mWindow->DisplayWindow(nCmdShow);
     mWindow->RefreshWindow();
 
-
-    if (FAILED(renderer::Renderer::GetInstance()->initialize(handleWindow, mWindowWidth, mWindowHeight, mAppFrameRate)))
+    
+    if (FAILED(mRenderer->initialize(handleWindow, mWindowWidth, mWindowHeight, mAppFrameRate)))
     {
         ASSERT(false, "Fail to initialize shaders");
         return false;
@@ -90,7 +90,7 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
         ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
         return false;
     }
-
+    // TODO: 굳이 여기에서 생성해야 하는 경우가 아니라면 기본적으로 생성자로 옮기는 게 나을 것 같다.
     mImporter = new renderer::ModelImporter();
     mImporter->Initialize();
 
@@ -118,8 +118,8 @@ void Application::Run()
     {
         if (bReinitDevice)
         {
-            renderer::Renderer::GetInstance()->Cleanup();
-            renderer::Renderer::GetInstance()->initialize(mWindow->GetHandle(), mWindowWidth, mWindowHeight, mAppFrameRate);
+            mRenderer->Cleanup();
+            mRenderer->initialize(mWindow->GetHandle(), mWindowWidth, mWindowHeight, mAppFrameRate);
             bReinitDevice = false;
         }
 
@@ -158,7 +158,7 @@ void Application::Run()
             frameCount = 0;
         }
 
-        if (renderer::Renderer::GetInstance()->CheckDeviceLost(bReinitDevice))
+        if (mRenderer->CheckDeviceLost(bReinitDevice))
         {
             break;
         }
@@ -182,36 +182,36 @@ bool Application::initializeScene()
 
     const int8_t* const modelFilePath = reinterpret_cast<int8_t*>("/AssetData/models/unagi.fbx");
     // TODO: 나중에 Object List를 만들어서 관리하도록 변경(성공하면 drawable 리스트에 추가)
-    mCharacter = new renderer::Model(mCamera, modelFilePath);
+    mCharacter = new renderer::Model(mCamera, modelFilePath, mBufferManager);
 
     mResourceManager->LoadModel(modelFilePath, mCharacter);
 
     mSkybox = new scene::Sky(*mCamera);
-    mSkybox->Initialize(10, 10, mTextureManager);
+    mSkybox->Initialize(10, 10, mTextureManager, *mRenderer);
 
-    renderer::Renderer::GetInstance()->BindPrimitiveTopologyTo(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    mCamera->ChangeFocus(mCharacter->GetCenterPoint());
+    mRenderer->BindPrimitiveTopologyTo(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    mCamera->ChangeFocus(mCharacter->GetCenterPoint(), *mRenderer);
     // MEMO Light 위치값 막 바꾸면 안됨. 그림자 제대로 안그려질 수 있음. 나중에 개선해야 할 항목 중 하나(cascade)
   //  gLight = new Light(XMFLOAT3(0.0f, 50.0f, 70.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), gCamera, 0.1f, 300.0f);
 
-    mLight = new scene::Light(XMFLOAT3(0.0f, 20.0f, 50.0f), mCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), mCamera, 0.1f, 500.0f);
-    mLight->Initialize(mTextureManager);
-    mLight->SetupCascade();
+    mLight = new scene::Light(XMFLOAT3(0.0f, 20.0f, 50.0f), mCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), mCamera, 0.1f, 500.0f, *mRenderer);
+    mLight->Initialize(mTextureManager, *mRenderer);
+    mLight->SetupCascade(*mRenderer);
 
     // debug quad
     // 깊이 텍스쳐 확인용
-    mPlane = new renderer::Plane();
+    mPlane = new renderer::Plane(mBufferManager, *mRenderer);
     mPlane->SetPosition(XMFLOAT3(0.0, 0.0, -1.0));
 
-    mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
+    mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10, mBufferManager, *mRenderer);
 
     return true;
 }
 
 bool Application::initializeManagers()
 {
-    ID3D11Device* device = renderer::Renderer::GetInstance()->GetDevice();
-    ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
+    ID3D11Device* device = mRenderer->GetDevice();
+    ID3D11DeviceContext* deviceContext = mRenderer->GetDeviceContext();
     mBufferManager = new renderer::BufferManager(device, deviceContext);
     if (!mBufferManager->Initialize(renderer::BufferManager::sVertexBufferDefaultSize, renderer::BufferManager::sIndexBufferDefaultSize))
     {
@@ -222,7 +222,7 @@ bool Application::initializeManagers()
     mTextureManager = new renderer::TextureManager(device);
     mResourceManager = new renderer::ResourceManager(device, mTextureManager, mImporter, mBufferManager);
 
-    renderer::Renderer::GetInstance()->SetManagers(mBufferManager, mTextureManager);
+    mRenderer->SetManagers(mBufferManager, mTextureManager);
     return true;
 }
 
@@ -244,28 +244,28 @@ void Application::updateScene(double deltaTime)
         mDirectInput->GetMouseDeltaPosition(mouseX, mouseY);
         if (!(mouseX == 0 && mouseY == 0))
         {
-            mCamera->RotateAxis(XMConvertToRadians(static_cast<float>(mouseX)) * deltaTime * speed, XMConvertToRadians(static_cast<float>(mouseY)) * deltaTime * speed);
+            mCamera->RotateAxis(XMConvertToRadians(static_cast<float>(mouseX)) * deltaTime * speed, XMConvertToRadians(static_cast<float>(mouseY)) * deltaTime * speed, *mRenderer);
         }
     }
     else
     {
         if (gKeyboard[DIK_W] & 0x80)
         {
-            mCamera->RotateAxis(0.0f, XMConvertToRadians(-(speed * deltaTime)));
+            mCamera->RotateAxis(0.0f, XMConvertToRadians(-(speed * deltaTime)), *mRenderer);
         }
 
         if (gKeyboard[DIK_S] & 0x80)
         {
-            mCamera->RotateAxis(0.0f, XMConvertToRadians(speed * deltaTime));
+            mCamera->RotateAxis(0.0f, XMConvertToRadians(speed * deltaTime), *mRenderer);
         }
         if (gKeyboard[DIK_A] & 0x80)
         {
-            mCamera->RotateAxis(XMConvertToRadians(-(speed * deltaTime)), 0.0f);
+            mCamera->RotateAxis(XMConvertToRadians(-(speed * deltaTime)), 0.0f, *mRenderer);
         }
 
         if (gKeyboard[DIK_D] & 0x80)
         {
-            mCamera->RotateAxis(XMConvertToRadians(speed * deltaTime), 0.0f);
+            mCamera->RotateAxis(XMConvertToRadians(speed * deltaTime), 0.0f, *mRenderer);
         }
     }
 
@@ -273,12 +273,12 @@ void Application::updateScene(double deltaTime)
     // 카메라와 물체간의 거리 조절(구체 크기 확대/축소)
     if (gKeyboard[DIK_Q] & 0x80)
     {
-        mCamera->AddRadiusSphere(deltaTime);
+        mCamera->AddRadiusSphere(deltaTime, *mRenderer);
     }
 
     if (gKeyboard[DIK_E] & 0x80)
     {
-        mCamera->AddRadiusSphere(-deltaTime);
+        mCamera->AddRadiusSphere(-deltaTime, *mRenderer);
     }
 
     // 키보드<-> 마우스 조작 전환
@@ -300,12 +300,12 @@ void Application::updateScene(double deltaTime)
 
     if (gKeyboard[DIK_Z] & 0x80)
     {
-        mCamera->AddHeight(-deltaTime);
+        mCamera->AddHeight(-deltaTime, *mRenderer);
     }
 
     if (gKeyboard[DIK_X] & 0x80)
     {
-        mCamera->AddHeight(deltaTime);
+        mCamera->AddHeight(deltaTime, *mRenderer);
     }
 
     if (gKeyboard[DIK_ESCAPE] & 0x80)
@@ -316,41 +316,41 @@ void Application::updateScene(double deltaTime)
 
     renderer::Renderer::CbViewProj cbViewProj;
     cbViewProj.Matrix = XMMatrixTranspose(mCamera->GetViewProjectionMatrix());
-    renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbViewProj, &cbViewProj);
+    mRenderer->UpdateCB(renderer::Renderer::eCbType::CbViewProj, &cbViewProj);
 
 
-    mLight->SetupCascade();
+    mLight->SetupCascade(*mRenderer);
 }
 
 void Application::preprocess()
 {
-    renderer::Renderer::GetInstance()->BindRenderTargetTo(renderer::Renderer::eRenderTarget::Shadow);
-    renderer::Renderer::GetInstance()->SetViewport(false);
-    renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Shadow);
-    mCharacter->Update();
-    mCharacter->DrawShadow();
+    mRenderer->BindRenderTargetTo(renderer::Renderer::eRenderTarget::Shadow);
+    mRenderer->SetViewport(false);
+    mRenderer->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Shadow);
+    mCharacter->Update(*mRenderer);
+    mCharacter->DrawShadow(*mRenderer);
 }
 
 void Application::renderScene()
 {
-    renderer::Renderer::GetInstance()->BindRenderTargetTo(renderer::Renderer::eRenderTarget::Default);
-    renderer::Renderer::GetInstance()->SetViewport(true);
-    renderer::Renderer::GetInstance()->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Default);
+    mRenderer->BindRenderTargetTo(renderer::Renderer::eRenderTarget::Default);
+    mRenderer->SetViewport(true);
+    mRenderer->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Default);
 
 
     // TODO: 지금은 WorldCB를 공유하여 Update함수를 같이 붙여둬야 하지만, 나중에 렌더큐를 가면 내부적으로 자동으로 업데이트 되게끔 처리해보기
-    mSkybox->Update();
-    mSkybox->Draw();
+    mSkybox->Update(*mRenderer);
+    mSkybox->Draw(*mRenderer);
 
-    mFloor->Draw();
-    mCharacter->Update();
-    mCharacter->Draw();
+    mFloor->Draw(*mRenderer);
+    mCharacter->Update(*mRenderer);
+    mCharacter->Draw(*mRenderer);
 
-    mLight->Update(mCamera);
-    mLight->Draw();
+    mLight->Update(*mRenderer);
+    mLight->Draw(*mRenderer);
     //mLight->DrawDebug();
 
     mPlane->Update();
-    mPlane->DrawTexture();
-    renderer::Renderer::GetInstance()->Present();
+    mPlane->DrawTexture(*mRenderer);
+    mRenderer->Present();
 }

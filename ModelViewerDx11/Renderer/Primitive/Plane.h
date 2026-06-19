@@ -9,18 +9,20 @@ namespace scene
 
 namespace renderer
 {
+    class Renderer;
     class TextureManager;
+    class BufferManager;
 
     // TODO: UI, debug panel 용도 분리 필요, Plane mesh 자체도 Generator가 담당하도록 
     class Plane final
     {
     public:
 
-        Plane();
+        Plane(BufferManager* const bufferManager, renderer::Renderer& renderer);
         ~Plane();
 
-        void Draw();
-        void DrawTexture();
+        void Draw(renderer::Renderer& renderer);
+        void DrawTexture(renderer::Renderer& renderer);
         void Update();
 
         void SetPosition(XMFLOAT3& pos);
@@ -35,7 +37,7 @@ namespace renderer
     private:
         static std::atomic_int32_t sObjectCount;
     private:
-
+        BufferManager* mBufferManager;
         HashID mTexHash;
         HashID mModelHash;
         VertexTex mMesh;

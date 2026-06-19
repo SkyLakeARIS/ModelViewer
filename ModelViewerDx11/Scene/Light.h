@@ -3,6 +3,7 @@
 
 namespace renderer
 {
+    class Renderer;
     class TextureManager;
     class Plane;
 }
@@ -19,20 +20,15 @@ namespace scene
             Level_4 = 5 // near - 1 - 2- 3- 4 - far
         };
     public:
-        Light(XMFLOAT3 pos, XMFLOAT3 dir, XMFLOAT3 color, Camera* camera, float nearPlane, float farPlane);
+        Light(XMFLOAT3 pos, XMFLOAT3 dir, XMFLOAT3 color, Camera* camera, float nearPlane, float farPlane, renderer::Renderer& renderer);
         ~Light();
 
-        void Initialize(renderer::TextureManager* const texManager);
-        void Update(Camera* camera);
-        void Draw();
+        void Initialize(renderer::TextureManager* const texManager, renderer::Renderer& renderer);
+        void Update(renderer::Renderer& renderer);
+        void Draw(renderer::Renderer& renderer);
         //void DrawDebug();
 
-        void Move(double deltaTime, float direction);
-
-        void SetupCascade();
-
-        void SetDirection(XMFLOAT3 dir);
-        void SetColor(XMFLOAT3 color);
+        void SetupCascade(renderer::Renderer& renderer);
 
         XMFLOAT4 GetDirection() const;
         XMFLOAT4 GetPosition() const;
@@ -41,8 +37,8 @@ namespace scene
 
     private:
 
-        void updateMatrices();
-        void updateLightPropertyCB();
+        void updateMatrices(renderer::Renderer& renderer);
+        void updateLightPropertyCB(renderer::Renderer& renderer);
 
 
         void getPointsFromMatrix(XMMATRIX* matView, float nearPlane, float farPlane, XMMATRIX* const outMatLightView, XMMATRIX* const outMatLightProj);

@@ -1013,7 +1013,7 @@ namespace renderer
         {
             ASSERT(mInputLayoutList[static_cast<uint32_t>(layout.ListIndex)] == nullptr, "The InputLayout-Mapping List may be incorrect or not initialized as nullptr.");
 
-            result = Renderer::GetInstance()->CreateInputLayout(InputLayoutSourceList[layout.SourceIndex], layout.Desc, layout.numDescElements, layout.ListIndex, &mInputLayoutList[static_cast<uint32_t>(layout.ListIndex)]);
+            result = CreateInputLayout(InputLayoutSourceList[layout.SourceIndex], layout.Desc, layout.numDescElements, layout.ListIndex, &mInputLayoutList[static_cast<uint32_t>(layout.ListIndex)]);
             if (FAILED(result))
             {
                 ASSERT(false, "To Create InputLayout FAILED");
@@ -1035,7 +1035,7 @@ namespace renderer
         {
             ASSERT(mPixelShaderList[static_cast<uint32_t>(ps.ListIndex)] == nullptr, "The PS-Mapping List may be incorrect or not initialized as nullptr.");
 
-            result = Renderer::GetInstance()->CreatePixelShader(PixelShaderSourceList[ps.SourceIndex], &mPixelShaderList[static_cast<uint32_t>(ps.ListIndex)]);
+            result = CreatePixelShader(PixelShaderSourceList[ps.SourceIndex], &mPixelShaderList[static_cast<uint32_t>(ps.ListIndex)]);
             if (FAILED(result))
             {
                 ASSERT(false, "To Compile Pixel Shader FAILED");

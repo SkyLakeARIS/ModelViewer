@@ -8,16 +8,17 @@
 
 namespace scene
 {
-    Floor::Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY)
+    Floor::Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY, renderer::BufferManager* const bufferManager, renderer::Renderer& renderer)
+        : mBufferManager(bufferManager)
     {
         ASSERT(numLineX >= 2, "numLineX must be 2 or greater");
         ASSERT(numLineY >= 2, "numLineY must be 2 or greater");
         ASSERT(gapEachLine >= 1, "gapEachLine must be 1 or greater");
 
-        mNumVertices = (numLineX * 2) * (numLineY - 1) + (numLineY - 1);
+        mNumVertices       = (numLineX * 2) * (numLineY - 1) + (numLineY - 1);
         XMFLOAT3* vertices = new XMFLOAT3[mNumVertices];
-        XMFLOAT3* cur = vertices;
-        XMFLOAT2 pos(startPoint);
+        XMFLOAT3* cur      = vertices;
+        XMFLOAT2  pos(startPoint);
         for (uint32_t lineY = 0; lineY < numLineY - 1; ++lineY)
         {
             for (uint32_t lineX = 0; lineX < numLineX; ++lineX)
@@ -33,10 +34,8 @@ namespace scene
             ++cur;
             pos.x = startPoint.x;
             pos.y += gapEachLine;
-
         }
 
-        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
 
         int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
         (void)sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Grid_%d_%d.mesh",
@@ -48,32 +47,32 @@ namespace scene
 
     Floor::~Floor()
     {
-        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
-        bufferManager->RemoveVertexData(mModelHash);
+        mBufferManager->RemoveVertexData(mModelHash);
+        mBufferManager = nullptr;
 
     }
 
-    void Floor::Draw()
+    void Floor::Draw(renderer::Renderer& renderer)
     {
-        renderer::Renderer::GetInstance()->BindRasterStateByType(renderer::Renderer::eRasterType::Basic);
-        renderer::Renderer::GetInstance()->BindInputLayoutTo(renderer::Renderer::eInputLayout::P);
-        renderer::Renderer::GetInstance()->BindShaderTo(renderer::Renderer::eShader::Color);
+        renderer.BindRasterStateByType(renderer::Renderer::eRasterType::Basic);
+        renderer.BindInputLayoutTo(renderer::Renderer::eInputLayout::P);
+        renderer.BindShaderTo(renderer::Renderer::eShader::Color);
 
         renderer::Renderer::CbWorld cbWorld;
         cbWorld.Matrix = XMMatrixIdentity();
-        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWorld);
+        renderer.UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWorld);
 
-        renderer::Renderer::GetInstance()->BindCbToVsByType(0, 1, renderer::Renderer::eCbType::CbWorld);
-        renderer::Renderer::GetInstance()->BindCbToVsByType(1, 1, renderer::Renderer::eCbType::CbViewProj);
-        renderer::Renderer::GetInstance()->BindCbToPs(0, 1, renderer::Renderer::eCbType::CbColor);
+        renderer.BindCbToVsByType(0, 1, renderer::Renderer::eCbType::CbWorld);
+        renderer.BindCbToVsByType(1, 1, renderer::Renderer::eCbType::CbViewProj);
+        renderer.BindCbToPs(0, 1, renderer::Renderer::eCbType::CbColor);
 
 
         renderer::Renderer::CbColor cbColor = {};
         cbColor.Float3 = XMFLOAT3(0.0, 1.0, 0.0);
-        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbColor, &cbColor);
+        renderer.UpdateCB(renderer::Renderer::eCbType::CbColor, &cbColor);
 
 
-        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
 
         const renderer::BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
         ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
@@ -81,16 +80,16 @@ namespace scene
         UINT stride = sizeof(XMFLOAT3);
         UINT offset = vertexRange.StartIndex;
 
-        renderer::Renderer::GetInstance()->BindVertexBuffer(stride, offset);
+        renderer.BindVertexBuffer(stride, offset);
 
         D3D11_PRIMITIVE_TOPOLOGY orgTopology;
-        renderer::Renderer::GetInstance()->GetCurrentPrimitiveTopology(orgTopology);
+        renderer.GetCurrentPrimitiveTopology(orgTopology);
 
-        renderer::Renderer::GetInstance()->BindPrimitiveTopologyTo(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+        renderer.BindPrimitiveTopologyTo(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-        renderer::Renderer::GetInstance()->Draw(mNumVertices, 0);
+        renderer.Draw(mNumVertices, 0);
 
-        renderer::Renderer::GetInstance()->BindPrimitiveTopologyTo(orgTopology);
+        renderer.BindPrimitiveTopologyTo(orgTopology);
 
     }
 }

@@ -1,17 +1,24 @@
 #pragma once
 #include "../framework.h"
 
+namespace renderer
+{
+    class BufferManager;
+    class Renderer;
+}
+
 namespace scene
 {
     // TODO: 클래스 말고 Generator에서 Grid Mesh를 생성하고 floor 객체(Plane 타입)로 관리되는 게 좋아 보임.
     class Floor
     {
     public:
-        Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY);
+        Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY, renderer::BufferManager* const bufferManager, renderer::Renderer& renderer);
         ~Floor();
 
-        void Draw();
+        void Draw(renderer::Renderer& renderer);
     private:
+        renderer::BufferManager* mBufferManager;
         uint32_t mNumVertices;
         HashID mModelHash;
     };

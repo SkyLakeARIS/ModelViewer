@@ -7,7 +7,7 @@
 
 namespace scene
 {
-    Light::Light(XMFLOAT3 pos, XMFLOAT3 dir, XMFLOAT3 color, Camera* camera, float nearPlane, float farPlane)
+    Light::Light(XMFLOAT3 pos, XMFLOAT3 dir, XMFLOAT3 color, Camera* camera, float nearPlane, float farPlane, renderer::Renderer& renderer)
         : mPosition(pos)
         , mDirection(dir)
         , mColor(color)
@@ -20,7 +20,8 @@ namespace scene
         , mCamera(camera)
         //, mLinesBuffer(nullptr)
     {
-        mMesh = new renderer::Plane();
+        renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
+        mMesh = new renderer::Plane(bufferManager, renderer);
         mMesh->SetPosition(mPosition);
 
         mLines.reserve(24 * eCascadeLevel::Level_4);
@@ -31,8 +32,8 @@ namespace scene
         mCascadePlaneDistances[4] = farPlane / 10.0f; // 50
         mCascadePlaneDistances[5] = farPlane; // 500
 
-        updateLightPropertyCB();
-        updateMatrices();
+        updateLightPropertyCB(renderer);
+        updateMatrices(renderer);
     }
 
     Light::~Light()
@@ -46,7 +47,7 @@ namespace scene
         //SAFETY_RELEASE(mLinesBuffer);
     }
 
-    void Light::Initialize(renderer::TextureManager* const texManager)
+    void Light::Initialize(renderer::TextureManager* const texManager, renderer::Renderer& renderer)
     {
         const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/lightIcon.png");
         texManager->AddTexture(filePath, mIconTexHash);
@@ -64,36 +65,36 @@ namespace scene
         blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
         blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
         blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        renderer::Renderer::GetInstance()->CreateBlendState(blendDesc, mBlendHash);
+        renderer.CreateBlendState(blendDesc, mBlendHash);
     }
 
-    void Light::Update(Camera* camera)
+    void Light::Update(renderer::Renderer& renderer)
     {
         mMesh->Update();
         mMesh->GetWorldMatrix(mMatWorld);
 
         renderer::Renderer::CbWorld cbMatWorld;
         cbMatWorld.Matrix = XMMatrixTranspose(mMatWorld);
-        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbMatWorld);
+        renderer.UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbMatWorld);
     }
 
-    void Light::Draw()
+    void Light::Draw(renderer::Renderer& renderer)
     {
         // MEMO: 임시로 CB 업데이트하도록 강제로 넣음. (cascade 테스트) update, rendering 주기가 달라서.
-        Update(nullptr);
+        Update(renderer);
 
-        renderer::Renderer::GetInstance()->BindInputLayoutTo(renderer::Renderer::eInputLayout::PT);
-        renderer::Renderer::GetInstance()->BindShaderTo(renderer::Renderer::eShader::RenderToTexture);
+        renderer.BindInputLayoutTo(renderer::Renderer::eInputLayout::PT);
+        renderer.BindShaderTo(renderer::Renderer::eShader::RenderToTexture);
 
-        renderer::Renderer::GetInstance()->BindRasterStateByType(renderer::Renderer::eRasterType::Basic);
-        renderer::Renderer::GetInstance()->BindBlendStateByHash(mBlendHash, nullptr, 0xffffffff);
+        renderer.BindRasterStateByType(renderer::Renderer::eRasterType::Basic);
+        renderer.BindBlendStateByHash(mBlendHash, nullptr, 0xffffffff);
 
 
 
-        renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
-        renderer::Renderer::GetInstance()->BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
+        renderer.BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
+        renderer.BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
 
-        mMesh->Draw();
+        mMesh->Draw(renderer);
     }
 
     //void Light::DrawDebug()
@@ -129,22 +130,7 @@ namespace scene
 
     //}
 
-    void Light::Move(double deltaTime, float direction)
-    {
-        XMFLOAT3 dir = mDirection;
-        XMFLOAT3 pos = mPosition;
-        XMVECTOR vDir = XMLoadFloat3(&dir);
-        XMVECTOR vPos = XMLoadFloat3(&pos);
-        vDir *= deltaTime * 100.0;
-        vPos += vDir;
-        XMStoreFloat3(&mPosition, (vPos));
-        mMesh->SetPosition(mPosition);
-
-        updateMatrices();
-        updateLightPropertyCB();
-    }
-
-    void Light::SetupCascade()
+    void Light::SetupCascade(renderer::Renderer& renderer)
     {
         mLines.clear();
         for (uint32_t i = 0; i < eCascadeLevel::Level_4 - 1; ++i)
@@ -182,27 +168,7 @@ namespace scene
             //deviceContext->Unmap(mLinesBuffer, 0);
         }
 
-        updateMatrices();
-    }
-
-    void Light::SetDirection(XMFLOAT3 dir)
-    {
-        XMFLOAT3 pos = mPosition;
-        XMVECTOR vDir = XMLoadFloat3(&dir);
-        XMVECTOR vPos = XMLoadFloat3(&pos);
-        vDir = vDir - vPos;
-        XMStoreFloat3(&mDirection, (vDir));
-
-        // mDirection = dir;
-
-        updateMatrices();
-    }
-
-    void Light::SetColor(XMFLOAT3 color)
-    {
-        mColor = color;
-
-        updateLightPropertyCB();
+        updateMatrices(renderer);
     }
 
     XMFLOAT4 Light::GetDirection() const
@@ -225,7 +191,7 @@ namespace scene
         return &mMatViewProj;
     }
 
-    void Light::updateMatrices()
+    void Light::updateMatrices(renderer::Renderer& renderer)
     {
         mMatView = XMMatrixLookAtLH(XMLoadFloat3(&mPosition), XMLoadFloat3(&mDirection), XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f));
         //mMatProj = XMMatrixPerspectiveFovLH(XM_PIDIV4, 1.0, 69.0f, 120.0f);
@@ -239,15 +205,15 @@ namespace scene
         renderer::Renderer::CbLightViewProjMatrix cbLightVpMat;
         cbLightVpMat.Matrix = XMMatrixTranspose(mMatViewProj);
         //deviceContext->UpdateSubresource(mCB, 0, nullptr, &cbWvp, 0U, 0U);
-        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbLightViewProjMatrix, &cbLightVpMat);
+        renderer.UpdateCB(renderer::Renderer::eCbType::CbLightViewProjMatrix, &cbLightVpMat);
     }
 
-    void Light::updateLightPropertyCB()
+    void Light::updateLightPropertyCB(renderer::Renderer& renderer)
     {
         renderer::Renderer::CbLightProperty cbLightProperty;
         cbLightProperty.First = XMFLOAT4(mColor.x, mColor.y, mColor.z, 0.0f);
         cbLightProperty.Second = XMFLOAT4(mPosition.x, mPosition.y, mPosition.z, 0.0f);
-        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbLightProperty, &cbLightProperty);
+        renderer.UpdateCB(renderer::Renderer::eCbType::CbLightProperty, &cbLightProperty);
     }
 
     void Light::getPointsFromMatrix(XMMATRIX* matView, float nearPlane, float farPlane, XMMATRIX* const outMatLightView, XMMATRIX* const outMatLightProj)

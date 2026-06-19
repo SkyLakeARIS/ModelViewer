@@ -29,16 +29,16 @@ namespace scene
         mCamera = nullptr;
     }
 
-    HRESULT Sky::Initialize(uint32 latLines, uint32 lonLines, renderer::TextureManager* const texManager)
+    HRESULT Sky::Initialize(uint32 latLines, uint32 lonLines, renderer::TextureManager* const texManager, renderer::Renderer& renderer)
     {
         // init mesh info
         HRESULT result;
-        result = createSphere(latLines, lonLines);
+        result = createSphere(latLines, lonLines, renderer);
         if(FAILED(result))
         {
             return result;
         }
-
+        
         const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/skybox.dds");
         texManager->AddDTextureDDS(filePath, mTextureHash);
         if (FAILED(result))
@@ -49,12 +49,12 @@ namespace scene
         return S_OK;
     }
 
-    void Sky::Draw()
+    void Sky::Draw(renderer::Renderer& renderer)
     {
         // render
-        renderer::Renderer::GetInstance()->BindInputLayoutTo(renderer::Renderer::eInputLayout::PT);
+        renderer.BindInputLayoutTo(renderer::Renderer::eInputLayout::PT);
 
-        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
         // TODO: improve- Model이 아니라 Mesh별로 해시를 가지는 게 더 좋을 것 같은 느낌과 ElementOffset도 추가로 저장하는 게 좋을 것 같다.
         // 그렇지 않으면 굳이 BufferManager가 Range 정보까지 가지고 있을 이유가 크게 사라짐.
         // 그래도 Buffer를 바인드할 때 offset을 0으로 두는 것이 나중에 렌더 큐 구조를 잡을 때 버퍼 바인드를 한번만 수행할 수 있다.
@@ -68,31 +68,31 @@ namespace scene
         uint32 stride = sizeof(renderer::Vertex);
         uint32 offset = vertexRange.StartIndex;
 
-        renderer::Renderer::GetInstance()->BindVertexBuffer(stride, offset);
-        renderer::Renderer::GetInstance()->BindIndexBuffer(indexRange.StartIndex);
+        renderer.BindVertexBuffer(stride, offset);
+        renderer.BindIndexBuffer(indexRange.StartIndex);
 
-        renderer::Renderer::GetInstance()->BindRasterStateByType(renderer::Renderer::eRasterType::Skybox);
+        renderer.BindRasterStateByType(renderer::Renderer::eRasterType::Skybox);
 
-        renderer::Renderer::GetInstance()->BindShaderTo(renderer::Renderer::eShader::Skybox);
+        renderer.BindShaderTo(renderer::Renderer::eShader::Skybox);
 
-        renderer::Renderer::GetInstance()->BindSamplerToPsByType(0, renderer::Renderer::eSamplerType::AnisotropicWrap);
+        renderer.BindSamplerToPsByType(0, renderer::Renderer::eSamplerType::AnisotropicWrap);
 
 
-        renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
-        renderer::Renderer::GetInstance()->BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
+        renderer.BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
+        renderer.BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
 
-        renderer::Renderer::GetInstance()->BindDepthStencilState(true);
+        renderer.BindDepthStencilState(true);
 
-        renderer::Renderer::GetInstance()->BindTextureToPs(0, mTextureHash);
+        renderer.BindTextureToPs(0, mTextureHash);
 
         // TODO: draw 구조가 잡히면 나중에 한번에 처리
         // TODO: improve - BufferManager에게 Range를 얻어서 쓰도록 전체적인 Draw 함수 로직 통일하기(ElementOffset 추가하고 나서)
-        renderer::Renderer::GetInstance()->DrawIndexed(static_cast<uint32_t>(indexRange.Count), 0, 0);
+        renderer.DrawIndexed(static_cast<uint32_t>(indexRange.Count), 0, 0);
 
-        renderer::Renderer::GetInstance()->BindDepthStencilState(false);
+        renderer.BindDepthStencilState(false);
     }
 
-    void Sky::Update()
+    void Sky::Update(renderer::Renderer& renderer)
     {
         // update
         XMFLOAT3 cameraPosition = mCamera->GetCameraPositionFloat();
@@ -105,14 +105,14 @@ namespace scene
 
         renderer::Renderer::CbWorld cbWVP;
         cbWVP.Matrix = XMMatrixTranspose(mWorld);
-        renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWVP);
+        renderer.UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWVP);
     }
 
     /*
      * https://www.braynzarsoft.net/viewtutorial/q16390-20-cube-mapping-skybox
      * 나중에 동적으로 생성하는 sphere 클래스를 만들어두면 좋을 것 같으므로 최대한 건들지 않는 것으로 한다.
      */
-    HRESULT Sky::createSphere(uint32 latLines, uint32 lonLines)
+    HRESULT Sky::createSphere(uint32 latLines, uint32 lonLines, renderer::Renderer& renderer)
     {
         const uint32 numVertex = ((latLines - 2) * lonLines) + 2;
         const uint32 numFace = ((latLines - 3) * (lonLines) * 2) + (lonLines * 2);
@@ -204,7 +204,7 @@ namespace scene
         indices[k + 2] = numVertex - 2U;
 
 
-        renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
+        renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
         bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices.data()), sizeof(renderer::Vertex) * vertices.size(), mModelHash);
         bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices.data()), sizeof(uint32_t) * indices.size(), mModelHash);
 
