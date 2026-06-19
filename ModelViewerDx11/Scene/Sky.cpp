@@ -3,6 +3,7 @@
 #include "../Renderer/Renderer.h"
 #include "../Renderer/Resources/BufferManager.h"
 #include "../Renderer/Resources/TextureManager.h"
+#include "../Util/Define.h"
 #include "../Util/Macro.h"
 #include "../Util/Util.h"
 
@@ -15,13 +16,9 @@ namespace scene
         , mLatLines(0)
         , mLonLines(0)
     {
-        // TODO: 이런 상수 값들도 따로 모아놓을 파일을 만드는 게 좋아 보임
-        enum
-        {
-            MAX_FILE_PATH = 260
-        };
-        int8_t virtualFilePath[MAX_FILE_PATH] = {};
-        (void)sprintf_s(reinterpret_cast<char*>(virtualFilePath), MAX_FILE_PATH, "%sPrimitive_Sphere_%d_%d.mesh",
+
+        int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
+        (void)sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Sphere_%d_%d.mesh",
                   reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), mLonLines, mLatLines);
 
         mModelHash = util::GetDjb2Hash(virtualFilePath);

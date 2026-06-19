@@ -2,6 +2,7 @@
 #include "../Renderer/Renderer.h"
 #include "../Renderer/Resources/BufferManager.h"
 #include "../Renderer/Resources/ModelData.h"
+#include "../Util/Define.h"
 #include "../Util/Macro.h"
 #include "../Util/Util.h"
 
@@ -37,9 +38,8 @@ namespace scene
 
         renderer::BufferManager* const bufferManager = renderer::Renderer::GetInstance()->GetBufferManager();
 
-        enum {MAX_FILE_PATH = 260};
-        int8_t virtualFilePath[MAX_FILE_PATH] = {};
-        (void)sprintf_s(reinterpret_cast<char*>(virtualFilePath), MAX_FILE_PATH, "%sPrimitive_Grid_%d_%d.mesh",
+        int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
+        (void)sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Grid_%d_%d.mesh",
                         reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), numLineX, numLineY);
 
         mModelHash = util::GetDjb2Hash(virtualFilePath);
