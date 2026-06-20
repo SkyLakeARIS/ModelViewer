@@ -40,7 +40,7 @@ namespace renderer
         BufferManager* mBufferManager;
         HashID mTexHash;
         HashID mModelHash;
-        VertexTex mMesh;
+        VertexPT mMesh;
         XMFLOAT3 mPosition;
         XMFLOAT3 mScale;
         XMFLOAT3 mRotation;

@@ -11,7 +11,7 @@ namespace renderer
         InputlayoutCount
     };
 
-    struct Vertex // 4bytes align
+    struct VertexPTN // 4bytes align
     {
         XMFLOAT3 Position;
         XMFLOAT2 TexCoord;
@@ -19,7 +19,7 @@ namespace renderer
         float    Reserve1;
     };
 
-    struct VertexTex // 4bytes align
+    struct VertexPT // 4bytes align
     {
         XMFLOAT3 Position;
         XMFLOAT2 TexCoord;
@@ -34,8 +34,8 @@ namespace renderer
     {
         constexpr int16_t VertexStrideMap[static_cast<int8_t>(eInputLayout::InputlayoutCount)] =
         {
-            sizeof(Vertex),
-            sizeof(VertexTex),
+            sizeof(VertexPTN),
+            sizeof(VertexPT),
             sizeof(VertexP)
         };
         return VertexStrideMap[static_cast<int8_t>(vertexAttrib)];

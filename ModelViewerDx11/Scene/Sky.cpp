@@ -65,7 +65,7 @@ namespace scene
         ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
 
 
-        uint32 stride = sizeof(renderer::Vertex);
+        uint32 stride = sizeof(renderer::VertexPTN);
         uint32 offset = vertexRange.StartIndex;
 
         renderer.BindVertexBuffer(stride, offset);
@@ -117,7 +117,7 @@ namespace scene
         const uint32 numVertex = ((latLines - 2) * lonLines) + 2;
         const uint32 numFace = ((latLines - 3) * (lonLines) * 2) + (lonLines * 2);
 
-        std::vector<renderer::Vertex> vertices(numVertex);
+        std::vector<renderer::VertexPTN> vertices(numVertex);
 
         vertices[0].Position.x = 0.0f;
         vertices[0].Position.y = 0.0f;
@@ -205,7 +205,7 @@ namespace scene
 
 
         renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
-        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices.data()), sizeof(renderer::Vertex) * vertices.size(), mModelHash);
+        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices.data()), sizeof(renderer::VertexPTN) * vertices.size(), mModelHash);
         bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices.data()), sizeof(uint32_t) * indices.size(), mModelHash);
 
         return S_OK;

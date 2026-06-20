@@ -164,7 +164,7 @@ namespace renderer
         outModelContainer.TotalVertexCount = totalVertexCount;
         outModelContainer.TotalIndexCount = totalIndexCount;
         outModelContainer.IndexBufferTotal = std::make_unique<uint32_t[]>(totalIndexCount);
-        outModelContainer.VertexBufferTotal = std::make_unique<Vertex[]>(totalVertexCount);
+        outModelContainer.VertexBufferTotal = std::make_unique<VertexPTN[]>(totalVertexCount);
 
         int32_t vertexBufWriteCursor = 0;
         int32_t indexBufWriteCursor = 0;
@@ -238,7 +238,7 @@ namespace renderer
                     // 한번에 3개의 점 -> for문으로 하나씩
                     int indexOfVertex = 0;
                     FbxVector4 normalIndex;
-                    renderer::Vertex vertexInfo;
+                    renderer::VertexPTN vertexInfo;
                     for (size_t index = 0; index < 3; ++index)
                     {
                         indexOfVertex = currentMesh->GetPolygonVertex(polyIndex, indexListOfTriangle[index]);

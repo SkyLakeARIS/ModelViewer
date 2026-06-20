@@ -43,7 +43,7 @@ namespace renderer
         std::vector<Mesh> meshes(modelContainer.Meshes.size());
         // TODO: 여기에서 로드한 Object를 처리해서 반환해 주는 게 좋을 것 같다.
         // 그리고 이곳에서 Imported 타입이 일단 Mesh 데이터로 바뀌는 시점.
-        mBufferManager->AddVertexData(reinterpret_cast<int8_t*>(modelContainer.VertexBufferTotal.get()), sizeof(Vertex) * modelContainer.TotalVertexCount, modelContainer.ModelHash);
+        mBufferManager->AddVertexData(reinterpret_cast<int8_t*>(modelContainer.VertexBufferTotal.get()), sizeof(VertexPTN) * modelContainer.TotalVertexCount, modelContainer.ModelHash);
 
         mBufferManager->AddIndexData(reinterpret_cast<int8_t*>(modelContainer.IndexBufferTotal.get()), sizeof(uint32_t) * modelContainer.TotalIndexCount, modelContainer.ModelHash);
 

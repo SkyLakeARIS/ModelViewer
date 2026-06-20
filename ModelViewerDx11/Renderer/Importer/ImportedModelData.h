@@ -6,7 +6,7 @@
 
 namespace renderer
 {
-    struct Vertex;
+    struct VertexPTN;
 
     struct ImportedTextureData
     {
@@ -28,7 +28,7 @@ namespace renderer
     struct ImportedModelContainer
     {
         HashID ModelHash;
-        std::unique_ptr<Vertex[]> VertexBufferTotal;
+        std::unique_ptr<VertexPTN[]> VertexBufferTotal;
         int32_t TotalVertexCount;
         std::unique_ptr<uint32_t[]> IndexBufferTotal;
         int32_t TotalIndexCount;

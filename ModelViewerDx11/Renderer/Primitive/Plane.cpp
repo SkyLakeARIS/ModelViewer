@@ -18,7 +18,7 @@ namespace renderer
         , mRotation(XMFLOAT3(0.0f, 0.0f, 0.0f))
         , mMatWorld(XMMatrixIdentity())
     {
-        VertexTex vertices[] =
+        VertexPT vertices[] =
         {
             {XMFLOAT3(-0.5f, -0.5f, 0.5f), XMFLOAT2(0.0f, 1.0f)},
             {XMFLOAT3(-0.5f, 0.5f, 0.5f), XMFLOAT2(0.0f, 0.0f)},
@@ -79,7 +79,7 @@ namespace renderer
         ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
         ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
 
-        const uint32 stride = sizeof(VertexTex);
+        const uint32 stride = sizeof(VertexPT);
         const uint32 offset = vertexRange.StartIndex;
 
         renderer.BindVertexBuffer(stride, offset);
@@ -112,7 +112,7 @@ namespace renderer
         ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
         ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
 
-        const uint32 stride = sizeof(VertexTex);
+        const uint32 stride = sizeof(VertexPT);
         const uint32 offset = vertexRange.StartIndex;
 
         renderer.BindVertexBuffer(stride, offset);

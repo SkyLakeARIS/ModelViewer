@@ -33,7 +33,7 @@ namespace renderer
     {
         renderer.BindInputLayoutTo(eInputLayout::PTN);
 
-        const uint32 stride = sizeof(Vertex);
+        const uint32 stride = sizeof(VertexPTN);
 
         renderer.BindVertexBuffer(stride, 0);
         renderer.BindIndexBuffer(0);
@@ -101,7 +101,7 @@ namespace renderer
     {
         renderer.BindInputLayoutTo(eInputLayout::P);
 
-        const uint32 stride = sizeof(Vertex);
+        const uint32 stride = sizeof(VertexPTN);
 
         renderer.BindVertexBuffer(stride, 0);
         renderer.BindIndexBuffer(0);
