@@ -1,8 +1,6 @@
 #include "Renderer.h"
-#include <string>
 #include "../Util/Macro.h"
 #include "Resources/BufferManager.h"
-#include "Resources/RenderTypes.h"
 #include "Resources/TextureManager.h"
 
 namespace renderer
