@@ -807,14 +807,16 @@ namespace renderer
         return result;
     }
 
-    void Renderer::BindVertexBufferNew(uint32_t stride, uint32_t offset) const
+    void Renderer::BindVertexBuffer(uint32_t stride) const
     {
+        uint32_t offset = 0;
         ID3D11Buffer* const vertexBuffer = mBufferManager->GetVertexBuffer(stride);
         mDeviceContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
     }
 
-    void Renderer::BindIndexBufferNew(uint32_t offset) const
+    void Renderer::BindIndexBuffer() const
     {
+        uint32_t offset = 0;
         const int16_t stride = mBufferManager->GetIndexStrideSize();
         ID3D11Buffer* const indexBuffer = mBufferManager->GetIndexBuffer(stride);
         // TODO: 나중에 BufferManager가 format을 가지도록 하는게 관리에 좋을 것으로 보임.

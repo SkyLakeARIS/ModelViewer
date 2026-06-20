@@ -107,8 +107,8 @@ namespace renderer
         void BindCbToVsByType(uint32_t slot, uint32_t numBuffer, eCbType type) const;
         void BindCbToPs(uint32_t slot, uint32_t numBuffer, eCbType type) const;
 
-        void BindVertexBufferNew(uint32_t stride, uint32_t offset) const;
-        void BindIndexBufferNew(uint32_t offset) const;
+        void BindVertexBuffer(uint32_t stride) const;
+        void BindIndexBuffer() const;
 
         void BindSamplerToPsByType(uint32_t slot, eSamplerType type) const;
         void BindBlendStateByHash(HashID hash, const float* const blendFactors, uint32_t mask);

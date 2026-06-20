@@ -59,8 +59,8 @@ namespace scene
 
         const int16_t strideVertex = renderer::GetVertexStrideSize(mMesh.VertexLayoutType);
 
-        renderer.BindVertexBufferNew(strideVertex, 0);
-        renderer.BindIndexBufferNew(0);
+        renderer.BindVertexBuffer(strideVertex);
+        renderer.BindIndexBuffer();
 
         renderer.BindRasterStateByType(renderer::eRasterType::Skybox);
 

@@ -79,8 +79,8 @@ namespace renderer
     {
         const int16_t strideVertex = GetVertexStrideSize(mMesh.VertexLayoutType);
 
-        renderer.BindVertexBufferNew(strideVertex, 0);
-        renderer.BindIndexBufferNew(0);
+        renderer.BindVertexBuffer(strideVertex);
+        renderer.BindIndexBuffer();
 
         if (!mMesh.TextureHashes[static_cast<int8_t>(eTextureType::Diffuse)])
         {
@@ -101,8 +101,8 @@ namespace renderer
         renderer.BindShaderTo(eShader::RenderToTexture);
 
         const int16_t strideVertex = GetVertexStrideSize(mMesh.VertexLayoutType);
-        renderer.BindVertexBufferNew(strideVertex, 0);
-        renderer.BindIndexBufferNew(0);
+        renderer.BindVertexBuffer(strideVertex);
+        renderer.BindIndexBuffer();
 
         XMMATRIX matWorld = XMMatrixTranspose(mMatWorld);
         renderer.UpdateCB(eCbType::CbWorld, &matWorld);

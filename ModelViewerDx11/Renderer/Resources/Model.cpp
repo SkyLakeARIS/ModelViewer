@@ -38,8 +38,8 @@ namespace renderer
 
         const uint32 stride = sizeof(VertexPTN);
 
-        renderer.BindVertexBufferNew(stride, 0);
-        renderer.BindIndexBufferNew(0);
+        renderer.BindVertexBuffer(stride);
+        renderer.BindIndexBuffer();
 
         // outline
         if (mbHighlight)
@@ -105,8 +105,8 @@ namespace renderer
 
         const uint32 stride = sizeof(VertexPTN);
 
-        renderer.BindVertexBufferNew(stride, 0);
-        renderer.BindIndexBufferNew(0);
+        renderer.BindVertexBuffer(stride);
+        renderer.BindIndexBuffer();
 
         renderer.BindRasterStateByType(eRasterType::Outline);
         renderer.BindShaderTo(eShader::Shadow);

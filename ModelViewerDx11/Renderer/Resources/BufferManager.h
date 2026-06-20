@@ -47,8 +47,8 @@ namespace renderer
 
         int16_t GetIndexStrideSize() const;
     private:
-        void resizeVertexBufferNew(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
-        void resizeIndexBufferNew(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
+        void resizeVertexBuffer(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
+        void resizeIndexBuffer(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
     public:
         static constexpr int32_t sVertexBufferDefaultSize = 4096;
         static constexpr int32_t sIndexBufferDefaultSize = 4096;

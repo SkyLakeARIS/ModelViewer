@@ -128,7 +128,7 @@ namespace renderer
 
         if (bufResIt->second.TotalSizeBytes <= bufResIt->second.CursorBytes + dataByteSize)
         {
-            resizeVertexBufferNew(bufResIt->second.CursorBytes + dataByteSize, bufResIt);
+            resizeVertexBuffer(bufResIt->second.CursorBytes + dataByteSize, bufResIt);
         }
 
         D3D11_BOX updateRange = {};
@@ -175,7 +175,7 @@ namespace renderer
 
         if (bufResIt->second.TotalSizeBytes <= bufResIt->second.CursorBytes + dataByteSize)
         {
-            resizeIndexBufferNew(bufResIt->second.CursorBytes + dataByteSize, bufResIt);
+            resizeIndexBuffer(bufResIt->second.CursorBytes + dataByteSize, bufResIt);
         }
 
         D3D11_BOX updateRange = {};
@@ -362,7 +362,7 @@ namespace renderer
         return mIndexStrideSize;
     }
 
-    void BufferManager::resizeVertexBufferNew(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt)
+    void BufferManager::resizeVertexBuffer(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt)
     {
         ID3D11Buffer* resizedBuffer = nullptr;
         D3D11_BUFFER_DESC bufferDesc = {};
@@ -392,7 +392,7 @@ namespace renderer
         bufResIt->second.TotalSizeBytes = bufferDesc.ByteWidth;
     }
 
-    void BufferManager::resizeIndexBufferNew(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt)
+    void BufferManager::resizeIndexBuffer(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt)
     {
         ID3D11Buffer* resizedBuffer = nullptr;
         D3D11_BUFFER_DESC bufferDesc = {};

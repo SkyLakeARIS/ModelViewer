@@ -77,7 +77,7 @@ namespace scene
         renderer.UpdateCB(renderer::eCbType::CbColor, &cbColor);
 
         const int16_t stride = renderer::GetVertexStrideSize(mMesh.VertexLayoutType);
-        renderer.BindVertexBufferNew(stride, 0);
+        renderer.BindVertexBuffer(stride);
 
         D3D11_PRIMITIVE_TOPOLOGY orgTopology;
         renderer.GetCurrentPrimitiveTopology(orgTopology);
