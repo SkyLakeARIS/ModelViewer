@@ -30,6 +30,7 @@ Application::Application()
     , mFloor(nullptr)
     , mBufferManager(nullptr)
     , mTextureManager(nullptr)
+    , mResourceManager(nullptr)
     , mDirectInput(nullptr)
 {
     mRenderer = new renderer::Renderer();
