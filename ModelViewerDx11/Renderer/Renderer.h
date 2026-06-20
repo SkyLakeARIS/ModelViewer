@@ -108,6 +108,10 @@ namespace renderer
         void BindCbToPs(uint32_t slot, uint32_t numBuffer, eCbType type) const;
         void BindVertexBuffer(uint32_t stride, uint32_t offset);
         void BindIndexBuffer(uint32_t offset);
+
+        void BindVertexBufferNew(uint32_t stride, uint32_t offset) const;
+        void BindIndexBufferNew(uint32_t offset) const;
+
         void BindSamplerToPsByType(uint32_t slot, eSamplerType type) const;
         void BindBlendStateByHash(HashID hash, const float* const blendFactors, uint32_t mask);
         void BindTextureToPs(uint32_t slot, HashID textureHash) const;

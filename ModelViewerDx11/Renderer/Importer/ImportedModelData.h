@@ -15,14 +15,15 @@ namespace renderer
         eTextureType TextureType;
     };
 
-    // MEMO:각 mesh에 대한 해시는 현재 필요없으므로 추가하지 않았음.(fbx에 mesh에 대한 이름은 존재하는 것으로 기억)
     struct ImportedMeshData
     {
+        int8_t MeshName[util::MAX_NAME_LENGTH];
+        std::unique_ptr<VertexPTN[]> VertexBuffer;
         uint32_t VertexCount;
+        std::unique_ptr<uint32_t[]> IndexBuffer;
         uint32_t IndexCount;
         Material Material;
         ImportedTextureData Textures[static_cast<int32_t>(eTextureType::TextureTypeCount)];
-        // TODO: 나중에 DebugTag로 이름을 추적할 수 있게 저장할 수 있도록 하면 어떨지.(별로도 관리하는 클래스나, 구조체에 추가하거나.)
     };
 
     struct ImportedModelContainer
