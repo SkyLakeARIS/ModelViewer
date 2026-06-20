@@ -203,15 +203,20 @@ namespace renderer
             ASSERT(numConverted <= meshNameLengthDebug + 1, "버퍼 초과");
             ASSERT(numConverted > 0, "복사된 문자가 없음.");
 #endif
+            const int32_t meshNameLength = strlen(currentMesh->GetName());
+            ASSERT(meshNameLength < util::MAX_NAME_LENGTH, "MeshName too long.");
+            memcpy(newMeshData.MeshName, currentMesh->GetName(), meshNameLength + 1);
 
             // 메시가 가지는 모든 정점들의 위치 배열
             FbxVector4* allVertexPos = currentMesh->GetControlPoints();
 
             const int32_t indexCount = currentMesh->GetPolygonVertexCount();
             ASSERT(indexCount > 0, "indexCount is not over 0  indexCount(%d)", indexCount);
+            newMeshData.IndexBuffer = std::make_unique<uint32_t[]>(indexCount);
             const int32_t vertexCount = currentMesh->GetControlPointsCount();
             ASSERT(vertexCount > 0, "vertexCount is not over 0  vertexCount(%d)", vertexCount);
-      
+            newMeshData.VertexBuffer= std::make_unique<VertexPTN[]>(vertexCount);
+
             // 메시가 가지는 폴리곤 수.
             size_t numPoly = currentMesh->GetPolygonCount();
             for (size_t polyIndex = 0; polyIndex < numPoly; ++polyIndex)
@@ -295,6 +300,7 @@ namespace renderer
                             // indexlist 구성을 위한 vertexCount와 통합 버퍼로 인한 CursorIndex 가 다르게 동작해야 하는 문제.
                             indexMap.insert(std::make_pair(indexOfVertex, newMeshData.VertexCount));
                             outModelContainer.VertexBufferTotal[vertexBufWriteCursor] = vertexInfo;
+                            newMeshData.VertexBuffer[newMeshData.VertexCount] = vertexInfo;
                             ++newMeshData.VertexCount;
                             ++vertexBufWriteCursor;
                         } // if end
@@ -324,6 +330,7 @@ namespace renderer
                             ASSERT(false, "map 구성 과정에 누락된 버텍스가 있음.");
                         }
                         outModelContainer.IndexBufferTotal[indexBufWriteCursor] = resultIter->second;
+                        newMeshData.IndexBuffer[newMeshData.IndexCount] = resultIter->second;
                         ++newMeshData.IndexCount;
                         ++indexBufWriteCursor;
                     }
