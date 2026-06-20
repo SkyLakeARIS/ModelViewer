@@ -1,14 +1,13 @@
 #include "Floor.h"
 #include "../Renderer/Renderer.h"
 #include "../Renderer/Resources/BufferManager.h"
-#include "../Renderer/Resources/ModelData.h"
 #include "../Util/Define.h"
 #include "../Util/Macro.h"
 #include "../Util/Util.h"
 
 namespace scene
 {
-    Floor::Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY, renderer::BufferManager* const bufferManager, renderer::Renderer& renderer)
+    Floor::Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY, renderer::BufferManager* const bufferManager)
         : mBufferManager(bufferManager)
     {
         ASSERT(numLineX >= 2, "numLineX must be 2 or greater");

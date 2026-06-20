@@ -1,6 +1,5 @@
 #include "ModelImporter.h"
 #include <filesystem>
-#include <fstream>
 #include <map>
 #include <set>
 #include "ImportedModelData.h"
@@ -146,28 +145,6 @@ namespace renderer
         FbxVector4 minBound = {DBL_MAX, DBL_MAX , DBL_MAX , DBL_MAX };
         FbxVector4 maxBound = {DBL_MIN, DBL_MIN , DBL_MIN ,DBL_MIN };
 
-        int32_t totalVertexCount = 0;
-        int32_t totalIndexCount = 0;
-        // calc total vtx/index count
-        for (size_t nodeIndex = 0; nodeIndex < outNodes.size(); ++nodeIndex)
-        {
-            FbxMesh* currentMesh = outNodes[nodeIndex]->GetMesh(); // mesh
-
-            const int32_t indexCount = currentMesh->GetPolygonVertexCount();
-            ASSERT(indexCount > 0, "indexCount is not over 0  indexCount(%d)", indexCount);
-            const int32_t vertexCount = currentMesh->GetControlPointsCount();
-            ASSERT(vertexCount > 0, "vertexCount is not over 0  vertexCount(%d)", vertexCount);
-
-            totalVertexCount += vertexCount;
-            totalIndexCount += indexCount;
-        }
-        outModelContainer.TotalVertexCount = totalVertexCount;
-        outModelContainer.TotalIndexCount = totalIndexCount;
-        outModelContainer.IndexBufferTotal = std::make_unique<uint32_t[]>(totalIndexCount);
-        outModelContainer.VertexBufferTotal = std::make_unique<VertexPTN[]>(totalVertexCount);
-
-        int32_t vertexBufWriteCursor = 0;
-        int32_t indexBufWriteCursor = 0;
         // 이전에 구성한 메시를 가지는 노드들을 순회.
         for (size_t nodeIndex = 0; nodeIndex < outNodes.size(); ++nodeIndex)
         {
@@ -299,10 +276,8 @@ namespace renderer
                             // TODO: improve - 이 부분은 개선하거나 데이터 구조를 좀 더 다듬는 게 좋아보인다. 메모해 두지 않으면 코드 다듬다가 실수하기 좋음.
                             // indexlist 구성을 위한 vertexCount와 통합 버퍼로 인한 CursorIndex 가 다르게 동작해야 하는 문제.
                             indexMap.insert(std::make_pair(indexOfVertex, newMeshData.VertexCount));
-                            outModelContainer.VertexBufferTotal[vertexBufWriteCursor] = vertexInfo;
                             newMeshData.VertexBuffer[newMeshData.VertexCount] = vertexInfo;
                             ++newMeshData.VertexCount;
-                            ++vertexBufWriteCursor;
                         } // if end
                     }
 
@@ -329,10 +304,8 @@ namespace renderer
                         {
                             ASSERT(false, "map 구성 과정에 누락된 버텍스가 있음.");
                         }
-                        outModelContainer.IndexBufferTotal[indexBufWriteCursor] = resultIter->second;
                         newMeshData.IndexBuffer[newMeshData.IndexCount] = resultIter->second;
                         ++newMeshData.IndexCount;
-                        ++indexBufWriteCursor;
                     }
                 }
             }

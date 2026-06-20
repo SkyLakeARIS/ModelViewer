@@ -21,7 +21,7 @@ namespace scene
         //, mLinesBuffer(nullptr)
     {
         renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
-        mMesh = new renderer::Plane(bufferManager, renderer);
+        mMesh = new renderer::Plane(bufferManager);
         mMesh->SetPosition(mPosition);
 
         mLines.reserve(24 * eCascadeLevel::Level_4);

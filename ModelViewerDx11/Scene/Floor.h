@@ -14,7 +14,7 @@ namespace scene
     class Floor
     {
     public:
-        Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY, renderer::BufferManager* const bufferManager, renderer::Renderer& renderer);
+        Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY, renderer::BufferManager* const bufferManager);
         ~Floor();
 
         void Draw(renderer::Renderer& renderer);

@@ -183,7 +183,7 @@ bool Application::initializeScene()
 
     const int8_t* const modelFilePath = reinterpret_cast<int8_t*>("/AssetData/models/unagi.fbx");
     // TODO: 나중에 Object List를 만들어서 관리하도록 변경(성공하면 drawable 리스트에 추가)
-    mCharacter = new renderer::Model(mCamera, modelFilePath, mBufferManager);
+    mCharacter = new renderer::Model(mCamera, mBufferManager);
 
     mResourceManager->LoadModel(modelFilePath, mCharacter);
 
@@ -201,10 +201,10 @@ bool Application::initializeScene()
 
     // debug quad
     // 깊이 텍스쳐 확인용
-    mPlane = new renderer::Plane(mBufferManager, *mRenderer);
+    mPlane = new renderer::Plane(mBufferManager);
     mPlane->SetPosition(XMFLOAT3(0.0, 0.0, -1.0));
 
-    mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10, mBufferManager, *mRenderer);
+    mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10, mBufferManager);
 
     return true;
 }

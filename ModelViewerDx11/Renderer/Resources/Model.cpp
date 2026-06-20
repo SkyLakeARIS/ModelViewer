@@ -2,14 +2,12 @@
 #include "BufferManager.h"
 #include "../Renderer.h"
 #include "../../Util/Macro.h"
-#include "../../Util/Util.h"
 #include "../Importer/ModelImporter.h"
 
 namespace renderer
 {
-    Model::Model(scene::Camera* camera, const int8_t* const filePath, BufferManager* bufferManager)
+    Model::Model(scene::Camera* camera, BufferManager* bufferManager)
         : mBufferManager(bufferManager)
-        , mModelHash(0)
         , mCenterPosition(0.0f, 0.0f, 0.0f)
         , mMatRotation(XMMatrixIdentity())
         , mMatScale(XMMatrixIdentity())
@@ -19,7 +17,6 @@ namespace renderer
         ASSERT(camera != nullptr, "do not pass nullptr");
 
         mMatWorld  = XMMatrixIdentity();
-        mModelHash = util::GetDjb2Hash(filePath);
     }
 
     Model::~Model()

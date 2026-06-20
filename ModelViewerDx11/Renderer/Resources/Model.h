@@ -17,7 +17,7 @@ namespace renderer
     class Model
     {
     public:
-        Model(scene::Camera* camera, const int8_t* const filePath, BufferManager* bufferManager);
+        Model(scene::Camera* camera, BufferManager* bufferManager);
         ~Model();
 
         void Draw(renderer::Renderer& renderer);
@@ -34,7 +34,6 @@ namespace renderer
 
     private:
         BufferManager* mBufferManager;
-        HashID mModelHash;
         size_t mNumMesh;
         size_t mNumVertex;
 

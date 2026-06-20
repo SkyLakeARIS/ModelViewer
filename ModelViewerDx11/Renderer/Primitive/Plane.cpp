@@ -1,7 +1,6 @@
 #include "Plane.h"
 #include "../Renderer.h"
 #include "../../Util/Define.h"
-#include "../../Util/Macro.h"
 #include "../../Util/Util.h"
 #include "../Resources/BufferManager.h"
 
@@ -9,7 +8,7 @@ namespace renderer
 {
     std::atomic_int32_t Plane::sObjectCount(0);
 
-    Plane::Plane(BufferManager* const bufferManager, renderer::Renderer& renderer)
+    Plane::Plane(BufferManager* const bufferManager)
         : mBufferManager(bufferManager)
         , mMesh()
         , mPosition(XMFLOAT3(0.0f, 0.0f, 0.0f))

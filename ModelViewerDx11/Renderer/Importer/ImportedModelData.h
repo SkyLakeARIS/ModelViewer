@@ -29,10 +29,6 @@ namespace renderer
     struct ImportedModelContainer
     {
         HashID ModelHash;
-        std::unique_ptr<VertexPTN[]> VertexBufferTotal;
-        int32_t TotalVertexCount;
-        std::unique_ptr<uint32_t[]> IndexBufferTotal;
-        int32_t TotalIndexCount;
         XMFLOAT4 CenterPoint;
         std::vector<ImportedMeshData> Meshes;
     };

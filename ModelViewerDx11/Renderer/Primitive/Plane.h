@@ -1,7 +1,6 @@
 #pragma once
 #include "../../framework.h"
 #include "../Resources/ModelData.h"
-#include "../Resources/RenderTypes.h"
 
 namespace scene
 {
@@ -19,7 +18,7 @@ namespace renderer
     {
     public:
 
-        Plane(BufferManager* const bufferManager, renderer::Renderer& renderer);
+        Plane(BufferManager* const bufferManager);
         ~Plane();
 
         void Draw(renderer::Renderer& renderer);
