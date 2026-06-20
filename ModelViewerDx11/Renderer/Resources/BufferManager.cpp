@@ -104,10 +104,6 @@ namespace renderer
         return true;
     }
 
-
-
-
-
     void BufferManager::AddVertexData(int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer)
     {
         ASSERT(pData, "pData is nullptr,");
@@ -365,26 +361,6 @@ namespace renderer
     {
         return mIndexStrideSize;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     void BufferManager::resizeVertexBufferNew(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt)
     {

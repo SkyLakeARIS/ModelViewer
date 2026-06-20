@@ -24,11 +24,6 @@ namespace renderer
 
         bool Initialize(int32_t vertexBufferByteSize, int32_t indexBufferByteSize);
 
-
-
-
-
-
         // MEMO: data들을 받고, Buffer내의 ElementCount/Offset을 반환
         void AddVertexData(int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
         void AddIndexData(int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
@@ -52,7 +47,6 @@ namespace renderer
 
         int16_t GetIndexStrideSize() const;
     private:
-
         void resizeVertexBufferNew(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
         void resizeIndexBufferNew(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
     public:
@@ -70,9 +64,6 @@ namespace renderer
         // MEMO: 데이터 제거 시 빈공간에 대한 데이터 범위를 저장하여 데이터 추가시 체크
         std::unordered_map<int16_t, std::vector<BufferRange>> mVertexRemovedRanges;
         std::unordered_map<int16_t, std::vector<BufferRange>> mIndexRemovedRanges;
-
         // TODO: FlatMap은 일단 구조를 잡고나서 도입하자.
-
-
     };
 }
