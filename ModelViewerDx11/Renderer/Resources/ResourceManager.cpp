@@ -3,6 +3,7 @@
 #include "Model.h"
 #include "TextureManager.h"
 #include "../../Util/Macro.h"
+#include "../../Util/Util.h"
 #include "../Importer/ImportedModelData.h"
 #include "../Importer/ModelImporter.h"
 
@@ -41,24 +42,19 @@ namespace renderer
         mModelImporter->LoadFbxModel(filePath, modelHash, modelContainer);
 
         std::vector<Mesh> meshes(modelContainer.Meshes.size());
-        // TODO: 여기에서 로드한 Object를 처리해서 반환해 주는 게 좋을 것 같다.
-        // 그리고 이곳에서 Imported 타입이 일단 Mesh 데이터로 바뀌는 시점.
-        mBufferManager->AddVertexData(reinterpret_cast<int8_t*>(modelContainer.VertexBufferTotal.get()), sizeof(VertexPTN) * modelContainer.TotalVertexCount, modelContainer.ModelHash);
-
-        mBufferManager->AddIndexData(reinterpret_cast<int8_t*>(modelContainer.IndexBufferTotal.get()), sizeof(uint32_t) * modelContainer.TotalIndexCount, modelContainer.ModelHash);
 
         auto meshIt = meshes.begin();
-        int32_t vertexStartIndex = 0;
-        int32_t indexStartIndex = 0;
         for(auto& mesh : modelContainer.Meshes)
         {
-            meshIt->VertexRange.StartIndex = vertexStartIndex;
-            meshIt->VertexRange.Count = mesh.VertexCount;
-            vertexStartIndex += mesh.VertexCount;
+            meshIt->VertexLayoutType = eInputLayout::PTN;
+            const int16_t strideVertex = GetVertexStrideSize(meshIt->VertexLayoutType);
+            const int16_t strideIndex = mBufferManager->GetIndexStrideSize();
+            meshIt->MeshHash = util::GetDjb2Hash(mesh.MeshName);
+            mBufferManager->AddVertexData(reinterpret_cast<int8_t*>(mesh.VertexBuffer.get()), strideVertex * mesh.VertexCount, meshIt->MeshHash, strideVertex, meshIt->VertexRange);
 
-            meshIt->IndexRange.StartIndex = indexStartIndex;
-            meshIt->IndexRange.Count = mesh.IndexCount;
-            indexStartIndex += mesh.IndexCount;
+            mBufferManager->AddIndexData(reinterpret_cast<int8_t*>(mesh.IndexBuffer.get()), strideIndex * mesh.IndexCount, meshIt->MeshHash, strideIndex, meshIt->IndexRange);
+
+            memcpy(meshIt->MeshName, mesh.MeshName, util::MAX_NAME_LENGTH);
 
             meshIt->Material = std::move(mesh.Material);
 

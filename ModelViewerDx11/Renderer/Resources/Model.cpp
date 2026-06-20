@@ -24,8 +24,13 @@ namespace renderer
 
     Model::~Model()
     {
-        mBufferManager->RemoveVertexData(mModelHash);
-        mBufferManager->RemoveIndexData(mModelHash);
+        for(auto& mesh : mMeshes)
+        {
+            const int16_t stride = GetVertexStrideSize(mesh.VertexLayoutType);
+            const int16_t strideIndex = mBufferManager->GetIndexStrideSize();
+            mBufferManager->RemoveVertexData(stride, mesh.MeshHash);
+            mBufferManager->RemoveIndexData(strideIndex, mesh.MeshHash);
+        }
         mBufferManager = nullptr;
     }
 
@@ -35,8 +40,8 @@ namespace renderer
 
         const uint32 stride = sizeof(VertexPTN);
 
-        renderer.BindVertexBuffer(stride, 0);
-        renderer.BindIndexBuffer(0);
+        renderer.BindVertexBufferNew(stride, 0);
+        renderer.BindIndexBufferNew(0);
 
         // outline
 
@@ -103,8 +108,8 @@ namespace renderer
 
         const uint32 stride = sizeof(VertexPTN);
 
-        renderer.BindVertexBuffer(stride, 0);
-        renderer.BindIndexBuffer(0);
+        renderer.BindVertexBufferNew(stride, 0);
+        renderer.BindIndexBufferNew(0);
 
         renderer.BindRasterStateByType(eRasterType::Outline);
         renderer.BindShaderTo(eShader::Shadow);
