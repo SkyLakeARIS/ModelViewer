@@ -42,7 +42,6 @@ namespace renderer
         renderer.BindIndexBufferNew(0);
 
         // outline
-
         if (mbHighlight)
         {
             renderer.BindRasterStateByType(eRasterType::CullBack);

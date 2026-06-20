@@ -82,8 +82,6 @@ namespace renderer
         renderer.BindVertexBufferNew(strideVertex, 0);
         renderer.BindIndexBufferNew(0);
 
-
-
         if (!mMesh.TextureHashes[static_cast<int8_t>(eTextureType::Diffuse)])
         {
             renderer.BindDefaultTextureToPs(0);
@@ -95,17 +93,12 @@ namespace renderer
         renderer.BindSamplerToPsByType(0, eSamplerType::AnisotropicWrap);
 
         renderer.DrawIndexed(mMesh.IndexRange.Count, mMesh.IndexRange.StartIndex, mMesh.VertexRange.StartIndex);
-
     }
 
     void Plane::DrawTexture(renderer::Renderer& renderer)
     {
-
         renderer.BindInputLayoutTo(eInputLayout::PT);
         renderer.BindShaderTo(eShader::RenderToTexture);
-
-
-
 
         const int16_t strideVertex = GetVertexStrideSize(mMesh.VertexLayoutType);
         renderer.BindVertexBufferNew(strideVertex, 0);

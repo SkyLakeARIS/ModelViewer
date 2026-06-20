@@ -216,8 +216,6 @@ namespace renderer
         return result;
     }
 
-
-
     HashID Renderer::GetBlendStateHash(D3D11_BLEND_DESC& desc)
     {
         HashID hash = 0;
@@ -370,7 +368,6 @@ namespace renderer
         mRtvDsMapTable[static_cast<uint8_t>(eRenderTarget::Default)].RenderTargetIndex = index;
         mRtvDsMapTable[static_cast<uint8_t>(eRenderTarget::Default)].DepthStencilIndex = index;
         mRtvDsMapTable[static_cast<uint8_t>(eRenderTarget::Default)].NumViews = 1U;
-
 
 
         D3D11_DEPTH_STENCIL_DESC depthStencilDesc;

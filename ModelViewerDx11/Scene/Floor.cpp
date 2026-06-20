@@ -72,14 +72,9 @@ namespace scene
         renderer.BindCbToVsByType(1, 1, renderer::eCbType::CbViewProj);
         renderer.BindCbToPs(0, 1, renderer::eCbType::CbColor);
 
-
         renderer::CbColor cbColor = {};
         cbColor.Float3 = XMFLOAT3(0.0, 1.0, 0.0);
         renderer.UpdateCB(renderer::eCbType::CbColor, &cbColor);
-
-
-
-
 
         const int16_t stride = renderer::GetVertexStrideSize(mMesh.VertexLayoutType);
         renderer.BindVertexBufferNew(stride, 0);
@@ -92,6 +87,5 @@ namespace scene
         renderer.Draw(mMesh.VertexRange.Count, mMesh.VertexRange.StartIndex);
 
         renderer.BindPrimitiveTopologyTo(orgTopology);
-
     }
 }

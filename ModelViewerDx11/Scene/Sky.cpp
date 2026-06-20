@@ -16,8 +16,6 @@ namespace scene
         , mLatLines(0)
         , mLonLines(0)
     {
-
-
     }
 
     Sky::~Sky()
@@ -58,9 +56,6 @@ namespace scene
     {
         // render
         renderer.BindInputLayoutTo(renderer::eInputLayout::PT);
-
-
-
 
         const int16_t strideVertex = renderer::GetVertexStrideSize(mMesh.VertexLayoutType);
 

@@ -89,8 +89,6 @@ namespace scene
         renderer.BindRasterStateByType(renderer::eRasterType::Basic);
         renderer.BindBlendStateByHash(mBlendHash, nullptr, 0xffffffff);
 
-
-
         renderer.BindCbToVsByType(0U, 1U, renderer::eCbType::CbWorld);
         renderer.BindCbToVsByType(1U, 1U, renderer::eCbType::CbViewProj);
 
