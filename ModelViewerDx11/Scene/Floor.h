@@ -1,5 +1,6 @@
 #pragma once
 #include "../framework.h"
+#include "../Renderer/Resources/ModelData.h"
 
 namespace renderer
 {
@@ -21,5 +22,6 @@ namespace scene
         renderer::BufferManager* mBufferManager;
         uint32_t mNumVertices;
         HashID mModelHash;
+        renderer::Mesh mMesh;
     };
 }

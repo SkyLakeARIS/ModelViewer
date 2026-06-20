@@ -38,18 +38,25 @@ namespace scene
 
 
         int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
-        (void)sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Grid_%d_%d.mesh",
+        const int16_t wroteCount = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Grid_%d_%d.mesh",
                         reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), numLineX, numLineY);
 
         mModelHash = util::GetDjb2Hash(virtualFilePath);
-        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices), sizeof(XMFLOAT3) * mNumVertices, mModelHash);
+        mMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
+        (void)memcpy(mMesh.MeshName, virtualFilePath, wroteCount+1);
+        mMesh.VertexLayoutType = renderer::eInputLayout::P;
+        const int16_t stride = renderer::GetVertexStrideSize(mMesh.VertexLayoutType);
+        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices), stride * mNumVertices, mMesh.MeshHash, stride, mMesh.VertexRange);
+        delete[] vertices;
     }
 
     Floor::~Floor()
     {
-        mBufferManager->RemoveVertexData(mModelHash);
+        const int16_t stride = renderer::GetVertexStrideSize(mMesh.VertexLayoutType);
+        mBufferManager->RemoveVertexData(stride, mMesh.MeshHash);
         mBufferManager = nullptr;
 
+        // TODO: BufferManager를 받지 않고, BufferData 처리할 수 있는 로직이 필요함.
     }
 
     void Floor::Draw(renderer::Renderer& renderer)
@@ -72,22 +79,18 @@ namespace scene
         renderer.UpdateCB(renderer::eCbType::CbColor, &cbColor);
 
 
-        renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
 
-        const renderer::BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
-        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
 
-        UINT stride = sizeof(XMFLOAT3);
-        UINT offset = vertexRange.StartIndex;
 
-        renderer.BindVertexBuffer(stride, offset);
+        const int16_t stride = renderer::GetVertexStrideSize(mMesh.VertexLayoutType);
+        renderer.BindVertexBufferNew(stride, 0);
 
         D3D11_PRIMITIVE_TOPOLOGY orgTopology;
         renderer.GetCurrentPrimitiveTopology(orgTopology);
 
         renderer.BindPrimitiveTopologyTo(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-        renderer.Draw(mNumVertices, 0);
+        renderer.Draw(mMesh.VertexRange.Count, mMesh.VertexRange.StartIndex);
 
         renderer.BindPrimitiveTopologyTo(orgTopology);
 

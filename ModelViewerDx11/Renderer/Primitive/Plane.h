@@ -1,5 +1,6 @@
 #pragma once
 #include "../../framework.h"
+#include "../Resources/ModelData.h"
 #include "../Resources/RenderTypes.h"
 
 namespace scene
@@ -38,9 +39,7 @@ namespace renderer
         static std::atomic_int32_t sObjectCount;
     private:
         BufferManager* mBufferManager;
-        HashID mTexHash;
-        HashID mModelHash;
-        VertexPT mMesh;
+        Mesh mMesh;
         XMFLOAT3 mPosition;
         XMFLOAT3 mScale;
         XMFLOAT3 mRotation;

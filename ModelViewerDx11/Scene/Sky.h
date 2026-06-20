@@ -30,8 +30,7 @@ namespace scene
     private:
         Camera* mCamera;
 
-        HashID mModelHash;
-        HashID mTextureHash;
+        renderer::Mesh mMesh;
         XMMATRIX mWorld;
 
         uint32 mLatLines;

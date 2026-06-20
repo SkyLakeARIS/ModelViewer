@@ -12,6 +12,7 @@ namespace renderer
         struct BufferResource
         {
             ID3D11Buffer* Buffer;
+            // MEMO: store in Bytes
             std::unordered_map<HashID, BufferRange> Ranges;
             int32_t TotalSizeBytes;
             int32_t CursorBytes;
@@ -41,6 +42,7 @@ namespace renderer
         ID3D11Buffer* GetIndexBuffer() const;
 
         // stride 별 buffer를 적용한 함수들
+        // MEMO: data들을 받고, Buffer내의 ElementCount/Offset을 반환
         void AddVertexData(int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
         void AddIndexData(int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
 

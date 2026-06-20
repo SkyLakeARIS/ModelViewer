@@ -11,26 +11,31 @@ namespace scene
 {
     Sky::Sky(Camera& camera)
         : mCamera(&camera)
-        , mModelHash(0)
+        , mMesh()
         , mWorld(XMMatrixIdentity())
         , mLatLines(0)
         , mLonLines(0)
     {
 
-        int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
-        (void)sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Sphere_%d_%d.mesh",
-                  reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), mLonLines, mLatLines);
 
-        mModelHash = util::GetDjb2Hash(virtualFilePath);
     }
 
     Sky::~Sky()
     {
         mCamera = nullptr;
+        // TODO: 추가한 BufferData 처리할 수 있는 로직이 필요함. - (종료될 떄 처리되기 때문에 당장 문제는 없음)
     }
 
     HRESULT Sky::Initialize(uint32 latLines, uint32 lonLines, renderer::TextureManager* const texManager, renderer::Renderer& renderer)
     {
+        mLonLines = lonLines;
+        mLatLines = latLines;
+        int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
+        const int16_t wroteCount = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Sphere_%d_%d.mesh",
+            reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH), mLonLines, mLatLines);
+
+        mMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
+        (void)memcpy(mMesh.MeshName, virtualFilePath, wroteCount + 1);
         // init mesh info
         HRESULT result;
         result = createSphere(latLines, lonLines, renderer);
@@ -40,7 +45,7 @@ namespace scene
         }
         
         const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/skybox.dds");
-        texManager->AddDTextureDDS(filePath, mTextureHash);
+        texManager->AddDTextureDDS(filePath, mMesh.TextureHashes[static_cast<int8_t>(renderer::eTextureType::Diffuse)]);
         if (FAILED(result))
         {
             ASSERT(false, "Skybox - fail to create texture");
@@ -54,22 +59,13 @@ namespace scene
         // render
         renderer.BindInputLayoutTo(renderer::eInputLayout::PT);
 
-        renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
-        // TODO: improve- Model이 아니라 Mesh별로 해시를 가지는 게 더 좋을 것 같은 느낌과 ElementOffset도 추가로 저장하는 게 좋을 것 같다.
-        // 그렇지 않으면 굳이 BufferManager가 Range 정보까지 가지고 있을 이유가 크게 사라짐.
-        // 그래도 Buffer를 바인드할 때 offset을 0으로 두는 것이 나중에 렌더 큐 구조를 잡을 때 버퍼 바인드를 한번만 수행할 수 있다.
-        const renderer::BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
-        const renderer::BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
-
-        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
-        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
 
 
-        uint32 stride = sizeof(renderer::VertexPTN);
-        uint32 offset = vertexRange.StartIndex;
 
-        renderer.BindVertexBuffer(stride, offset);
-        renderer.BindIndexBuffer(indexRange.StartIndex);
+        const int16_t strideVertex = renderer::GetVertexStrideSize(mMesh.VertexLayoutType);
+
+        renderer.BindVertexBufferNew(strideVertex, 0);
+        renderer.BindIndexBufferNew(0);
 
         renderer.BindRasterStateByType(renderer::eRasterType::Skybox);
 
@@ -83,11 +79,9 @@ namespace scene
 
         renderer.BindDepthStencilState(true);
 
-        renderer.BindTextureToPs(0, mTextureHash);
+        renderer.BindTextureToPs(0, mMesh.TextureHashes[static_cast<int8_t>(renderer::eTextureType::Diffuse)]);
 
-        // TODO: draw 구조가 잡히면 나중에 한번에 처리
-        // TODO: improve - BufferManager에게 Range를 얻어서 쓰도록 전체적인 Draw 함수 로직 통일하기(ElementOffset 추가하고 나서)
-        renderer.DrawIndexed(static_cast<uint32_t>(indexRange.Count), 0, 0);
+        renderer.DrawIndexed(mMesh.IndexRange.Count, mMesh.IndexRange.StartIndex, mMesh.VertexRange.StartIndex);
 
         renderer.BindDepthStencilState(false);
     }
@@ -117,7 +111,7 @@ namespace scene
         const uint32 numVertex = ((latLines - 2) * lonLines) + 2;
         const uint32 numFace = ((latLines - 3) * (lonLines) * 2) + (lonLines * 2);
 
-        std::vector<renderer::VertexPTN> vertices(numVertex);
+        std::vector<renderer::VertexPT> vertices(numVertex);
 
         vertices[0].Position.x = 0.0f;
         vertices[0].Position.y = 0.0f;
@@ -205,8 +199,13 @@ namespace scene
 
 
         renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
-        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices.data()), sizeof(renderer::VertexPTN) * vertices.size(), mModelHash);
-        bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices.data()), sizeof(uint32_t) * indices.size(), mModelHash);
+
+        mMesh.VertexLayoutType = renderer::eInputLayout::PT;
+        const int16_t strideVertex = renderer::GetVertexStrideSize(mMesh.VertexLayoutType);
+        const int16_t strideIndex = bufferManager->GetIndexStrideSize();
+
+        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices.data()), strideVertex * vertices.size(), mMesh.MeshHash, strideVertex, mMesh.VertexRange);
+        bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices.data()), strideIndex * indices.size(), mMesh.MeshHash, strideIndex, mMesh.IndexRange);
 
         return S_OK;
     }

@@ -4,7 +4,6 @@
 #include "../../Util/Macro.h"
 #include "../../Util/Util.h"
 #include "../Resources/BufferManager.h"
-#include "../Resources/ModelData.h"
 
 namespace renderer
 {
@@ -12,7 +11,7 @@ namespace renderer
 
     Plane::Plane(BufferManager* const bufferManager, renderer::Renderer& renderer)
         : mBufferManager(bufferManager)
-        , mTexHash(0)
+        , mMesh()
         , mPosition(XMFLOAT3(0.0f, 0.0f, 0.0f))
         , mScale(XMFLOAT3(1.6f, 1.6f, 0.6f))
         , mRotation(XMFLOAT3(0.0f, 0.0f, 0.0f))
@@ -39,20 +38,27 @@ namespace renderer
         sObjectCount.fetch_add(1);
 
         int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
-        sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Plane_%d.mesh",
+        const int16_t wroteCount = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Plane_%d.mesh",
                   reinterpret_cast<const char*>(VIRTUAL_ROOT_PATH), sObjectCount.load());
 
-        mModelHash = util::GetDjb2Hash(virtualFilePath);
+        mMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
+        (void)memcpy(mMesh.MeshName, virtualFilePath, wroteCount + 1);
+        mMesh.VertexLayoutType = eInputLayout::PT;
+        const int16_t strideVertex = GetVertexStrideSize(mMesh.VertexLayoutType);
+        const int16_t strideIndex = bufferManager->GetIndexStrideSize();
 
-        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices), sizeof(vertices), mModelHash);
-        bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices), sizeof(indices), mModelHash);
+        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices), sizeof(vertices), mMesh.MeshHash, strideVertex, mMesh.VertexRange);
+        bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices), sizeof(indices), mMesh.MeshHash, strideIndex, mMesh.IndexRange);
     }
 
     Plane::~Plane()
     {
-        mBufferManager->RemoveVertexData(mModelHash);
-        mBufferManager->RemoveIndexData(mModelHash);
+        const int16_t strideVertex = GetVertexStrideSize(mMesh.VertexLayoutType);
+        const int16_t strideIndex = mBufferManager->GetIndexStrideSize();
+        mBufferManager->RemoveVertexData(strideVertex, mMesh.MeshHash);
+        mBufferManager->RemoveIndexData(strideIndex, mMesh.MeshHash);
         mBufferManager = nullptr;
+        // TODO: BufferManager를 받지 않고, BufferData 처리할 수 있는 로직이 필요함.
     }
 
     XMFLOAT3 Plane::GetPosition() const
@@ -72,30 +78,24 @@ namespace renderer
 
     void Plane::Draw(renderer::Renderer& renderer)
     {
-        BufferManager* const bufferManager = renderer.GetBufferManager();
-        const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
-        const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
+        const int16_t strideVertex = GetVertexStrideSize(mMesh.VertexLayoutType);
 
-        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
-        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
+        renderer.BindVertexBufferNew(strideVertex, 0);
+        renderer.BindIndexBufferNew(0);
 
-        const uint32 stride = sizeof(VertexPT);
-        const uint32 offset = vertexRange.StartIndex;
 
-        renderer.BindVertexBuffer(stride, offset);
-        renderer.BindIndexBuffer(indexRange.StartIndex);
 
-        if (!mTexHash)
+        if (!mMesh.TextureHashes[static_cast<int8_t>(eTextureType::Diffuse)])
         {
             renderer.BindDefaultTextureToPs(0);
         }
         else
         {
-            renderer.BindTextureToPs(0, mTexHash);
+            renderer.BindTextureToPs(0, mMesh.TextureHashes[static_cast<int8_t>(eTextureType::Diffuse)]);
         }
         renderer.BindSamplerToPsByType(0, eSamplerType::AnisotropicWrap);
 
-        renderer.DrawIndexed(6, 0U, 0U);
+        renderer.DrawIndexed(mMesh.IndexRange.Count, mMesh.IndexRange.StartIndex, mMesh.VertexRange.StartIndex);
 
     }
 
@@ -105,18 +105,12 @@ namespace renderer
         renderer.BindInputLayoutTo(eInputLayout::PT);
         renderer.BindShaderTo(eShader::RenderToTexture);
 
-        BufferManager* const bufferManager = renderer.GetBufferManager();
-        const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
-        const BufferRange indexRange = bufferManager->GetIndexRangeByHash(mModelHash);
 
-        ASSERT((vertexRange.Count >= 0 && vertexRange.StartIndex >= 0), "no matched VertexRange data. hash(%u)", mModelHash);
-        ASSERT((indexRange.Count >= 0 && indexRange.StartIndex >= 0), "no matched IndexRange data. hash(%u)", mModelHash);
 
-        const uint32 stride = sizeof(VertexPT);
-        const uint32 offset = vertexRange.StartIndex;
 
-        renderer.BindVertexBuffer(stride, offset);
-        renderer.BindIndexBuffer(indexRange.StartIndex);
+        const int16_t strideVertex = GetVertexStrideSize(mMesh.VertexLayoutType);
+        renderer.BindVertexBufferNew(strideVertex, 0);
+        renderer.BindIndexBufferNew(0);
 
         XMMATRIX matWorld = XMMatrixTranspose(mMatWorld);
         renderer.UpdateCB(eCbType::CbWorld, &matWorld);
@@ -126,7 +120,7 @@ namespace renderer
         renderer.BindSamplerToPsByType(0, eSamplerType::AnisotropicWrap);
 
         renderer.BindShadowTextureToPs(0);
-        renderer.DrawIndexed(6, 0U, 0U);
+        renderer.DrawIndexed(mMesh.IndexRange.Count, mMesh.IndexRange.StartIndex, mMesh.VertexRange.StartIndex);
 
         renderer.UnbindTexturePs(0);
     }
@@ -150,6 +144,6 @@ namespace renderer
 
     void Plane::SetTexHash(HashID textureHash)
     {
-        mTexHash = textureHash;
+        mMesh.TextureHashes[static_cast<int8_t>(eTextureType::Diffuse)] = textureHash;
     }
 }
