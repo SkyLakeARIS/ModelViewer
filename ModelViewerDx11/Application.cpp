@@ -315,9 +315,9 @@ void Application::updateScene(double deltaTime)
     }
 
 
-    renderer::Renderer::CbViewProj cbViewProj;
+    renderer::CbViewProj cbViewProj;
     cbViewProj.Matrix = XMMatrixTranspose(mCamera->GetViewProjectionMatrix());
-    mRenderer->UpdateCB(renderer::Renderer::eCbType::CbViewProj, &cbViewProj);
+    mRenderer->UpdateCB(renderer::eCbType::CbViewProj, &cbViewProj);
 
 
     mLight->SetupCascade(*mRenderer);
@@ -325,18 +325,18 @@ void Application::updateScene(double deltaTime)
 
 void Application::preprocess()
 {
-    mRenderer->BindRenderTargetTo(renderer::Renderer::eRenderTarget::Shadow);
+    mRenderer->BindRenderTargetTo(renderer::eRenderTarget::Shadow);
     mRenderer->SetViewport(false);
-    mRenderer->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Shadow);
+    mRenderer->ClearScreenAndDepth(renderer::eRenderTarget::Shadow);
     mCharacter->Update(*mRenderer);
     mCharacter->DrawShadow(*mRenderer);
 }
 
 void Application::renderScene()
 {
-    mRenderer->BindRenderTargetTo(renderer::Renderer::eRenderTarget::Default);
+    mRenderer->BindRenderTargetTo(renderer::eRenderTarget::Default);
     mRenderer->SetViewport(true);
-    mRenderer->ClearScreenAndDepth(renderer::Renderer::eRenderTarget::Default);
+    mRenderer->ClearScreenAndDepth(renderer::eRenderTarget::Default);
 
 
     // TODO: 지금은 WorldCB를 공유하여 Update함수를 같이 붙여둬야 하지만, 나중에 렌더큐를 가면 내부적으로 자동으로 업데이트 되게끔 처리해보기

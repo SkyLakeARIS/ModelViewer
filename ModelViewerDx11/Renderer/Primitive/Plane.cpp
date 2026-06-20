@@ -93,7 +93,7 @@ namespace renderer
         {
             renderer.BindTextureToPs(0, mTexHash);
         }
-        renderer.BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
+        renderer.BindSamplerToPsByType(0, eSamplerType::AnisotropicWrap);
 
         renderer.DrawIndexed(6, 0U, 0U);
 
@@ -102,8 +102,8 @@ namespace renderer
     void Plane::DrawTexture(renderer::Renderer& renderer)
     {
 
-        renderer.BindInputLayoutTo(Renderer::eInputLayout::PT);
-        renderer.BindShaderTo(Renderer::eShader::RenderToTexture);
+        renderer.BindInputLayoutTo(eInputLayout::PT);
+        renderer.BindShaderTo(eShader::RenderToTexture);
 
         BufferManager* const bufferManager = renderer.GetBufferManager();
         const BufferRange vertexRange = bufferManager->GetVertexRangeByHash(mModelHash);
@@ -119,11 +119,11 @@ namespace renderer
         renderer.BindIndexBuffer(indexRange.StartIndex);
 
         XMMATRIX matWorld = XMMatrixTranspose(mMatWorld);
-        renderer.UpdateCB(Renderer::eCbType::CbWorld, &matWorld);
-        renderer.BindCbToVsByType(0, 1, Renderer::eCbType::CbWorld);
-        renderer.BindCbToVsByType(1, 1, Renderer::eCbType::CbViewProj);
+        renderer.UpdateCB(eCbType::CbWorld, &matWorld);
+        renderer.BindCbToVsByType(0, 1, eCbType::CbWorld);
+        renderer.BindCbToVsByType(1, 1, eCbType::CbViewProj);
 
-        renderer.BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
+        renderer.BindSamplerToPsByType(0, eSamplerType::AnisotropicWrap);
 
         renderer.BindShadowTextureToPs(0);
         renderer.DrawIndexed(6, 0U, 0U);

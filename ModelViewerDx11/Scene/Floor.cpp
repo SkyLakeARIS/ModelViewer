@@ -54,22 +54,22 @@ namespace scene
 
     void Floor::Draw(renderer::Renderer& renderer)
     {
-        renderer.BindRasterStateByType(renderer::Renderer::eRasterType::Basic);
-        renderer.BindInputLayoutTo(renderer::Renderer::eInputLayout::P);
-        renderer.BindShaderTo(renderer::Renderer::eShader::Color);
+        renderer.BindRasterStateByType(renderer::eRasterType::Basic);
+        renderer.BindInputLayoutTo(renderer::eInputLayout::P);
+        renderer.BindShaderTo(renderer::eShader::Color);
 
-        renderer::Renderer::CbWorld cbWorld;
+        renderer::CbWorld cbWorld;
         cbWorld.Matrix = XMMatrixIdentity();
-        renderer.UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWorld);
+        renderer.UpdateCB(renderer::eCbType::CbWorld, &cbWorld);
 
-        renderer.BindCbToVsByType(0, 1, renderer::Renderer::eCbType::CbWorld);
-        renderer.BindCbToVsByType(1, 1, renderer::Renderer::eCbType::CbViewProj);
-        renderer.BindCbToPs(0, 1, renderer::Renderer::eCbType::CbColor);
+        renderer.BindCbToVsByType(0, 1, renderer::eCbType::CbWorld);
+        renderer.BindCbToVsByType(1, 1, renderer::eCbType::CbViewProj);
+        renderer.BindCbToPs(0, 1, renderer::eCbType::CbColor);
 
 
-        renderer::Renderer::CbColor cbColor = {};
+        renderer::CbColor cbColor = {};
         cbColor.Float3 = XMFLOAT3(0.0, 1.0, 0.0);
-        renderer.UpdateCB(renderer::Renderer::eCbType::CbColor, &cbColor);
+        renderer.UpdateCB(renderer::eCbType::CbColor, &cbColor);
 
 
         renderer::BufferManager* const bufferManager = renderer.GetBufferManager();

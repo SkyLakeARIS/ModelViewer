@@ -155,9 +155,9 @@ namespace scene
 
         XMFLOAT3 position;
         XMStoreFloat3(&position, mvEye);
-        renderer::Renderer::CbCameraPosition cbCameraPos = {};
+        renderer::CbCameraPosition cbCameraPos = {};
         cbCameraPos.Float3 = position;
-        renderer.UpdateCB(renderer::Renderer::eCbType::CbCameraPosition, &cbCameraPos);
+        renderer.UpdateCB(renderer::eCbType::CbCameraPosition, &cbCameraPos);
     }
 
     void Camera::makeViewMatrix()

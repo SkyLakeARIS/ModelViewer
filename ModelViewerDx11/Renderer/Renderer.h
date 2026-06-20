@@ -1,5 +1,6 @@
 #pragma once
 #include "../framework.h"
+#include "./Resources/RenderTypes.h"
 
 namespace renderer
 {
@@ -8,79 +9,6 @@ namespace renderer
 
     class Renderer final : IUnknown
     {
-    public:
-        typedef struct CbMatrix
-        {
-            XMMATRIX Matrix;
-        }CbWorld, CbViewProj, CbLightViewProjMatrix;
-
-        typedef struct CbFloat3
-        {
-            XMFLOAT3    Float3;
-            float       Reserve;
-        } CbCameraPosition, CbOutlineProperty, CbColor;
-
-        typedef struct CbTwoVec4
-        {
-            XMFLOAT4    First;
-            XMFLOAT4    Second;
-        }CbLightProperty;
-
-        enum class eCbType : uint8_t
-        {
-            CbWorld,
-            CbViewProj,
-            CbLightViewProjMatrix,
-            CbCameraPosition,
-            CbOutlineProperty,
-            CbLightProperty,
-            CbMaterial,
-            CbColor,
-            ConstantBufferCount
-        };
-
-        enum class eRasterType
-        {
-            Basic,
-            Outline,
-            Skybox,
-            CullBack,
-            RasterCount,
-        };
-
-        enum class eSamplerType
-        {
-            AnisotropicWrap,
-            SamplerCount
-        };
-
-        enum class eInputLayout : uint8_t
-        {
-            PTN,    // pos, normal, tex
-            PT,     // pos, tex
-            P,      // pos
-            InputlayoutCount
-        };
-
-        enum class eShader : uint32_t
-        {
-            Outline,
-            Skybox,
-            Shadow,
-            BasicWithShadow,
-            RenderToTexture,
-            Color,
-            ShaderCount
-        };
-
-        // RenderTarget, DepthStencil 
-        enum class eRenderTarget : uint8_t
-        {
-            Default,
-            Shadow,
-            RenderTargetCount
-        };
-
     private:
 
         enum class eVertexShader : uint32_t

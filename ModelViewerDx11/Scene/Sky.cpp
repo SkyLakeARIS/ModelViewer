@@ -52,7 +52,7 @@ namespace scene
     void Sky::Draw(renderer::Renderer& renderer)
     {
         // render
-        renderer.BindInputLayoutTo(renderer::Renderer::eInputLayout::PT);
+        renderer.BindInputLayoutTo(renderer::eInputLayout::PT);
 
         renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
         // TODO: improve- Model이 아니라 Mesh별로 해시를 가지는 게 더 좋을 것 같은 느낌과 ElementOffset도 추가로 저장하는 게 좋을 것 같다.
@@ -71,15 +71,15 @@ namespace scene
         renderer.BindVertexBuffer(stride, offset);
         renderer.BindIndexBuffer(indexRange.StartIndex);
 
-        renderer.BindRasterStateByType(renderer::Renderer::eRasterType::Skybox);
+        renderer.BindRasterStateByType(renderer::eRasterType::Skybox);
 
-        renderer.BindShaderTo(renderer::Renderer::eShader::Skybox);
+        renderer.BindShaderTo(renderer::eShader::Skybox);
 
-        renderer.BindSamplerToPsByType(0, renderer::Renderer::eSamplerType::AnisotropicWrap);
+        renderer.BindSamplerToPsByType(0, renderer::eSamplerType::AnisotropicWrap);
 
 
-        renderer.BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
-        renderer.BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
+        renderer.BindCbToVsByType(0U, 1U, renderer::eCbType::CbWorld);
+        renderer.BindCbToVsByType(1U, 1U, renderer::eCbType::CbViewProj);
 
         renderer.BindDepthStencilState(true);
 
@@ -103,9 +103,9 @@ namespace scene
 
         mWorld = matScale * matTranslate;
 
-        renderer::Renderer::CbWorld cbWVP;
+        renderer::CbWorld cbWVP;
         cbWVP.Matrix = XMMatrixTranspose(mWorld);
-        renderer.UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWVP);
+        renderer.UpdateCB(renderer::eCbType::CbWorld, &cbWVP);
     }
 
     /*

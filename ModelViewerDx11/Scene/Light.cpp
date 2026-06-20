@@ -73,9 +73,9 @@ namespace scene
         mMesh->Update();
         mMesh->GetWorldMatrix(mMatWorld);
 
-        renderer::Renderer::CbWorld cbMatWorld;
+        renderer::CbWorld cbMatWorld;
         cbMatWorld.Matrix = XMMatrixTranspose(mMatWorld);
-        renderer.UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbMatWorld);
+        renderer.UpdateCB(renderer::eCbType::CbWorld, &cbMatWorld);
     }
 
     void Light::Draw(renderer::Renderer& renderer)
@@ -83,16 +83,16 @@ namespace scene
         // MEMO: 임시로 CB 업데이트하도록 강제로 넣음. (cascade 테스트) update, rendering 주기가 달라서.
         Update(renderer);
 
-        renderer.BindInputLayoutTo(renderer::Renderer::eInputLayout::PT);
-        renderer.BindShaderTo(renderer::Renderer::eShader::RenderToTexture);
+        renderer.BindInputLayoutTo(renderer::eInputLayout::PT);
+        renderer.BindShaderTo(renderer::eShader::RenderToTexture);
 
-        renderer.BindRasterStateByType(renderer::Renderer::eRasterType::Basic);
+        renderer.BindRasterStateByType(renderer::eRasterType::Basic);
         renderer.BindBlendStateByHash(mBlendHash, nullptr, 0xffffffff);
 
 
 
-        renderer.BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
-        renderer.BindCbToVsByType(1U, 1U, renderer::Renderer::eCbType::CbViewProj);
+        renderer.BindCbToVsByType(0U, 1U, renderer::eCbType::CbWorld);
+        renderer.BindCbToVsByType(1U, 1U, renderer::eCbType::CbViewProj);
 
         mMesh->Draw(renderer);
     }
@@ -202,18 +202,18 @@ namespace scene
         int32_t index = 0;
         mMatViewProj = mMatLightViews[index] * mMatLightProjs[index];
 
-        renderer::Renderer::CbLightViewProjMatrix cbLightVpMat;
+        renderer::CbLightViewProjMatrix cbLightVpMat;
         cbLightVpMat.Matrix = XMMatrixTranspose(mMatViewProj);
         //deviceContext->UpdateSubresource(mCB, 0, nullptr, &cbWvp, 0U, 0U);
-        renderer.UpdateCB(renderer::Renderer::eCbType::CbLightViewProjMatrix, &cbLightVpMat);
+        renderer.UpdateCB(renderer::eCbType::CbLightViewProjMatrix, &cbLightVpMat);
     }
 
     void Light::updateLightPropertyCB(renderer::Renderer& renderer)
     {
-        renderer::Renderer::CbLightProperty cbLightProperty;
+        renderer::CbLightProperty cbLightProperty;
         cbLightProperty.First = XMFLOAT4(mColor.x, mColor.y, mColor.z, 0.0f);
         cbLightProperty.Second = XMFLOAT4(mPosition.x, mPosition.y, mPosition.z, 0.0f);
-        renderer.UpdateCB(renderer::Renderer::eCbType::CbLightProperty, &cbLightProperty);
+        renderer.UpdateCB(renderer::eCbType::CbLightProperty, &cbLightProperty);
     }
 
     void Light::getPointsFromMatrix(XMMATRIX* matView, float nearPlane, float farPlane, XMMATRIX* const outMatLightView, XMMATRIX* const outMatLightProj)

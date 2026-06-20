@@ -31,7 +31,7 @@ namespace renderer
 
     void Model::Draw(renderer::Renderer& renderer)
     {
-        renderer.BindInputLayoutTo(Renderer::eInputLayout::PTN);
+        renderer.BindInputLayoutTo(eInputLayout::PTN);
 
         const uint32 stride = sizeof(Vertex);
 
@@ -42,12 +42,12 @@ namespace renderer
 
         if (mbHighlight)
         {
-            renderer.BindRasterStateByType(Renderer::eRasterType::CullBack);
+            renderer.BindRasterStateByType(eRasterType::CullBack);
 
-            renderer.BindShaderTo(Renderer::eShader::Outline);
-            renderer.BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
-            renderer.BindCbToVsByType(1U, 1U, Renderer::eCbType::CbOutlineProperty);
-            renderer.BindCbToVsByType(2U, 1U, Renderer::eCbType::CbViewProj);
+            renderer.BindShaderTo(eShader::Outline);
+            renderer.BindCbToVsByType(0U, 1U, eCbType::CbWorld);
+            renderer.BindCbToVsByType(1U, 1U, eCbType::CbOutlineProperty);
+            renderer.BindCbToVsByType(2U, 1U, eCbType::CbViewProj);
 
             for (uint32_t index = 0U; index < mMeshes.size(); ++index)
             {
@@ -57,19 +57,19 @@ namespace renderer
             renderer.ClearDepthBuffer();
         }
 
-        renderer.BindRasterStateByType(Renderer::eRasterType::Basic);
+        renderer.BindRasterStateByType(eRasterType::Basic);
 
-        renderer.BindShaderTo(Renderer::eShader::BasicWithShadow);
+        renderer.BindShaderTo(eShader::BasicWithShadow);
 
-        renderer.BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
-        renderer.BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
-        renderer.BindCbToVsByType(2U, 1U, Renderer::eCbType::CbLightProperty);
-        renderer.BindCbToVsByType(3U, 1U, Renderer::eCbType::CbCameraPosition);
-        renderer.BindCbToVsByType(4U, 1U, Renderer::eCbType::CbViewProj);
+        renderer.BindCbToVsByType(0U, 1U, eCbType::CbWorld);
+        renderer.BindCbToVsByType(1U, 1U, eCbType::CbLightViewProjMatrix);
+        renderer.BindCbToVsByType(2U, 1U, eCbType::CbLightProperty);
+        renderer.BindCbToVsByType(3U, 1U, eCbType::CbCameraPosition);
+        renderer.BindCbToVsByType(4U, 1U, eCbType::CbViewProj);
 
-        renderer.BindSamplerToPsByType(0, Renderer::eSamplerType::AnisotropicWrap);
+        renderer.BindSamplerToPsByType(0, eSamplerType::AnisotropicWrap);
 
-        renderer.BindCbToPs(0U, 1U, Renderer::eCbType::CbMaterial);
+        renderer.BindCbToPs(0U, 1U, eCbType::CbMaterial);
 
         renderer.BindShadowTextureToPs(2);
 
@@ -89,7 +89,7 @@ namespace renderer
             {
                 cbMaterial.Emissive = XMFLOAT3(0.0f, 0.0f, 0.0f);
             }
-            renderer.UpdateCB(Renderer::eCbType::CbMaterial, &cbMaterial);
+            renderer.UpdateCB(eCbType::CbMaterial, &cbMaterial);
 
             renderer.DrawIndexed(static_cast<uint32_t>(mMeshes[index].IndexRange.Count), mMeshes[index].IndexRange.StartIndex, mMeshes[index].VertexRange.StartIndex);
         }
@@ -99,18 +99,18 @@ namespace renderer
 
     void Model::DrawShadow(renderer::Renderer& renderer)
     {
-        renderer.BindInputLayoutTo(Renderer::eInputLayout::P);
+        renderer.BindInputLayoutTo(eInputLayout::P);
 
         const uint32 stride = sizeof(Vertex);
 
         renderer.BindVertexBuffer(stride, 0);
         renderer.BindIndexBuffer(0);
 
-        renderer.BindRasterStateByType(Renderer::eRasterType::Outline);
-        renderer.BindShaderTo(Renderer::eShader::Shadow);
+        renderer.BindRasterStateByType(eRasterType::Outline);
+        renderer.BindShaderTo(eShader::Shadow);
 
-        renderer.BindCbToVsByType(0U, 1U, Renderer::eCbType::CbWorld);
-        renderer.BindCbToVsByType(1U, 1U, Renderer::eCbType::CbLightViewProjMatrix);
+        renderer.BindCbToVsByType(0U, 1U, eCbType::CbWorld);
+        renderer.BindCbToVsByType(1U, 1U, eCbType::CbLightViewProjMatrix);
 
         // Draw
         for (size_t index = 0U; index < mMeshes.size(); ++index)
@@ -121,10 +121,10 @@ namespace renderer
 
     void Model::Update(renderer::Renderer& renderer)
     {
-        Renderer::CbWorld cbWorld;
+        CbWorld cbWorld;
         cbWorld.Matrix = XMMatrixTranspose(mMatWorld);
 
-        renderer.UpdateCB(Renderer::eCbType::CbWorld, &cbWorld);
+        renderer.UpdateCB(eCbType::CbWorld, &cbWorld);
     }
 
     void Model::SetMeshes(std::vector<Mesh>& meshes)
