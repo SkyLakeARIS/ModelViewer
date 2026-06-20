@@ -24,24 +24,11 @@ namespace renderer
 
         bool Initialize(int32_t vertexBufferByteSize, int32_t indexBufferByteSize);
 
-        // TODO: consider - 유니크 포인터를 쓴다면 소유권 문제와 유효성 문제가 있을 것 같은데 나중에 비동기 상황에 문제가 되지 않을까?
-        void AddVertexData(int8_t* const pData, int32_t dataByteSize, HashID hash);
-        void AddIndexData(int8_t* const pData, int32_t dataByteSize, HashID hash);
 
-        void RemoveVertexData(HashID hash);
-        void RemoveIndexData(HashID hash);
 
-        // TODO: 해시 테이블에서 데이터 범위 값을 찾을 수 있으므로, 원하는 범위 업데이트는 나중에 확장(크기 확장도?)
-        void UpdateVertexData(int8_t* const pData, HashID hash);
-        void UpdateIndexData(int8_t* const pData, HashID hash);
 
-        BufferRange GetVertexRangeByHash(HashID hash);
-        BufferRange GetIndexRangeByHash(HashID hash);
 
-        ID3D11Buffer* GetVertexBuffer() const;
-        ID3D11Buffer* GetIndexBuffer() const;
 
-        // stride 별 buffer를 적용한 함수들
         // MEMO: data들을 받고, Buffer내의 ElementCount/Offset을 반환
         void AddVertexData(int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
         void AddIndexData(int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
@@ -65,11 +52,7 @@ namespace renderer
 
         int16_t GetIndexStrideSize() const;
     private:
-        // TODO: 하나로 합쳐도 좋을 것 같고, 분리해도 좋을 것 같고.
-        void resizeVertexBuffer(uint32_t newSize);
-        void resizeIndexBuffer(uint32_t newSize);
 
-        // stride 별 buffer를 적용한 함수들
         void resizeVertexBufferNew(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
         void resizeIndexBufferNew(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
     public:
@@ -78,8 +61,6 @@ namespace renderer
     private:
         ID3D11Device* mDevice;
         ID3D11DeviceContext* mDeviceContext;
-        ID3D11Buffer* mVertexBuffer;
-        ID3D11Buffer* mIndexBuffer;
         int16_t mIndexStrideSize;
         // MEMO: 0 offset bind를 하려면 버퍼 내에 서로 다른 stride를 가진 데이터가 존재하면 안될 것으로 생각되어 Buffer들을 분리한다.
         // MEMO: pair<vertex stride, Buffer> - stride 크기 별로 개별 버퍼를 관리
@@ -91,15 +72,7 @@ namespace renderer
         std::unordered_map<int16_t, std::vector<BufferRange>> mIndexRemovedRanges;
 
         // TODO: FlatMap은 일단 구조를 잡고나서 도입하자.
-        // MEMO: pair<hash - BufferRange>
-        std::unordered_map<HashID, BufferRange> mVertexRanges;
-        std::unordered_map<HashID, BufferRange> mIndexRanges;
 
-        // MEMO: in Bytes
-        int32_t mVertexBufferTotalSize;
-        int32_t mIndexBufferTotalSize;
 
-        int32_t mVertexBufferCursor;
-        int32_t mIndexBufferCursor;
     };
 }
