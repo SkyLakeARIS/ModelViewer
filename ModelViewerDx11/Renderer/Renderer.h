@@ -36,7 +36,7 @@ namespace renderer
             CbLightProperty,
             CbMaterial,
             CbColor,
-            NumConstantBuffer
+            ConstantBufferCount
         };
 
         enum class eRasterType
@@ -45,13 +45,12 @@ namespace renderer
             Outline,
             Skybox,
             CullBack,
-            NumRaster,
+            RasterCount,
         };
 
         enum class eSamplerType
         {
             AnisotropicWrap,
-            // TODO: Num->Count로 네이밍 통일하는 게 좋을 것 같다.
             SamplerCount
         };
 
@@ -60,7 +59,7 @@ namespace renderer
             PTN,    // pos, normal, tex
             PT,     // pos, tex
             P,      // pos
-            NumInputlayout
+            InputlayoutCount
         };
 
         enum class eShader : uint32_t
@@ -71,7 +70,7 @@ namespace renderer
             BasicWithShadow,
             RenderToTexture,
             Color,
-            NumShader
+            ShaderCount
         };
 
         // RenderTarget, DepthStencil 
@@ -79,7 +78,7 @@ namespace renderer
         {
             Default,
             Shadow,
-            NumRenderTarget
+            RenderTargetCount
         };
 
     private:
@@ -91,7 +90,7 @@ namespace renderer
             VsRenderToTexture,
             VsSimple,
             VsSkybox,
-            NumVertexShader
+            VertexShaderCount
         };
 
         enum class ePixelShader : uint32_t
@@ -102,7 +101,7 @@ namespace renderer
             PsSkybox,
             PsRenderToTexture,
             PsColor,
-            NumPixelShader
+            PixelShaderCount
         };
 
         struct ShaderMap
@@ -230,10 +229,10 @@ namespace renderer
         ID3D11DeviceContext*        mDeviceContext;
 
         // shader
-        ShaderMap           mShaderMapTable[static_cast<uint32_t>(eShader::NumShader)]; // combine vs-ps pairs
-        ID3D11VertexShader* mVertexShadersList[static_cast<uint32_t>(eVertexShader::NumVertexShader)];
-        ID3D11PixelShader*  mPixelShaderList[static_cast<uint32_t>(ePixelShader::NumPixelShader)];
-        ID3D11InputLayout*  mInputLayoutList[static_cast<uint32_t>(eInputLayout::NumInputlayout)];
+        ShaderMap           mShaderMapTable[static_cast<uint32_t>(eShader::ShaderCount)]; // combine vs-ps pairs
+        ID3D11VertexShader* mVertexShadersList[static_cast<uint32_t>(eVertexShader::VertexShaderCount)];
+        ID3D11PixelShader*  mPixelShaderList[static_cast<uint32_t>(ePixelShader::PixelShaderCount)];
+        ID3D11InputLayout*  mInputLayoutList[static_cast<uint32_t>(eInputLayout::InputlayoutCount)];
 
         // 
         IDXGISwapChain*             mSwapChain;
@@ -243,9 +242,9 @@ namespace renderer
 
         // render target, depthStencil
         // 일단은 쉽게 무조건 1:1매핑으로 (nullptr 처리는 나중에 최적화)
-        ID3D11RenderTargetView* mRenderTargetViewList[static_cast<uint8_t>(eRenderTarget::NumRenderTarget)];
-        ID3D11DepthStencilView* mDepthStencilViewList[static_cast<uint8_t>(eRenderTarget::NumRenderTarget)];
-        RtvDsMap mRtvDsMapTable[static_cast<uint8_t>(eRenderTarget::NumRenderTarget)]; // combine rtv - depth-stencil pairs
+        ID3D11RenderTargetView* mRenderTargetViewList[static_cast<uint8_t>(eRenderTarget::RenderTargetCount)];
+        ID3D11DepthStencilView* mDepthStencilViewList[static_cast<uint8_t>(eRenderTarget::RenderTargetCount)];
+        RtvDsMap mRtvDsMapTable[static_cast<uint8_t>(eRenderTarget::RenderTargetCount)]; // combine rtv - depth-stencil pairs
 
         // shadow
         ID3D11Texture2D*            mTexShadow;
@@ -256,7 +255,7 @@ namespace renderer
         D3D11_VIEWPORT mViewportTex;
 
         // raster state
-        ID3D11RasterizerState*      mRasterStates[static_cast<uint32>(eRasterType::NumRaster)]; // 0: back cull, 1: front cull
+        ID3D11RasterizerState*      mRasterStates[static_cast<uint32>(eRasterType::RasterCount)]; // 0: back cull, 1: front cull
 
         // sampler state
         ID3D11SamplerState* mSamplerState[static_cast<uint8_t>(eSamplerType::SamplerCount)];
@@ -264,7 +263,7 @@ namespace renderer
         // MEMO: option이 많고, 블렌드 하는데 조합이 많을 것 같으니 Hash로 관리하는 게 나을 것 같다.
         std::unordered_map<HashID, ID3D11BlendState*> mBlendStateMap;
         // CB
-        ID3D11Buffer* mCbList[static_cast<uint8_t>(eCbType::NumConstantBuffer)];
+        ID3D11Buffer* mCbList[static_cast<uint8_t>(eCbType::ConstantBufferCount)];
 
         // Managers
         BufferManager* mBufferManager;

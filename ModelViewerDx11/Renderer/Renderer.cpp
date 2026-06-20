@@ -189,7 +189,7 @@ namespace renderer
 
     HRESULT Renderer::createPresetConstantBuffers()
     {
-        constexpr ConstantBufferMap cbMapTable[static_cast<uint8_t>(eCbType::NumConstantBuffer)] =
+        constexpr ConstantBufferMap cbMapTable[static_cast<uint8_t>(eCbType::ConstantBufferCount)] =
             {
                 {eCbType::CbWorld, sizeof(CbWorld)},
                 {eCbType::CbViewProj, sizeof(CbViewProj)},
@@ -206,7 +206,7 @@ namespace renderer
         desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
         desc.CPUAccessFlags = 0;
         HRESULT result = {};
-        for (uint8_t index = 0; index < static_cast<uint8_t>(eCbType::NumConstantBuffer); ++index)
+        for (uint8_t index = 0; index < static_cast<uint8_t>(eCbType::ConstantBufferCount); ++index)
         {
             desc.ByteWidth = cbMapTable[index].ByteWidth;
             result = CreateConstantBuffer(desc, &mCbList[index]);
@@ -964,14 +964,14 @@ namespace renderer
             uint32_t numDescElements;
         };
 
-        InputLayoutContainer InputLayoutListMapTable[static_cast<uint8_t>(eInputLayout::NumInputlayout)] =
+        InputLayoutContainer InputLayoutListMapTable[static_cast<uint8_t>(eInputLayout::InputlayoutCount)] =
         {
             { eInputLayout::PTN, 0U, layoutPTNDesc, 3},
             { eInputLayout::PT, 1U, layoutPTNDesc, 2},
             {eInputLayout::P, 2U, layoutPTNDesc, 1},
         };
 
-        constexpr VertexShaderContainer VertexShaderListMapTable[static_cast<uint32_t>(eVertexShader::NumVertexShader)] =
+        constexpr VertexShaderContainer VertexShaderListMapTable[static_cast<uint32_t>(eVertexShader::VertexShaderCount)] =
         {
             {eVertexShader::VsBasicWithShadow, 1U},
             { eVertexShader::VsOutline, 0U},
@@ -980,7 +980,7 @@ namespace renderer
             {eVertexShader::VsSkybox, 3U},
         };
 
-        constexpr PixelShaderContainer PixelShaderListMapTable[static_cast<uint32_t>(ePixelShader::NumPixelShader)] =
+        constexpr PixelShaderContainer PixelShaderListMapTable[static_cast<uint32_t>(ePixelShader::PixelShaderCount)] =
         {
             {ePixelShader::PsBasicWithShadow, 1U},
             {ePixelShader::PsOutline, 0U},
@@ -1081,12 +1081,12 @@ namespace renderer
 
     void Renderer::Cleanup()
     {
-        for (uint32 i = 0; i < static_cast<uint32>(eCbType::NumConstantBuffer); ++i)
+        for (uint32 i = 0; i < static_cast<uint32>(eCbType::ConstantBufferCount); ++i)
         {
             SAFETY_RELEASE(mCbList[i]);
         }
 
-        for (uint32 i = 0; i < static_cast<uint32>(eRasterType::NumRaster); ++i)
+        for (uint32 i = 0; i < static_cast<uint32>(eRasterType::RasterCount); ++i)
         {
             SAFETY_RELEASE(mRasterStates[i]);
         }
@@ -1102,22 +1102,22 @@ namespace renderer
         }
         mBlendStateMap.clear();
 
-        for (uint32 i = 0; i < static_cast<uint32>(eVertexShader::NumVertexShader); ++i)
+        for (uint32 i = 0; i < static_cast<uint32>(eVertexShader::VertexShaderCount); ++i)
         {
             SAFETY_RELEASE(mVertexShadersList[i]);
         }
 
-        for (uint32 i = 0; i < static_cast<uint32>(ePixelShader::NumPixelShader); ++i)
+        for (uint32 i = 0; i < static_cast<uint32>(ePixelShader::PixelShaderCount); ++i)
         {
             SAFETY_RELEASE(mPixelShaderList[i]);
         }
 
-        for (uint32 i = 0; i < static_cast<uint32>(eInputLayout::NumInputlayout); ++i)
+        for (uint32 i = 0; i < static_cast<uint32>(eInputLayout::InputlayoutCount); ++i)
         {
             SAFETY_RELEASE(mInputLayoutList[i]);
         }
 
-        for (uint32 i = 0; i < static_cast<uint8_t>(eRenderTarget::NumRenderTarget); ++i)
+        for (uint32 i = 0; i < static_cast<uint8_t>(eRenderTarget::RenderTargetCount); ++i)
         {
             SAFETY_RELEASE(mRenderTargetViewList[i]);
             SAFETY_RELEASE(mDepthStencilViewList[i]);
