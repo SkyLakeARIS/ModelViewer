@@ -3,6 +3,14 @@
 
 namespace renderer
 {
+    enum class eInputLayout : uint8_t
+    {
+        PTN,    // pos, normal, tex
+        PT,     // pos, tex
+        P,      // pos
+        InputlayoutCount
+    };
+
     struct Vertex // 4bytes align
     {
         XMFLOAT3 Position;
@@ -16,6 +24,22 @@ namespace renderer
         XMFLOAT3 Position;
         XMFLOAT2 TexCoord;
     };
+
+    struct VertexP // 4bytes align
+    {
+        XMFLOAT3 Position;
+    };
+
+    inline constexpr int16_t GetVertexStrideSize(eInputLayout vertexAttrib)
+    {
+        constexpr int16_t VertexStrideMap[static_cast<int8_t>(eInputLayout::InputlayoutCount)] =
+        {
+            sizeof(Vertex),
+            sizeof(VertexTex),
+            sizeof(VertexP)
+        };
+        return VertexStrideMap[static_cast<int8_t>(vertexAttrib)];
+    }
 
     // 모델링 프로그램에서 미리 계산된 값으로 사용
     struct Material // 16 bytes align
@@ -86,13 +110,6 @@ namespace renderer
         SamplerCount
     };
 
-    enum class eInputLayout : uint8_t
-    {
-        PTN,    // pos, normal, tex
-        PT,     // pos, tex
-        P,      // pos
-        InputlayoutCount
-    };
 
     enum class eShader : uint32_t
     {
