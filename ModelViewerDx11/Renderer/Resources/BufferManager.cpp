@@ -79,9 +79,12 @@ namespace renderer
                 ASSERT(false, "vertex buffer creation failed, check the options. layoutType(%d)", layoutType);
                 return false;
             }
+            bufferRes.Ranges.reserve(128);
             bufferRes.TotalSizeBytes = vertexBufferByteSize;
-            mVertexBuffers.insert(std::make_pair(stride, bufferRes));
-            mVertexRemovedRanges.insert(std::make_pair(stride, std::vector<BufferRange>()));
+            mVertexBuffers.insert(std::make_pair(stride, std::move(bufferRes)));
+            std::vector<BufferRange> ranges;
+            ranges.reserve(128);
+            mVertexRemovedRanges.insert(std::make_pair(stride, std::move(ranges)));
         }
 
 
@@ -91,15 +94,17 @@ namespace renderer
         mIndexBuffers.reserve(static_cast<int16_t>(eInputLayout::InputlayoutCount));
 
         BufferResource bufferRes = {};
-        // TODO: 테스트 해보기.
+        bufferRes.Ranges.reserve(256);
         if (mDevice->CreateBuffer(&bufferDesc, nullptr, &bufferRes.Buffer) == E_FAIL)
         {
             ASSERT(false, "index buffer creation failed, check the options. layoutType(%d)", mIndexStrideSize);
             return false;
         }
         bufferRes.TotalSizeBytes = indexBufferByteSize;
-        mIndexBuffers.insert(std::make_pair(mIndexStrideSize, bufferRes));
-        mIndexRemovedRanges.insert(std::make_pair(mIndexStrideSize, std::vector<BufferRange>()));
+        mIndexBuffers.insert(std::make_pair(mIndexStrideSize, std::move(bufferRes)));
+        std::vector<BufferRange> ranges;
+        ranges.reserve(256);
+        mIndexRemovedRanges.insert(std::make_pair(mIndexStrideSize, std::move(ranges)));
 
         return true;
     }
