@@ -3,7 +3,9 @@
 #include "../Util/Macro.h"
 #include "../Renderer/Primitive/Plane.h"
 #include "../Renderer/Renderer.h"
+#include "../Renderer/Resources/BufferManager.h"
 #include "../Renderer/Resources/TextureManager.h"
+#include "../Util/Util.h"
 
 namespace scene
 {
@@ -18,7 +20,6 @@ namespace scene
         , mNearPlane(nearPlane)
         , mFarPlane(farPlane)
         , mCamera(camera)
-        //, mLinesBuffer(nullptr)
     {
         renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
         mMesh = new renderer::Plane(bufferManager);
@@ -44,7 +45,6 @@ namespace scene
             mMesh = nullptr;
         }
 
-        //SAFETY_RELEASE(mLinesBuffer);
     }
 
     void Light::Initialize(renderer::TextureManager* const texManager, renderer::Renderer& renderer)
@@ -95,45 +95,42 @@ namespace scene
         mMesh->Draw(renderer);
     }
 
-    //void Light::DrawDebug()
-    //{
-    //    renderer::Renderer::GetInstance()->SetInputLayoutTo(renderer::Renderer::eInputLayout::P);
-    //    renderer::Renderer::GetInstance()->SetShaderTo(renderer::Renderer::eShader::Color);
+    void Light::DrawDebug(renderer::Renderer& renderer)
+    {
+        renderer.BindInputLayoutTo(renderer::eInputLayout::P);
+        renderer.BindShaderTo(renderer::eShader::Color);
 
-    //    renderer::Renderer::CbColor cbColor = {  };
-    //    cbColor.Float3 = XMFLOAT3(1.0f, 1.0f, 0.0f);
+        renderer::CbColor cbColor = {  };
+        cbColor.Float3 = XMFLOAT3(1.0f, 1.0f, 0.0f);
 
-    //    renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbColor, &cbColor);
-    //    renderer::Renderer::GetInstance()->BindCbToPs(0, 1, renderer::Renderer::eCbType::CbColor);
+        renderer.UpdateCB(renderer::eCbType::CbColor, &cbColor);
+        renderer.BindCbToPs(0, 1, renderer::eCbType::CbColor);
 
-    //    renderer::Renderer::CbWorld cbWorld;
-    //    cbWorld.Matrix = XMMatrixTranspose(XMMatrixIdentity());
-    //    renderer::Renderer::GetInstance()->UpdateCB(renderer::Renderer::eCbType::CbWorld, &cbWorld);
+        renderer::CbWorld cbWorld;
+        cbWorld.Matrix = XMMatrixTranspose(XMMatrixIdentity());
+        renderer.UpdateCB(renderer::eCbType::CbWorld, &cbWorld);
 
-    //    renderer::Renderer::GetInstance()->BindCbToVsByType(0U, 1U, renderer::Renderer::eCbType::CbWorld);
-    //    renderer::Renderer::GetInstance()->BindCbToVsByType(1, 1, renderer::Renderer::eCbType::CbViewProj);
+        renderer.BindCbToVsByType(0U, 1U, renderer::eCbType::CbWorld);
+        renderer.BindCbToVsByType(1, 1, renderer::eCbType::CbViewProj);
 
-    //    ID3D11DeviceContext* deviceContext = renderer::Renderer::GetInstance()->GetDeviceContext();
-    //    const UINT stride = sizeof(XMFLOAT3);
-    //    const UINT offset = 0;
-    //    deviceContext->IASetVertexBuffers(0, 1, &mLinesBuffer, &stride, &offset);
+        const int16_t strideVertex = renderer::GetVertexStrideSize(mMeshDebug.VertexLayoutType);
+        renderer.BindVertexBufferDynamic(strideVertex);
 
-    //    D3D11_PRIMITIVE_TOPOLOGY origTopology;
-    //    deviceContext->IAGetPrimitiveTopology(&origTopology);
-    //    deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+        D3D11_PRIMITIVE_TOPOLOGY origTopology;
+        renderer.GetCurrentPrimitiveTopology(origTopology);
+        renderer.BindPrimitiveTopologyTo(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
-    //    deviceContext->Draw(mLines.size(), 0);
+        renderer.Draw(mMeshDebug.VertexRange.Count, mMeshDebug.VertexRange.StartIndex);
 
-    //    deviceContext->IASetPrimitiveTopology(origTopology);
-
-    //}
+        renderer.BindPrimitiveTopologyTo(origTopology);
+    }
 
     void Light::SetupCascade(renderer::Renderer& renderer)
     {
         mLines.clear();
         for (uint32_t i = 0; i < eCascadeLevel::Level_4 - 1; ++i)
         {
-            getPointsFromMatrix(&(mCamera->GetViewMatrix()), mCascadePlaneDistances[i], mCascadePlaneDistances[i + 1], &mMatLightViews[i], &mMatLightProjs[i]);
+            getPointsFromMatrix(&(mCamera->GetViewMatrix()), mCascadePlaneDistances[i], mCascadePlaneDistances[i + 1], &mMatLightViews[i], &mMatLightProjs[i], renderer);
         }
         // int32_t index = 0;
        //  mMatViewProj = mMatLightViews[index] * mMatLightProjs[index];
@@ -214,7 +211,7 @@ namespace scene
         renderer.UpdateCB(renderer::eCbType::CbLightProperty, &cbLightProperty);
     }
 
-    void Light::getPointsFromMatrix(XMMATRIX* matView, float nearPlane, float farPlane, XMMATRIX* const outMatLightView, XMMATRIX* const outMatLightProj)
+    void Light::getPointsFromMatrix(XMMATRIX* matView, float nearPlane, float farPlane, XMMATRIX* const outMatLightView, XMMATRIX* const outMatLightProj, renderer::Renderer& renderer)
     {
         XMMATRIX matLightProj = XMMatrixPerspectiveFovLH(mCamera->GetFov(), mCamera->GetAspectRatio(), nearPlane, farPlane);
         matLightProj = mCamera->GetViewMatrix() * matLightProj;
@@ -362,5 +359,21 @@ namespace scene
 
         mLines.push_back(XMFLOAT3(pointToWorld[6]));
         mLines.push_back(XMFLOAT3(pointToWorld[4]));
+
+        if(mMeshDebug.MeshHash == 0)
+        {
+            int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
+            const int16_t wroteCount = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Light_Debug_Line.mesh",
+                reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH));
+
+            (void)memcpy(mMeshDebug.MeshName, virtualFilePath, wroteCount + 1);
+
+            mMeshDebug.MeshHash = util::GetDjb2Hash(virtualFilePath);
+            mMeshDebug.VertexLayoutType = renderer::eInputLayout::P;
+        }
+
+        const int16_t strideVertex = renderer::GetVertexStrideSize(mMeshDebug.VertexLayoutType);
+        renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
+        bufferManager->AddVertexDynamic(reinterpret_cast<int8_t*>(mLines.data()), strideVertex * mLines.size(), mMeshDebug.MeshHash, strideVertex, mMeshDebug.VertexRange);
     }
 }

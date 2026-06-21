@@ -1,5 +1,6 @@
 #pragma once
 #include "../framework.h"
+#include "../Renderer/Resources/ModelData.h"
 
 namespace renderer
 {
@@ -26,7 +27,8 @@ namespace scene
         void Initialize(renderer::TextureManager* const texManager, renderer::Renderer& renderer);
         void Update(renderer::Renderer& renderer);
         void Draw(renderer::Renderer& renderer);
-        //void DrawDebug();
+        // TODO: 별도 함수보다 GUI 추가되면 Debug모드 추가하여 on/off 방식으로 처리
+        void DrawDebug(renderer::Renderer& renderer);
 
         void SetupCascade(renderer::Renderer& renderer);
 
@@ -41,7 +43,7 @@ namespace scene
         void updateLightPropertyCB(renderer::Renderer& renderer);
 
 
-        void getPointsFromMatrix(XMMATRIX* matView, float nearPlane, float farPlane, XMMATRIX* const outMatLightView, XMMATRIX* const outMatLightProj);
+        void getPointsFromMatrix(XMMATRIX* matView, float nearPlane, float farPlane, XMMATRIX* const outMatLightView, XMMATRIX* const outMatLightProj, renderer::Renderer& renderer);
     private:
 
         XMFLOAT3 mPosition;
@@ -58,11 +60,8 @@ namespace scene
         HashID mBlendHash;
 
         HashID mIconTexHash;
-        //  XMFLOAT3 mLines[24];
         std::vector<XMFLOAT3> mLines;
-        // TODO: 디버그용 버퍼도 처리해야 한다.
-        // TODO: 우선 주석으로 제거하고 정리 작업 끝난 다음에 DynamicBuffer 관리 방안까지 결정 후 다시 진행
-        //ID3D11Buffer* mLinesBuffer;
+        renderer::Mesh mMeshDebug;
 
         float mNearPlane;
         float mFarPlane;

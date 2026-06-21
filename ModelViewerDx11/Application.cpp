@@ -351,7 +351,8 @@ void Application::renderScene()
 
     mLight->Update(*mRenderer);
     mLight->Draw(*mRenderer);
-    //mLight->DrawDebug();
+    mLight->Update(*mRenderer);
+    mLight->DrawDebug(*mRenderer);
 
     mPlane->Update();
     mPlane->DrawTexture(*mRenderer);
