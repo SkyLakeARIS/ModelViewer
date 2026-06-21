@@ -109,6 +109,8 @@ namespace renderer
 
         void BindVertexBuffer(uint32_t stride) const;
         void BindIndexBuffer() const;
+        void BindVertexBufferDynamic(uint32_t stride) const;
+        void BindIndexBufferDynamic() const;
 
         void BindSamplerToPsByType(uint32_t slot, eSamplerType type) const;
         void BindBlendStateByHash(HashID hash, const float* const blendFactors, uint32_t mask);

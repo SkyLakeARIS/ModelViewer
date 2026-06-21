@@ -214,7 +214,7 @@ bool Application::initializeManagers()
     ID3D11Device* device = mRenderer->GetDevice();
     ID3D11DeviceContext* deviceContext = mRenderer->GetDeviceContext();
     mBufferManager = new renderer::BufferManager(device, deviceContext);
-    if (!mBufferManager->Initialize(renderer::BufferManager::sVertexBufferDefaultSize, renderer::BufferManager::sIndexBufferDefaultSize))
+    if (!mBufferManager->Initialize(renderer::BufferManager::sVertexBufferDefaultSize, renderer::BufferManager::sIndexBufferDefaultSize, renderer::BufferManager::sVertexBufferDefaultSize, renderer::BufferManager::sIndexBufferDefaultSize))
     {
         ASSERT(false, "buffer manager init failed.")
         return false;
@@ -334,6 +334,8 @@ void Application::preprocess()
 
 void Application::renderScene()
 {
+    mBufferManager->MarkInvalidateDynamicVertexBuf();
+    mBufferManager->MarkInvalidateDynamicIndexBuf();
     mRenderer->BindRenderTargetTo(renderer::eRenderTarget::Default);
     mRenderer->SetViewport(true);
     mRenderer->ClearScreenAndDepth(renderer::eRenderTarget::Default);

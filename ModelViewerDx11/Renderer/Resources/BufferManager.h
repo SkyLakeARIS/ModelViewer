@@ -22,11 +22,16 @@ namespace renderer
         BufferManager(ID3D11Device* device, ID3D11DeviceContext* deviceContext);
         ~BufferManager();
 
-        bool Initialize(int32_t vertexBufferByteSize, int32_t indexBufferByteSize);
+        bool Initialize(int32_t vertexBufferByteSizeStatic, int32_t indexBufferByteSizeStatic, int32_t vertexBufferByteSizeDynamic, int32_t
+                        indexBufferByteSizeDynamic);
 
         // MEMO: data들을 받고, Buffer내의 ElementCount/Offset을 반환
         void AddVertexData(int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
         void AddIndexData(int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
+
+        // TODO: consider - Data는 떼고 Static/Dynamic 구분하는 네이밍 검토
+        void AddVertexDynamic(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
+        void AddIndexDynamic(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
 
         void RemoveVertexData(int16_t stride, HashID hash);
         void RemoveIndexData(int16_t stride, HashID hash);
@@ -35,6 +40,9 @@ namespace renderer
         void UpdateVertexData(int8_t* const pData, int16_t stride, HashID hash);
         // MEMO: pData의 사이즈가 기존에 삽입된 사이즈와 같지 않으면 정의되지 않음
         void UpdateIndexData(int8_t* const pData, int16_t stride, HashID hash);
+
+        void MarkInvalidateDynamicVertexBuf();
+        void MarkInvalidateDynamicIndexBuf();
 
         BufferRange GetVertexRangeByteByHash(int16_t stride, HashID hash);
         BufferRange GetIndexRangeByteByHash(int16_t stride, HashID hash);
@@ -45,10 +53,13 @@ namespace renderer
         ID3D11Buffer* GetVertexBuffer(int16_t stride) const;
         ID3D11Buffer* GetIndexBuffer(int16_t stride) const;
 
+        ID3D11Buffer* GetVertexBufferDynamic(int16_t stride) const;
+        ID3D11Buffer* GetIndexBufferDynamic(int16_t stride) const;
+
         int16_t GetIndexStrideSize() const;
     private:
-        void resizeVertexBuffer(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
-        void resizeIndexBuffer(uint32_t newSize, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
+        void resizeVertexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
+        void resizeIndexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
     public:
         static constexpr int32_t sVertexBufferDefaultSize = 4096;
         static constexpr int32_t sIndexBufferDefaultSize = 4096;
@@ -56,6 +67,8 @@ namespace renderer
         ID3D11Device* mDevice;
         ID3D11DeviceContext* mDeviceContext;
         int16_t mIndexStrideSize;
+        bool mbNeedDiscardDynamicVertex;
+        bool mbNeedDiscardDynamicIndex;
         // MEMO: 0 offset bind를 하려면 버퍼 내에 서로 다른 stride를 가진 데이터가 존재하면 안될 것으로 생각되어 Buffer들을 분리한다.
         // MEMO: pair<vertex stride, Buffer> - stride 크기 별로 개별 버퍼를 관리
         std::unordered_map<int16_t, BufferResource> mVertexBuffers;
@@ -65,5 +78,9 @@ namespace renderer
         std::unordered_map<int16_t, std::vector<BufferRange>> mVertexRemovedRanges;
         std::unordered_map<int16_t, std::vector<BufferRange>> mIndexRemovedRanges;
         // TODO: FlatMap은 일단 구조를 잡고나서 도입하자.
+
+        // MEMO: 동적 데이터 전용
+        std::unordered_map<int16_t, BufferResource> mVertexBuffersDynamic;
+        std::unordered_map<int16_t, BufferResource> mIndexBuffersDynamic;
     };
 }
