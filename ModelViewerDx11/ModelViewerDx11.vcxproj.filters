@@ -105,6 +105,9 @@
     <ClInclude Include="Util\Define.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Renderer\Primitive\MeshGenerator.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModelViewerDx11.cpp">
@@ -156,6 +159,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\Resources\ResourceManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Primitive\MeshGenerator.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
