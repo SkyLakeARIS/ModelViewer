@@ -26,9 +26,7 @@ namespace scene
 
     private:
         Camera* mCamera;
-
         renderer::Mesh mMesh;
         XMMATRIX mWorld;
-
     };
 }

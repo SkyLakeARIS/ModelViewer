@@ -21,7 +21,6 @@ namespace scene
 
     HRESULT Sky::Initialize(uint32 latLines, uint32 lonLines, renderer::TextureManager* const texManager)
     {
- 
         renderer::MeshGenerator::CreateSphere(latLines, lonLines, mMesh);
 
         const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/skybox.dds");
