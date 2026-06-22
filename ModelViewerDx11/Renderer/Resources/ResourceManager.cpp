@@ -37,7 +37,6 @@ namespace renderer
 
         HashID modelHash = 0;
         ImportedModelContainer modelContainer;
-        // TODO: 동기식이므로 받아오고 받아온 데이터를 각 Manager에 할당시키는 것으로 처리하면 될듯.
         // TODO: IndexList가 비어있을 수 있지 않을까 생각하면 Importer에서 좀 더 로직을 엄격하게 체크해야 할 것으로 보임.
         mModelImporter->LoadFbxModel(filePath, modelHash, modelContainer);
 

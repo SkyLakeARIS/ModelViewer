@@ -1,9 +1,6 @@
 #include "Plane.h"
 #include "MeshGenerator.h"
 #include "../Renderer.h"
-#include "../../Util/Define.h"
-#include "../../Util/Util.h"
-#include "../Resources/BufferManager.h"
 
 namespace renderer
 {

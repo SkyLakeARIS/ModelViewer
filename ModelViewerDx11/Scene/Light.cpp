@@ -134,7 +134,6 @@ namespace scene
         // int32_t index = 0;
        //  mMatViewProj = mMatLightViews[index] * mMatLightProjs[index];
 
-        // TODO: 이건 새로운 유형의 버퍼(Dynamic)를 만들어야 하지 않을까?
         //if (!mLinesBuffer)
         //{
         //    // debug - frustum

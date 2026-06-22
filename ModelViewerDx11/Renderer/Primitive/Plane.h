@@ -2,18 +2,13 @@
 #include "../../framework.h"
 #include "../Resources/ModelData.h"
 
-namespace scene
-{
-    class Light;
-}
-
 namespace renderer
 {
     class Renderer;
     class TextureManager;
     class BufferManager;
 
-    // TODO: UI, debug panel 용도 분리 필요, Plane mesh 자체도 Generator가 담당하도록 
+    // TODO: UI, debug panel 용도 분리 필요
     class Plane final
     {
     public:

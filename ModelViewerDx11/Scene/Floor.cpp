@@ -1,10 +1,7 @@
 #include "Floor.h"
 #include "../Renderer/Renderer.h"
 #include "../Renderer/Primitive/MeshGenerator.h"
-#include "../Renderer/Resources/BufferManager.h"
-#include "../Util/Define.h"
 #include "../Util/Macro.h"
-#include "../Util/Util.h"
 
 namespace scene
 {

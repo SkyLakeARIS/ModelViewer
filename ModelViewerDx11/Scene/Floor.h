@@ -4,13 +4,11 @@
 
 namespace renderer
 {
-    class BufferManager;
     class Renderer;
 }
 
 namespace scene
 {
-    // TODO: 클래스 말고 Generator에서 Grid Mesh를 생성하고 floor 객체(Plane 타입)로 관리되는 게 좋아 보임.
     class Floor
     {
     public:
