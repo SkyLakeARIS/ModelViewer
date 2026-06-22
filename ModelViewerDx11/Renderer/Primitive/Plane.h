@@ -5,8 +5,6 @@
 namespace renderer
 {
     class Renderer;
-    class TextureManager;
-    class BufferManager;
 
     // TODO: UI, debug panel 용도 분리 필요
     class Plane final

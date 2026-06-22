@@ -3,7 +3,6 @@
 
 namespace scene
 {
-    class Light;
     class Camera;
 }
 
@@ -11,7 +10,6 @@ namespace renderer
 {
     class BufferManager;
     class Renderer;
-    class ModelImporter;
 
 
     class Model
@@ -34,8 +32,6 @@ namespace renderer
 
     private:
         BufferManager* mBufferManager;
-        size_t mNumMesh;
-        size_t mNumVertex;
 
         std::vector<Mesh> mMeshes;
 
