@@ -178,7 +178,7 @@ namespace renderer
     {
         ASSERT(sBufferManager, "MeshGenerator not initialized. (Call the Initialize)");
 
-        VertexPT vertices[] =
+        constexpr VertexPT vertices[] =
         {
             {XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f)},
             {XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 0.0f)},
@@ -186,7 +186,7 @@ namespace renderer
             {XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT2(1.0f, 1.0f)},
         };
 
-        uint32_t indices[] =
+        constexpr uint32_t indices[] =
         {
             0,
             1,
@@ -208,8 +208,8 @@ namespace renderer
         const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexLayoutType);
         const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
 
-        sBufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices), sizeof(vertices), outMesh.MeshHash, strideVertex, outMesh.VertexRange);
-        sBufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices), sizeof(indices), outMesh.MeshHash, strideIndex, outMesh.IndexRange);
+        sBufferManager->AddVertexData(reinterpret_cast<const int8_t*>(vertices), sizeof(vertices), outMesh.MeshHash, strideVertex, outMesh.VertexRange);
+        sBufferManager->AddIndexData(reinterpret_cast<const int8_t*>(indices), sizeof(indices), outMesh.MeshHash, strideIndex, outMesh.IndexRange);
 
     }
 }

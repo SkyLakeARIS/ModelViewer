@@ -26,8 +26,8 @@ namespace renderer
                         indexBufferByteSizeDynamic);
 
         // MEMO: data들을 받고, Buffer내의 ElementCount/Offset을 반환
-        void AddVertexData(int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
-        void AddIndexData(int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
+        void AddVertexData(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
+        void AddIndexData(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
 
         // TODO: consider - Data는 떼고 Static/Dynamic 구분하는 네이밍 검토
         void AddVertexDynamic(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer);
