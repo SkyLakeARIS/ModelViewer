@@ -3,6 +3,7 @@
 #include "../Util/Macro.h"
 #include "../Renderer/Primitive/Plane.h"
 #include "../Renderer/Renderer.h"
+#include "../Renderer/Primitive/MeshGenerator.h"
 #include "../Renderer/Resources/BufferManager.h"
 #include "../Renderer/Resources/TextureManager.h"
 #include "../Util/Util.h"
@@ -362,7 +363,7 @@ namespace scene
         {
             int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
             const int16_t wroteCount = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Light_Debug_Line.mesh",
-                reinterpret_cast<const char*>(renderer::VIRTUAL_ROOT_PATH));
+                reinterpret_cast<const char*>(renderer::MeshGenerator::VIRTUAL_ROOT_PATH));
 
             (void)memcpy(mMeshDebug.MeshName, virtualFilePath, wroteCount + 1);
 
