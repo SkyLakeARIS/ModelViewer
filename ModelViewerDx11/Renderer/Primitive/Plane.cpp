@@ -1,4 +1,5 @@
 #include "Plane.h"
+#include "MeshGenerator.h"
 #include "../Renderer.h"
 #include "../../Util/Define.h"
 #include "../../Util/Util.h"
@@ -6,58 +7,20 @@
 
 namespace renderer
 {
-    std::atomic_int32_t Plane::sObjectCount(0);
 
-    Plane::Plane(BufferManager* const bufferManager)
-        : mBufferManager(bufferManager)
-        , mMesh()
+    Plane::Plane()
+        : mMesh()
         , mPosition(XMFLOAT3(0.0f, 0.0f, 0.0f))
         , mScale(XMFLOAT3(1.6f, 1.6f, 0.6f))
         , mRotation(XMFLOAT3(0.0f, 0.0f, 0.0f))
         , mMatWorld(XMMatrixIdentity())
     {
-        VertexPT vertices[] =
-        {
-            {XMFLOAT3(-0.5f, -0.5f, 0.5f), XMFLOAT2(0.0f, 1.0f)},
-            {XMFLOAT3(-0.5f, 0.5f, 0.5f), XMFLOAT2(0.0f, 0.0f)},
-            {XMFLOAT3(0.5f, 0.5f, 0.5f), XMFLOAT2(1.0f, 0.0f)},
-            {XMFLOAT3(0.5f, -0.5f, 0.5f), XMFLOAT2(1.0f, 1.0f)},
-        };
-
-        DWORD indices[] =
-        {
-            0,
-            1,
-            2,
-            0,
-            2,
-            3,
-        };
-
-        sObjectCount.fetch_add(1);
-
-        int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
-        const int16_t wroteCount = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Plane_%d.mesh",
-                  reinterpret_cast<const char*>(VIRTUAL_ROOT_PATH), sObjectCount.load());
-
-        mMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
-        (void)memcpy(mMesh.MeshName, virtualFilePath, wroteCount + 1);
-        mMesh.VertexLayoutType = eInputLayout::PT;
-        const int16_t strideVertex = GetVertexStrideSize(mMesh.VertexLayoutType);
-        const int16_t strideIndex = bufferManager->GetIndexStrideSize();
-
-        bufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices), sizeof(vertices), mMesh.MeshHash, strideVertex, mMesh.VertexRange);
-        bufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices), sizeof(indices), mMesh.MeshHash, strideIndex, mMesh.IndexRange);
+        MeshGenerator::CreatePlane(mMesh);
     }
 
     Plane::~Plane()
     {
-        const int16_t strideVertex = GetVertexStrideSize(mMesh.VertexLayoutType);
-        const int16_t strideIndex = mBufferManager->GetIndexStrideSize();
-        mBufferManager->RemoveVertexData(strideVertex, mMesh.MeshHash);
-        mBufferManager->RemoveIndexData(strideIndex, mMesh.MeshHash);
-        mBufferManager = nullptr;
-        // TODO: BufferManager를 받지 않고, BufferData 처리할 수 있는 로직이 필요함.
+        // TODO: 추가한 BufferData 처리할 수 있는 로직이 필요함. - (종료될 떄 처리되기 때문에 당장 문제는 없음)
     }
 
     XMFLOAT3 Plane::GetPosition() const

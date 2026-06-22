@@ -3,6 +3,7 @@
 #include "Window.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Importer/ModelImporter.h"
+#include "Renderer/Primitive/MeshGenerator.h"
 #include "Renderer/Primitive/Plane.h"
 #include "Renderer/Resources/BufferManager.h"
 #include "Renderer/Resources/Model.h"
@@ -188,7 +189,7 @@ bool Application::initializeScene()
     mResourceManager->LoadModel(modelFilePath, mCharacter);
 
     mSkybox = new scene::Sky(*mCamera);
-    mSkybox->Initialize(10, 10, mTextureManager, *mRenderer);
+    mSkybox->Initialize(10, 10, mTextureManager);
 
     mRenderer->BindPrimitiveTopologyTo(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     mCamera->ChangeFocus(mCharacter->GetCenterPoint(), *mRenderer);
@@ -201,10 +202,12 @@ bool Application::initializeScene()
 
     // debug quad
     // 깊이 텍스쳐 확인용
-    mPlane = new renderer::Plane(mBufferManager);
+    mPlane = new renderer::Plane();
+    // TODO: refactor - 요소 받아서 내부에서 복사하도록 변경하기 
     mPlane->SetPosition(XMFLOAT3(0.0, 0.0, -1.0));
+    mPlane->SetScale(XMFLOAT3(0.5f, 0.5f, 0.5f));
 
-    mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10, mBufferManager);
+    mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
 
     return true;
 }
@@ -224,6 +227,7 @@ bool Application::initializeManagers()
     mResourceManager = new renderer::ResourceManager(device, mTextureManager, mImporter, mBufferManager);
 
     mRenderer->SetManagers(mBufferManager, mTextureManager);
+    renderer::MeshGenerator::Initialize(mBufferManager);
     return true;
 }
 

@@ -21,8 +21,7 @@ namespace scene
         , mFarPlane(farPlane)
         , mCamera(camera)
     {
-        renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
-        mMesh = new renderer::Plane(bufferManager);
+        mMesh = new renderer::Plane();
         mMesh->SetPosition(mPosition);
 
         mLines.reserve(24 * eCascadeLevel::Level_4);

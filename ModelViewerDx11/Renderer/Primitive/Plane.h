@@ -18,7 +18,7 @@ namespace renderer
     {
     public:
 
-        Plane(BufferManager* const bufferManager);
+        Plane();
         ~Plane();
 
         void Draw(renderer::Renderer& renderer);
@@ -35,9 +35,6 @@ namespace renderer
         void GetWorldMatrix(XMMATRIX& outMat) const;
 
     private:
-        static std::atomic_int32_t sObjectCount;
-    private:
-        BufferManager* mBufferManager;
         Mesh mMesh;
         XMFLOAT3 mPosition;
         XMFLOAT3 mScale;

@@ -19,13 +19,10 @@ namespace scene
         Sky(Camera& camera);
         ~Sky();
 
-        HRESULT Initialize(uint32 latLines, uint32 lonLines, renderer::TextureManager* const texManager, renderer::Renderer& renderer);
+        HRESULT Initialize(uint32 latLines, uint32 lonLines, renderer::TextureManager* const texManager);
 
         void Draw(renderer::Renderer& renderer);
         void Update(renderer::Renderer& renderer);
-    private:
-
-        HRESULT createSphere(uint32 latLines, uint32 lonLines, renderer::Renderer& renderer);
 
     private:
         Camera* mCamera;
@@ -33,7 +30,5 @@ namespace scene
         renderer::Mesh mMesh;
         XMMATRIX mWorld;
 
-        uint32 mLatLines;
-        uint32 mLonLines;
     };
 }

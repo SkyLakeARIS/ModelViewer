@@ -14,14 +14,11 @@ namespace scene
     class Floor
     {
     public:
-        Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY, renderer::BufferManager* const bufferManager);
+        Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY);
         ~Floor();
 
         void Draw(renderer::Renderer& renderer);
     private:
-        renderer::BufferManager* mBufferManager;
-        uint32_t mNumVertices;
-        HashID mModelHash;
         renderer::Mesh mMesh;
     };
 }
