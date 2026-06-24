@@ -163,7 +163,7 @@ namespace renderer
         return true;
     }
 
-    void BufferManager::AddVertexData(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer)
+    void BufferManager::AddVertex(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer)
     {
         ASSERT(pData, "pData is nullptr,");
         ASSERT(dataByteSize > 0, "dataByteSize is zero or negative");
@@ -211,7 +211,7 @@ namespace renderer
         outRangeInBuffer.StartIndex = range.StartIndex / bufResIt->first;
     }
 
-    void BufferManager::AddIndexData(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer)
+    void BufferManager::AddIndex(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer)
     {
         ASSERT(pData, "pData is nullptr,");
         ASSERT(dataByteSize > 0, "dataByteSize is zero or negative");

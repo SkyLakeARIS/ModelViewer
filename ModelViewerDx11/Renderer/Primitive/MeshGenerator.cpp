@@ -127,8 +127,8 @@ namespace renderer
         const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexLayoutType);
         const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
 
-        sBufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices.data()), strideVertex * vertices.size(), outMesh.MeshHash, strideVertex, outMesh.VertexRange);
-        sBufferManager->AddIndexData(reinterpret_cast<int8_t*>(indices.data()), strideIndex * indices.size(), outMesh.MeshHash, strideIndex, outMesh.IndexRange);
+        sBufferManager->AddVertex(reinterpret_cast<int8_t*>(vertices.data()), strideVertex * vertices.size(), outMesh.MeshHash, strideVertex, outMesh.VertexRange);
+        sBufferManager->AddIndex(reinterpret_cast<int8_t*>(indices.data()), strideIndex * indices.size(), outMesh.MeshHash, strideIndex, outMesh.IndexRange);
     }
 
     void MeshGenerator::CreateGrid(XMFLOAT2 startPoint, uint16_t horizontalLines, uint16_t verticalLines, float gapEachLine, Mesh& outMesh)
@@ -171,7 +171,7 @@ namespace renderer
 
         const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexLayoutType);
 
-        sBufferManager->AddVertexData(reinterpret_cast<int8_t*>(vertices.get()), strideVertex * numVertices, outMesh.MeshHash, strideVertex, outMesh.VertexRange);
+        sBufferManager->AddVertex(reinterpret_cast<int8_t*>(vertices.get()), strideVertex * numVertices, outMesh.MeshHash, strideVertex, outMesh.VertexRange);
     }
 
     void MeshGenerator::CreatePlane(Mesh& outMesh)
@@ -208,8 +208,8 @@ namespace renderer
         const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexLayoutType);
         const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
 
-        sBufferManager->AddVertexData(reinterpret_cast<const int8_t*>(vertices), sizeof(vertices), outMesh.MeshHash, strideVertex, outMesh.VertexRange);
-        sBufferManager->AddIndexData(reinterpret_cast<const int8_t*>(indices), sizeof(indices), outMesh.MeshHash, strideIndex, outMesh.IndexRange);
+        sBufferManager->AddVertex(reinterpret_cast<const int8_t*>(vertices), sizeof(vertices), outMesh.MeshHash, strideVertex, outMesh.VertexRange);
+        sBufferManager->AddIndex(reinterpret_cast<const int8_t*>(indices), sizeof(indices), outMesh.MeshHash, strideIndex, outMesh.IndexRange);
 
     }
 }

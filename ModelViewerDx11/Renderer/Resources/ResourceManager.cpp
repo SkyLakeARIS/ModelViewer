@@ -49,9 +49,9 @@ namespace renderer
             const int16_t strideVertex = GetVertexStrideSize(meshIt->VertexLayoutType);
             const int16_t strideIndex = mBufferManager->GetIndexStrideSize();
             meshIt->MeshHash = util::GetDjb2Hash(mesh.MeshName);
-            mBufferManager->AddVertexData(reinterpret_cast<int8_t*>(mesh.VertexBuffer.get()), strideVertex * mesh.VertexCount, meshIt->MeshHash, strideVertex, meshIt->VertexRange);
+            mBufferManager->AddVertex(reinterpret_cast<int8_t*>(mesh.VertexBuffer.get()), strideVertex * mesh.VertexCount, meshIt->MeshHash, strideVertex, meshIt->VertexRange);
 
-            mBufferManager->AddIndexData(reinterpret_cast<int8_t*>(mesh.IndexBuffer.get()), strideIndex * mesh.IndexCount, meshIt->MeshHash, strideIndex, meshIt->IndexRange);
+            mBufferManager->AddIndex(reinterpret_cast<int8_t*>(mesh.IndexBuffer.get()), strideIndex * mesh.IndexCount, meshIt->MeshHash, strideIndex, meshIt->IndexRange);
 
             memcpy(meshIt->MeshName, mesh.MeshName, util::MAX_NAME_LENGTH);
 
