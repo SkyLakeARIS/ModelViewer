@@ -1,13 +1,19 @@
 #include "BufferManager.h"
+#include "BufferManager.h"
 #include "RenderTypes.h"
 #include "../../Util/Macro.h"
 
 namespace renderer
 {
-    BufferManager::BufferManager(ID3D11Device* device, ID3D11DeviceContext* deviceContext)
+    BufferManager::IndexFormatPair BufferManager::sIndexFormatMap[static_cast<int8_t>(BufferManager::eIndexListFormat::IndexListFormatCount)] =
+    {
+        {sizeof(uint32_t), DXGI_FORMAT_R32_UINT},
+    };
+
+    BufferManager::BufferManager(ID3D11Device* device, ID3D11DeviceContext* deviceContext, eIndexListFormat indexFormat)
         : mDevice(device)
         , mDeviceContext(deviceContext)
-        , mIndexStrideSize(sizeof(uint32_t))
+        , mIndexFormat(indexFormat)
     {
         ASSERT(mDevice, "device is nullptr. pass the valid device");
         ASSERT(mDeviceContext, "deviceContext is nullptr. pass the valid deviceContext");
@@ -107,19 +113,21 @@ namespace renderer
         bufferDesc.ByteWidth = indexBufferByteSizeStatic;
 
         mIndexBuffers.reserve(static_cast<int16_t>(eInputLayout::InputlayoutCount));
+        const int16_t indexStrideSize = sIndexFormatMap[static_cast<int8_t>(mIndexFormat)].Stride;
+
 
         BufferResource indexBufResStatic = {};
         indexBufResStatic.Ranges.reserve(256);
         if (mDevice->CreateBuffer(&bufferDesc, nullptr, &indexBufResStatic.Buffer) == E_FAIL)
         {
-            ASSERT(false, "index buffer creation failed, check the options. layoutType(%d)", mIndexStrideSize);
+            ASSERT(false, "index buffer creation failed, check the options. layoutType(%d)", indexStrideSize);
             return false;
         }
         indexBufResStatic.TotalSizeBytes = indexBufferByteSizeStatic;
-        mIndexBuffers.insert(std::make_pair(mIndexStrideSize, std::move(indexBufResStatic)));
+        mIndexBuffers.insert(std::make_pair(indexStrideSize, std::move(indexBufResStatic)));
         std::vector<BufferRange> ranges;
         ranges.reserve(256);
-        mIndexRemovedRanges.insert(std::make_pair(mIndexStrideSize, std::move(ranges)));
+        mIndexRemovedRanges.insert(std::make_pair(indexStrideSize, std::move(ranges)));
 
         // init Dynamic Buffers
         bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
@@ -151,12 +159,12 @@ namespace renderer
         BufferResource indexBufDynamic = {};
         if (mDevice->CreateBuffer(&bufferDesc, nullptr, &indexBufDynamic.Buffer) == E_FAIL)
         {
-            ASSERT(false, "index buffer(dynamic) creation failed, check the options. layoutType(%d)", mIndexStrideSize);
+            ASSERT(false, "index buffer(dynamic) creation failed, check the options. layoutType(%d)", indexStrideSize);
             return false;
         }
         indexBufDynamic.Ranges.reserve(32);
         indexBufDynamic.TotalSizeBytes = indexBufferByteSizeDynamic;
-        mIndexBuffersDynamic.insert(std::make_pair(mIndexStrideSize, std::move(indexBufDynamic)));
+        mIndexBuffersDynamic.insert(std::make_pair(indexStrideSize, std::move(indexBufDynamic)));
         std::vector<BufferRange> rangesDynamic;
         rangesDynamic.reserve(32);
 
@@ -551,7 +559,12 @@ namespace renderer
 
     int16_t BufferManager::GetIndexStrideSize() const
     {
-        return mIndexStrideSize;
+        return sIndexFormatMap[static_cast<int8_t>(mIndexFormat)].Stride;
+    }
+
+    DXGI_FORMAT BufferManager::GetIndexFormat() const
+    {
+        return sIndexFormatMap[static_cast<int8_t>(mIndexFormat)].Format;
     }
 
     void BufferManager::resizeVertexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt)

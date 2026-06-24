@@ -8,6 +8,12 @@ namespace renderer
 
     class BufferManager
     {
+    public:
+        enum class eIndexListFormat
+        {
+            UInt32,
+            IndexListFormatCount
+        };
     private:
         struct BufferResource
         {
@@ -17,9 +23,13 @@ namespace renderer
             int32_t TotalSizeBytes;
             int32_t CursorBytes;
         };
-
+        struct IndexFormatPair
+        {
+            int16_t Stride;
+            DXGI_FORMAT Format;
+        };
     public:
-        BufferManager(ID3D11Device* device, ID3D11DeviceContext* deviceContext);
+        BufferManager(ID3D11Device* device, ID3D11DeviceContext* deviceContext, eIndexListFormat indexFormat);
         ~BufferManager();
 
         bool Initialize(int32_t vertexBufferByteSizeStatic, int32_t indexBufferByteSizeStatic, int32_t vertexBufferByteSizeDynamic, int32_t
@@ -56,6 +66,7 @@ namespace renderer
         ID3D11Buffer* GetIndexBufferDynamic(int16_t stride) const;
 
         int16_t GetIndexStrideSize() const;
+        DXGI_FORMAT GetIndexFormat() const;
     private:
         void resizeVertexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
         void resizeIndexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
@@ -63,9 +74,11 @@ namespace renderer
         static constexpr int32_t sVertexBufferDefaultSize = 4096;
         static constexpr int32_t sIndexBufferDefaultSize = 4096;
     private:
+        static IndexFormatPair sIndexFormatMap[static_cast<int8_t>(eIndexListFormat::IndexListFormatCount)];
+    private:
         ID3D11Device* mDevice;
         ID3D11DeviceContext* mDeviceContext;
-        int16_t mIndexStrideSize;
+        eIndexListFormat mIndexFormat;
         bool mbNeedDiscardDynamicVertex;
         bool mbNeedDiscardDynamicIndex;
         // MEMO: 0 offset bind를 하려면 버퍼 내에 서로 다른 stride를 가진 데이터가 존재하면 안될 것으로 생각되어 Buffer들을 분리한다.

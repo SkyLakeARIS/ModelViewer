@@ -818,9 +818,9 @@ namespace renderer
     {
         uint32_t offset = 0;
         const int16_t stride = mBufferManager->GetIndexStrideSize();
+        const DXGI_FORMAT format = mBufferManager->GetIndexFormat();
         ID3D11Buffer* const indexBuffer = mBufferManager->GetIndexBuffer(stride);
-        // TODO: 나중에 BufferManager가 format을 가지도록 하는게 관리에 좋을 것으로 보임.
-        mDeviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, offset);
+        mDeviceContext->IASetIndexBuffer(indexBuffer, format, offset);
     }
 
     void Renderer::BindVertexBufferDynamic(uint32_t stride) const
@@ -834,9 +834,9 @@ namespace renderer
     {
         uint32_t offset = 0;
         const int16_t stride = mBufferManager->GetIndexStrideSize();
+        const DXGI_FORMAT format = mBufferManager->GetIndexFormat();
         ID3D11Buffer* const indexBuffer = mBufferManager->GetIndexBufferDynamic(stride);
-        // TODO: 나중에 BufferManager가 format을 가지도록 하는게 관리에 좋을 것으로 보임.
-        mDeviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, offset);
+        mDeviceContext->IASetIndexBuffer(indexBuffer, format, offset);
     }
 
     void Renderer::BindSamplerToPsByType(uint32_t slot, eSamplerType type) const
