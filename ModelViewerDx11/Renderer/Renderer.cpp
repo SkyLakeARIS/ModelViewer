@@ -563,7 +563,6 @@ namespace renderer
         }
         else
         {
-            // TODO: 나중에 해당 코드 포함하여 모든 Create 함수에 Debug 매크로로만 체크될 수 있도록 분기하면 디버깅용으로 좋을 듯
             const auto& it = mBlendStateMap.find(outHash);
             ASSERT(false, "hash collision detected or double insertion. Hash(%u)", it->first);
         }
