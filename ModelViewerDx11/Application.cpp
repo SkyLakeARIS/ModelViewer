@@ -35,6 +35,7 @@ Application::Application()
     , mDirectInput(nullptr)
 {
     mRenderer = new renderer::Renderer();
+    mImporter = new renderer::ModelImporter();
 }
 
 Application::~Application()
@@ -92,8 +93,6 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
         ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
         return false;
     }
-    // TODO: 굳이 여기에서 생성해야 하는 경우가 아니라면 기본적으로 생성자로 옮기는 게 나을 것 같다.
-    mImporter = new renderer::ModelImporter();
     mImporter->Initialize();
 
     if(!initializeManagers())
