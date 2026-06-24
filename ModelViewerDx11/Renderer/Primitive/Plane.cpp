@@ -84,12 +84,12 @@ namespace renderer
         mMatWorld = mMatWorld * XMMatrixTranslation(mPosition.x, mPosition.y, mPosition.z);
     }
 
-    void Plane::SetPosition(XMFLOAT3& pos)
+    void Plane::SetPosition(const XMFLOAT3& pos)
     {
         mPosition = pos;
     }
 
-    void Plane::SetScale(XMFLOAT3& scale)
+    void Plane::SetScale(const XMFLOAT3& scale)
     {
         mScale = scale;
     }

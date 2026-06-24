@@ -202,9 +202,10 @@ bool Application::initializeScene()
     // debug quad
     // 깊이 텍스쳐 확인용
     mPlane = new renderer::Plane();
-    // TODO: refactor - 요소 받아서 내부에서 복사하도록 변경하기 
-    mPlane->SetPosition(XMFLOAT3(0.0, 0.0, -1.0));
-    mPlane->SetScale(XMFLOAT3(0.5f, 0.5f, 0.5f));
+    const XMFLOAT3 planePosition(0.0, 0.0, -1.0);
+    const XMFLOAT3 planeScale(0.5f, 0.5f, 0.5f);
+    mPlane->SetPosition(planePosition);
+    mPlane->SetScale(planeScale);
 
     mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
 

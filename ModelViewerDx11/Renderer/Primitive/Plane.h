@@ -18,8 +18,8 @@ namespace renderer
         void DrawTexture(renderer::Renderer& renderer);
         void Update();
 
-        void SetPosition(XMFLOAT3& pos);
-        void SetScale(XMFLOAT3& scale);
+        void SetPosition(const XMFLOAT3& pos);
+        void SetScale(const XMFLOAT3& scale);
         // TODO: improve - Plane 역할을 분리하기 전까지 기존 구조 방식에 Hash를 주입받아 쓰는 것으로 바꿈
         void SetTexHash(HashID textureHash);
 
