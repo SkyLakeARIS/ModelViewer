@@ -193,9 +193,43 @@ namespace renderer
             return;
         }
 
-        if (bufResIt->second.TotalSizeBytes <= bufResIt->second.CursorBytes + dataByteSize)
+        // MEMO: 적절한 공간을 가진 빈공간 탐색
+        const auto& removedRangeIt = mVertexRemovedRanges.find(stride);
+        std::vector<BufferRange>::iterator bestFitSpaceIt = removedRangeIt->second.begin();
+        int32_t minRemainSpace = INT32_MAX;
+        for(int32_t rangeIndex = 0; rangeIndex < removedRangeIt->second.size(); ++rangeIndex)
         {
-            resizeVertexBuffer(bufResIt->second.CursorBytes + dataByteSize, D3D11_USAGE_DEFAULT, 0, bufResIt);
+            const std::vector<BufferRange>::iterator& element = (removedRangeIt->second.begin() + rangeIndex);
+            const int32_t remainSpace = element->Count - dataByteSize;
+            if(remainSpace >= 0)
+            {
+                // MEMO: save best-fit.
+                if (remainSpace < minRemainSpace)
+                {
+                    minRemainSpace = remainSpace;
+                    bestFitSpaceIt = element;
+                }
+            }
+        }
+
+        int32_t writeCursorInBuffer  = bufResIt->second.CursorBytes;
+        if(bestFitSpaceIt != removedRangeIt->second.end())
+        {
+            // MEMO: 빈공간 재활용
+            writeCursorInBuffer = bestFitSpaceIt->StartIndex;
+            // MEMO: 재활용하고 남은 공간은 또 재활용을 하기 위함.
+            bestFitSpaceIt->StartIndex = bestFitSpaceIt->StartIndex + dataByteSize;
+            bestFitSpaceIt->Count = minRemainSpace;
+        }
+        else
+        {
+            // MEMO: 재활용할 공간이 없음
+            if (bufResIt->second.TotalSizeBytes <= writeCursorInBuffer + dataByteSize)
+            {
+                resizeVertexBuffer(writeCursorInBuffer + dataByteSize, D3D11_USAGE_DEFAULT, 0, bufResIt);
+            }
+
+            bufResIt->second.CursorBytes += dataByteSize;
         }
 
         D3D11_BOX updateRange = {};
@@ -203,16 +237,15 @@ namespace renderer
         updateRange.back = 1;
         updateRange.top = 0;
         updateRange.bottom = 1;
-        updateRange.left = bufResIt->second.CursorBytes;
-        updateRange.right = bufResIt->second.CursorBytes + dataByteSize;
+        updateRange.left = writeCursorInBuffer;
+        updateRange.right = writeCursorInBuffer + dataByteSize;
         mDeviceContext->UpdateSubresource(bufResIt->second.Buffer, 0, &updateRange, pData, 0, 0);
 
         BufferRange range = {};
-        range.StartIndex = bufResIt->second.CursorBytes;
+        range.StartIndex = writeCursorInBuffer;
         range.Count = dataByteSize;
 
         bufResIt->second.Ranges.insert(std::make_pair(hash, range));
-        bufResIt->second.CursorBytes += dataByteSize;
 
         // MEMO: in vertex count (not bytes). convert bytes -> stride
         outRangeInBuffer.Count = range.Count / bufResIt->first;
@@ -240,9 +273,43 @@ namespace renderer
             return;
         }
 
-        if (bufResIt->second.TotalSizeBytes <= bufResIt->second.CursorBytes + dataByteSize)
+        // MEMO: 적절한 공간을 가진 빈공간 탐색
+        const auto& removedRangeIt = mIndexRemovedRanges.find(stride);
+        std::vector<BufferRange>::iterator bestFitSpaceIt = removedRangeIt->second.begin();
+        int32_t minRemainSpace = INT32_MAX;
+        for (int32_t rangeIndex = 0; rangeIndex < removedRangeIt->second.size(); ++rangeIndex)
         {
-            resizeIndexBuffer(bufResIt->second.CursorBytes + dataByteSize, D3D11_USAGE_DEFAULT, 0, bufResIt);
+            const std::vector<BufferRange>::iterator& element = (removedRangeIt->second.begin() + rangeIndex);
+            const int32_t remainSpace = element->Count - dataByteSize;
+            if (remainSpace >= 0)
+            {
+                // MEMO: save best-fit.
+                if (remainSpace < minRemainSpace)
+                {
+                    minRemainSpace = remainSpace;
+                    bestFitSpaceIt = element;
+                }
+            }
+        }
+
+        int32_t writeCursorInBuffer = bufResIt->second.CursorBytes;
+        if (bestFitSpaceIt != removedRangeIt->second.end())
+        {
+            // MEMO: 빈공간 재활용
+            writeCursorInBuffer = bestFitSpaceIt->StartIndex;
+            // MEMO: 재활용하고 남은 공간은 또 재활용을 하기 위함.
+            bestFitSpaceIt->StartIndex = bestFitSpaceIt->StartIndex + dataByteSize;
+            bestFitSpaceIt->Count = minRemainSpace;
+        }
+        else
+        {
+            // MEMO: 재활용할 공간이 없음
+            if (bufResIt->second.TotalSizeBytes <= writeCursorInBuffer + dataByteSize)
+            {
+                resizeIndexBuffer(writeCursorInBuffer + dataByteSize, D3D11_USAGE_DEFAULT, 0, bufResIt);
+            }
+
+            bufResIt->second.CursorBytes += dataByteSize;
         }
 
         D3D11_BOX updateRange = {};
@@ -250,16 +317,15 @@ namespace renderer
         updateRange.back = 1;
         updateRange.top = 0;
         updateRange.bottom = 1;
-        updateRange.left = bufResIt->second.CursorBytes;
-        updateRange.right = bufResIt->second.CursorBytes + dataByteSize;
+        updateRange.left = writeCursorInBuffer;
+        updateRange.right = writeCursorInBuffer + dataByteSize;
         mDeviceContext->UpdateSubresource(bufResIt->second.Buffer, 0, &updateRange, pData, 0, 0);
 
         BufferRange range = {};
-        range.StartIndex = bufResIt->second.CursorBytes;
+        range.StartIndex = writeCursorInBuffer;
         range.Count = dataByteSize;
 
         bufResIt->second.Ranges.insert(std::make_pair(hash, range));
-        bufResIt->second.CursorBytes += dataByteSize;
 
         // MEMO: in vertex count (not bytes). convert bytes -> stride
         outRangeInBuffer.Count = range.Count / bufResIt->first;
@@ -373,12 +439,36 @@ namespace renderer
 
         const auto& bufResIt = mVertexBuffers.find(stride);
         const auto& rangeIt = bufResIt->second.Ranges.find(hash);
+        // TODO: RefCount를 통해서 바로 제거되지 않도록 작업해야 한다. (Add 함수도 마찬가지로 중복 데이터가 삽입되면 RefUp)
         if(rangeIt != bufResIt->second.Ranges.end())
         {
             const auto& removedRangeIt = mVertexRemovedRanges.find(stride);
             removedRangeIt->second.push_back(rangeIt->second);
 
             bufResIt->second.Ranges.erase(rangeIt);
+            // MEMO: 연속된 빈공간 병합 시도
+            if(removedRangeIt->second.size() >= 2)
+            {
+                auto cursorIt = removedRangeIt->second.begin();
+                // 1. 병합되고 나서 vector size가 1개 일 때.
+                // 2. nextRangeIt이 end 일 때.
+                while((cursorIt + 1) != removedRangeIt->second.end())
+                {
+                    const auto nextRangeIt = cursorIt + 1;
+                    if ((cursorIt->StartIndex + cursorIt->Count) == nextRangeIt->StartIndex)
+                    {
+                        cursorIt->Count += nextRangeIt->Count;
+                        removedRangeIt->second.erase(nextRangeIt);
+                        // TODO: optimize - 이렇게하면 항상 처음으로 돌아가므로 중간에 병합된 경우 다시 처음부터 순회해야하는 비효율 존재. 빠른 구현을 위해 우선 이렇게 함.
+                        // RemoveIndexData도 마찬가지로 작업
+                        cursorIt = removedRangeIt->second.begin();
+                    }
+                    else
+                    {
+                        ++cursorIt;
+                    }
+                }
+            }
         }
     }
 
@@ -395,6 +485,25 @@ namespace renderer
             removedRangeIt->second.push_back(rangeIt->second);
 
             bufResIt->second.Ranges.erase(rangeIt);
+            if (removedRangeIt->second.size() >= 2)
+            {
+                auto cursorIt = removedRangeIt->second.begin();
+
+                while ((cursorIt + 1) != removedRangeIt->second.end())
+                {
+                    const auto nextRangeIt = cursorIt + 1;
+                    if ((cursorIt->StartIndex + cursorIt->Count) == nextRangeIt->StartIndex)
+                    {
+                        cursorIt->Count += nextRangeIt->Count;
+                        removedRangeIt->second.erase(nextRangeIt);
+                        cursorIt = removedRangeIt->second.begin();
+                    }
+                    else
+                    {
+                        ++cursorIt;
+                    }
+                }
+            }
         }
     }
 
