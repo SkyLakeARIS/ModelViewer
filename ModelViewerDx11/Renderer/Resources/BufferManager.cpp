@@ -1,10 +1,15 @@
 #include "BufferManager.h"
-#include "BufferManager.h"
+#include <algorithm>
 #include "RenderTypes.h"
 #include "../../Util/Macro.h"
 
 namespace renderer
 {
+    bool BufferRangeIncrCompare(const BufferRange& left, const BufferRange& right)
+    {
+        return left.StartIndex < right.StartIndex;
+    }
+
     BufferManager::IndexFormatPair BufferManager::sIndexFormatMap[static_cast<int8_t>(BufferManager::eIndexListFormat::IndexListFormatCount)] =
     {
         {sizeof(uint32_t), DXGI_FORMAT_R32_UINT},
@@ -216,10 +221,18 @@ namespace renderer
         if(bestFitSpaceIt != removedRangeIt->second.end())
         {
             // MEMO: 빈공간 재활용
-            writeCursorInBuffer = bestFitSpaceIt->StartIndex;
-            // MEMO: 재활용하고 남은 공간은 또 재활용을 하기 위함.
-            bestFitSpaceIt->StartIndex = bestFitSpaceIt->StartIndex + dataByteSize;
-            bestFitSpaceIt->Count = minRemainSpace;
+            if(minRemainSpace == 0)
+            {
+                *bestFitSpaceIt = removedRangeIt->second.back();
+                removedRangeIt->second.pop_back();
+            }
+            else
+            {
+                writeCursorInBuffer = bestFitSpaceIt->StartIndex;
+                // MEMO: 재활용하고 남은 공간은 또 재활용을 하기 위함.
+                bestFitSpaceIt->StartIndex = bestFitSpaceIt->StartIndex + dataByteSize;
+                bestFitSpaceIt->Count = minRemainSpace;
+            }
         }
         else
         {
@@ -296,10 +309,18 @@ namespace renderer
         if (bestFitSpaceIt != removedRangeIt->second.end())
         {
             // MEMO: 빈공간 재활용
-            writeCursorInBuffer = bestFitSpaceIt->StartIndex;
-            // MEMO: 재활용하고 남은 공간은 또 재활용을 하기 위함.
-            bestFitSpaceIt->StartIndex = bestFitSpaceIt->StartIndex + dataByteSize;
-            bestFitSpaceIt->Count = minRemainSpace;
+            if (minRemainSpace == 0)
+            {
+                *bestFitSpaceIt = removedRangeIt->second.back();
+                removedRangeIt->second.pop_back();
+            }
+            else
+            {
+                writeCursorInBuffer = bestFitSpaceIt->StartIndex;
+                // MEMO: 재활용하고 남은 공간은 또 재활용을 하기 위함.
+                bestFitSpaceIt->StartIndex = bestFitSpaceIt->StartIndex + dataByteSize;
+                bestFitSpaceIt->Count = minRemainSpace;
+            }
         }
         else
         {
@@ -446,9 +467,11 @@ namespace renderer
             removedRangeIt->second.push_back(rangeIt->second);
 
             bufResIt->second.Ranges.erase(rangeIt);
+            // TODO: 나중에 별도 Merge 함수로 분리하여, 정한 기준에 따라서 주기적으로 병합을 시도하는 것이 필요함.
             // MEMO: 연속된 빈공간 병합 시도
             if(removedRangeIt->second.size() >= 2)
             {
+                std::sort(removedRangeIt->second.begin(), removedRangeIt->second.end(), BufferRangeIncrCompare);
                 auto cursorIt = removedRangeIt->second.begin();
                 // 1. 병합되고 나서 vector size가 1개 일 때.
                 // 2. nextRangeIt이 end 일 때.
@@ -458,6 +481,7 @@ namespace renderer
                     if ((cursorIt->StartIndex + cursorIt->Count) == nextRangeIt->StartIndex)
                     {
                         cursorIt->Count += nextRangeIt->Count;
+                        // TODO: optimize - 현재 로직 구조로는 제거를 빠르게 할 수 없는 것 같다. 다른 좋은 방안 찾는게 필요
                         removedRangeIt->second.erase(nextRangeIt);
                         // TODO: optimize - 이렇게하면 항상 처음으로 돌아가므로 중간에 병합된 경우 다시 처음부터 순회해야하는 비효율 존재. 빠른 구현을 위해 우선 이렇게 함.
                         // RemoveIndexData도 마찬가지로 작업
