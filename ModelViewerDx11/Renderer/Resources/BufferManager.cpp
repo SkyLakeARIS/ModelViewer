@@ -579,7 +579,7 @@ namespace renderer
         mDeviceContext->UpdateSubresource(bufResIt->second.Buffer, 0, &updateRange, pData, 0, 0);
     }
 
-    void BufferManager::MarkInvalidateDynamicVertexBuf()
+    void BufferManager::MarkInvalidateDynamicBuf()
     {
         mbNeedDiscardDynamicVertex = true;
 
@@ -588,10 +588,7 @@ namespace renderer
             bufStrideIt.second.CursorBytes = 0;
             bufStrideIt.second.Ranges.clear();
         }
-    }
 
-    void BufferManager::MarkInvalidateDynamicIndexBuf()
-    {
         mbNeedDiscardDynamicIndex = true;
         for (auto& bufStrideIt : mIndexBuffersDynamic)
         {

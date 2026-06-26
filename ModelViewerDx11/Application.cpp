@@ -338,8 +338,7 @@ void Application::preprocess()
 
 void Application::renderScene()
 {
-    mBufferManager->MarkInvalidateDynamicVertexBuf();
-    mBufferManager->MarkInvalidateDynamicIndexBuf();
+    mBufferManager->MarkInvalidateDynamicBuf();
     mRenderer->BindRenderTargetTo(renderer::eRenderTarget::Default);
     mRenderer->SetViewport(true);
     mRenderer->ClearScreenAndDepth(renderer::eRenderTarget::Default);

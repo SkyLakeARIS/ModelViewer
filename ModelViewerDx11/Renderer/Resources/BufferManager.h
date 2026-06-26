@@ -50,8 +50,8 @@ namespace renderer
         // MEMO: pData의 사이즈가 기존에 삽입된 사이즈와 같지 않으면 정의되지 않음
         void UpdateIndexData(int8_t* const pData, int16_t stride, HashID hash);
 
-        void MarkInvalidateDynamicVertexBuf();
-        void MarkInvalidateDynamicIndexBuf();
+        // MEMO: Vertex/Index 버퍼 통합 처리
+        void MarkInvalidateDynamicBuf();
 
         BufferRange GetVertexRangeByteByHash(int16_t stride, HashID hash);
         BufferRange GetIndexRangeByteByHash(int16_t stride, HashID hash);
