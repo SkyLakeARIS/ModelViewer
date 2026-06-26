@@ -149,6 +149,8 @@ void Application::Run()
         preprocess();
         renderScene();
 
+        mRenderer->Present();
+
         ++frameCount;
         if (startTime - lastFPSTime >= 1000.0)
         {
@@ -359,5 +361,4 @@ void Application::renderScene()
 
     mPlane->Update();
     mPlane->DrawTexture(*mRenderer);
-    mRenderer->Present();
 }
