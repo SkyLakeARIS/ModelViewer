@@ -186,15 +186,15 @@ namespace renderer
             return;
         }
 
-        auto bufResIt = mVertexBuffers.find(stride);
+        auto chunkIt = mVertexBuffers.find(stride);
 
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
         // TODO: 나중에 <파일 명 - 해시> Map을 만들어서 같은 데이터를 중복 삽입하는 건지 해시함수 충돌 발생인지 구분할 필요가 있음.
-        if(subChunkIt != bufResIt->second.SubChunks.end())
+        if(subChunkIt != chunkIt->second.SubChunks.end())
         {
             // MEMO: in vertex count (not bytes). convert bytes -> stride
-            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
-            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
+            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / chunkIt->first;
+            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / chunkIt->first;
             ++subChunkIt->second.RefCount;
             return;
         }
@@ -218,7 +218,7 @@ namespace renderer
             }
         }
 
-        int32_t writeCursorInBuffer  = bufResIt->second.CursorBytes;
+        int32_t writeCursorInBuffer  = chunkIt->second.CursorBytes;
         if(bestFitSpaceIt != removedRangeIt->second.end())
         {
             // MEMO: 빈공간 재활용
@@ -238,12 +238,12 @@ namespace renderer
         else
         {
             // MEMO: 재활용할 공간이 없음
-            if (bufResIt->second.TotalSizeBytes <= writeCursorInBuffer + dataByteSize)
+            if (chunkIt->second.TotalSizeBytes <= writeCursorInBuffer + dataByteSize)
             {
-                resizeVertexBuffer(writeCursorInBuffer + dataByteSize, D3D11_USAGE_DEFAULT, 0, bufResIt);
+                resizeVertexBuffer(writeCursorInBuffer + dataByteSize, D3D11_USAGE_DEFAULT, 0, chunkIt);
             }
 
-            bufResIt->second.CursorBytes += dataByteSize;
+            chunkIt->second.CursorBytes += dataByteSize;
         }
 
         D3D11_BOX updateRange = {};
@@ -253,18 +253,18 @@ namespace renderer
         updateRange.bottom = 1;
         updateRange.left = writeCursorInBuffer;
         updateRange.right = writeCursorInBuffer + dataByteSize;
-        mDeviceContext->UpdateSubresource(bufResIt->second.Buffer, 0, &updateRange, pData, 0, 0);
+        mDeviceContext->UpdateSubresource(chunkIt->second.Buffer, 0, &updateRange, pData, 0, 0);
 
         SubChunk subChunk = {};
         subChunk.Ranges.StartIndex = writeCursorInBuffer;
         subChunk.Ranges.Count = dataByteSize;
         subChunk.RefCount = 1;
 
-        bufResIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
+        chunkIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
 
         // MEMO: in vertex count (not bytes). convert bytes -> stride
-        outRangeInBuffer.Count = subChunk.Ranges.Count / bufResIt->first;
-        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / bufResIt->first;
+        outRangeInBuffer.Count = subChunk.Ranges.Count / chunkIt->first;
+        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / chunkIt->first;
     }
 
     void BufferManager::AddIndex(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer)
@@ -277,14 +277,14 @@ namespace renderer
             return;
         }
 
-        auto bufResIt = mIndexBuffers.find(stride);
+        auto chunkIt = mIndexBuffers.find(stride);
 
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
-        if (subChunkIt != bufResIt->second.SubChunks.end())
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
+        if (subChunkIt != chunkIt->second.SubChunks.end())
         {
             // MEMO: in vertex count (not bytes). convert bytes -> stride
-            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
-            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
+            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / chunkIt->first;
+            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / chunkIt->first;
             ++subChunkIt->second.RefCount;
             return;
         }
@@ -308,7 +308,7 @@ namespace renderer
             }
         }
 
-        int32_t writeCursorInBuffer = bufResIt->second.CursorBytes;
+        int32_t writeCursorInBuffer = chunkIt->second.CursorBytes;
         if (bestFitSpaceIt != removedRangeIt->second.end())
         {
             // MEMO: 빈공간 재활용
@@ -328,12 +328,12 @@ namespace renderer
         else
         {
             // MEMO: 재활용할 공간이 없음
-            if (bufResIt->second.TotalSizeBytes <= writeCursorInBuffer + dataByteSize)
+            if (chunkIt->second.TotalSizeBytes <= writeCursorInBuffer + dataByteSize)
             {
-                resizeIndexBuffer(writeCursorInBuffer + dataByteSize, D3D11_USAGE_DEFAULT, 0, bufResIt);
+                resizeIndexBuffer(writeCursorInBuffer + dataByteSize, D3D11_USAGE_DEFAULT, 0, chunkIt);
             }
 
-            bufResIt->second.CursorBytes += dataByteSize;
+            chunkIt->second.CursorBytes += dataByteSize;
         }
 
         D3D11_BOX updateRange = {};
@@ -343,18 +343,18 @@ namespace renderer
         updateRange.bottom = 1;
         updateRange.left = writeCursorInBuffer;
         updateRange.right = writeCursorInBuffer + dataByteSize;
-        mDeviceContext->UpdateSubresource(bufResIt->second.Buffer, 0, &updateRange, pData, 0, 0);
+        mDeviceContext->UpdateSubresource(chunkIt->second.Buffer, 0, &updateRange, pData, 0, 0);
 
         SubChunk subChunk = {};
         subChunk.Ranges.StartIndex = writeCursorInBuffer;
         subChunk.Ranges.Count = dataByteSize;
         subChunk.RefCount = 1;
 
-        bufResIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
+        chunkIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
 
         // MEMO: in vertex count (not bytes). convert bytes -> stride
-        outRangeInBuffer.Count = subChunk.Ranges.Count / bufResIt->first;
-        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / bufResIt->first;
+        outRangeInBuffer.Count = subChunk.Ranges.Count / chunkIt->first;
+        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / chunkIt->first;
     }
 
     void BufferManager::AddVertexDynamic(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer)
@@ -367,44 +367,44 @@ namespace renderer
             return;
         }
 
-        auto bufResIt = mVertexBuffersDynamic.find(stride);
+        auto chunkIt = mVertexBuffersDynamic.find(stride);
 
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
-        if (subChunkIt != bufResIt->second.SubChunks.end())
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
+        if (subChunkIt != chunkIt->second.SubChunks.end())
         {
             // MEMO: in vertex count (not bytes). convert bytes -> stride
-            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
-            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
+            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / chunkIt->first;
+            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / chunkIt->first;
             return;
         }
 
-        if (bufResIt->second.TotalSizeBytes <= bufResIt->second.CursorBytes + dataByteSize)
+        if (chunkIt->second.TotalSizeBytes <= chunkIt->second.CursorBytes + dataByteSize)
         {
-            resizeVertexBuffer(bufResIt->second.CursorBytes + dataByteSize, D3D11_USAGE_DYNAMIC, 0, bufResIt);
+            resizeVertexBuffer(chunkIt->second.CursorBytes + dataByteSize, D3D11_USAGE_DYNAMIC, 0, chunkIt);
         }
 
         const D3D11_MAP mapType = mbNeedDiscardDynamicVertex ? (D3D11_MAP_WRITE_DISCARD) : D3D11_MAP_WRITE_NO_OVERWRITE;
         mbNeedDiscardDynamicVertex = false;
 
         D3D11_MAPPED_SUBRESOURCE mappedRes = {};
-        mDeviceContext->Map(bufResIt->second.Buffer, 0, mapType, 0, &mappedRes);
+        mDeviceContext->Map(chunkIt->second.Buffer, 0, mapType, 0, &mappedRes);
 
         int8_t* gpuBuffer = reinterpret_cast<int8_t*>(mappedRes.pData);
-        memcpy(gpuBuffer + bufResIt->second.CursorBytes, pData, dataByteSize);
+        memcpy(gpuBuffer + chunkIt->second.CursorBytes, pData, dataByteSize);
 
-        mDeviceContext->Unmap(bufResIt->second.Buffer, 0);
+        mDeviceContext->Unmap(chunkIt->second.Buffer, 0);
 
         SubChunk subChunk = {};
-        subChunk.Ranges.StartIndex = bufResIt->second.CursorBytes;
+        subChunk.Ranges.StartIndex = chunkIt->second.CursorBytes;
         subChunk.Ranges.Count = dataByteSize;
         // MEMO: 동적 데이터에는 필요 없음.
 
-        bufResIt->second.CursorBytes += dataByteSize;
-        bufResIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
+        chunkIt->second.CursorBytes += dataByteSize;
+        chunkIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
 
         // MEMO: in vertex count (not bytes). convert bytes -> stride
-        outRangeInBuffer.Count = subChunk.Ranges.Count / bufResIt->first;
-        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / bufResIt->first;
+        outRangeInBuffer.Count = subChunk.Ranges.Count / chunkIt->first;
+        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / chunkIt->first;
     }
 
     void BufferManager::AddIndexDynamic(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride,
@@ -418,20 +418,20 @@ namespace renderer
             return;
         }
 
-        auto bufResIt = mIndexBuffersDynamic.find(stride);
+        auto chunkIt = mIndexBuffersDynamic.find(stride);
 
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
-        if (subChunkIt != bufResIt->second.SubChunks.end())
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
+        if (subChunkIt != chunkIt->second.SubChunks.end())
         {
             // MEMO: in vertex count (not bytes). convert bytes -> stride
-            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
-            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
+            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / chunkIt->first;
+            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / chunkIt->first;
             return;
         }
 
-        if (bufResIt->second.TotalSizeBytes <= bufResIt->second.CursorBytes + dataByteSize)
+        if (chunkIt->second.TotalSizeBytes <= chunkIt->second.CursorBytes + dataByteSize)
         {
-            resizeVertexBuffer(bufResIt->second.CursorBytes + dataByteSize, D3D11_USAGE_DYNAMIC, 0, bufResIt);
+            resizeVertexBuffer(chunkIt->second.CursorBytes + dataByteSize, D3D11_USAGE_DYNAMIC, 0, chunkIt);
         }
 
 
@@ -439,24 +439,24 @@ namespace renderer
         mbNeedDiscardDynamicIndex = false;
 
         D3D11_MAPPED_SUBRESOURCE mappedRes = {};
-        mDeviceContext->Map(bufResIt->second.Buffer, 0, mapType, 0, &mappedRes);
+        mDeviceContext->Map(chunkIt->second.Buffer, 0, mapType, 0, &mappedRes);
 
         int8_t* gpuBuffer = reinterpret_cast<int8_t*>(mappedRes.pData);
         memcpy(gpuBuffer + subChunkIt->second.Ranges.StartIndex, pData, dataByteSize);
 
-        mDeviceContext->Unmap(bufResIt->second.Buffer, 0);
+        mDeviceContext->Unmap(chunkIt->second.Buffer, 0);
 
         SubChunk subChunk = {};
-        subChunk.Ranges.StartIndex = bufResIt->second.CursorBytes;
+        subChunk.Ranges.StartIndex = chunkIt->second.CursorBytes;
         subChunk.Ranges.Count = dataByteSize;
         // MEMO: 동적 데이터에는 필요 없음.
 
-        bufResIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
-        bufResIt->second.CursorBytes += dataByteSize;
+        chunkIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
+        chunkIt->second.CursorBytes += dataByteSize;
 
         // MEMO: in vertex count (not bytes). convert bytes -> stride
-        outRangeInBuffer.Count = subChunk.Ranges.Count / bufResIt->first;
-        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / bufResIt->first;
+        outRangeInBuffer.Count = subChunk.Ranges.Count / chunkIt->first;
+        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / chunkIt->first;
     }
 
     void BufferManager::RemoveVertexData(int16_t stride, HashID hash)
@@ -464,10 +464,10 @@ namespace renderer
         ASSERT(stride > 0, "stride is zero or negative");
         ASSERT(hash > 0, "hash is zero or negative");
 
-        const auto& bufResIt = mVertexBuffers.find(stride);
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        const auto& chunkIt = mVertexBuffers.find(stride);
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
         // TODO: RefCount를 통해서 바로 제거되지 않도록 작업해야 한다. (Add 함수도 마찬가지로 중복 데이터가 삽입되면 RefUp)
-        if(subChunkIt != bufResIt->second.SubChunks.end())
+        if(subChunkIt != chunkIt->second.SubChunks.end())
         {
             --subChunkIt->second.RefCount;
             if (subChunkIt->second.RefCount <= 0)
@@ -475,7 +475,7 @@ namespace renderer
                 const auto& removedRangeIt = mVertexRemovedRanges.find(stride);
                 removedRangeIt->second.push_back(subChunkIt->second.Ranges);
 
-                bufResIt->second.SubChunks.erase(subChunkIt);
+                chunkIt->second.SubChunks.erase(subChunkIt);
                 // TODO: 나중에 별도 Merge 함수로 분리하여, 정한 기준에 따라서 주기적으로 병합을 시도하는 것이 필요함.
                 // MEMO: 연속된 빈공간 병합 시도
                 if (removedRangeIt->second.size() >= 2)
@@ -511,9 +511,9 @@ namespace renderer
         ASSERT(stride > 0, "stride is zero or negative");
         ASSERT(hash > 0, "hash is zero or negative");
 
-        const auto& bufResIt = mIndexBuffers.find(stride);
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
-        if (subChunkIt != bufResIt->second.SubChunks.end())
+        const auto& chunkIt = mIndexBuffers.find(stride);
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
+        if (subChunkIt != chunkIt->second.SubChunks.end())
         {
             --subChunkIt->second.RefCount;
             if(subChunkIt->second.RefCount <= 0)
@@ -521,7 +521,7 @@ namespace renderer
                 const auto& removedRangeIt = mIndexRemovedRanges.find(stride);
                 removedRangeIt->second.push_back(subChunkIt->second.Ranges);
 
-                bufResIt->second.SubChunks.erase(subChunkIt);
+                chunkIt->second.SubChunks.erase(subChunkIt);
                 if (removedRangeIt->second.size() >= 2)
                 {
                     auto cursorIt = removedRangeIt->second.begin();
@@ -551,9 +551,9 @@ namespace renderer
         ASSERT(hash > 0, "hash is zero or negative");
         ASSERT(pData, "pData is nullptr. nullptr이 아닌 유효한 pData를 전달해야 합니다.");
 
-        const auto& bufResIt = mVertexBuffers.find(stride);
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
-        if (subChunkIt == bufResIt->second.SubChunks.end())
+        const auto& chunkIt = mVertexBuffers.find(stride);
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
+        if (subChunkIt == chunkIt->second.SubChunks.end())
         {
             return;
         }
@@ -567,7 +567,7 @@ namespace renderer
         updateRange.bottom = 1;
         updateRange.left = subChunkIt->second.Ranges.StartIndex;
         updateRange.right = subChunkIt->second.Ranges.StartIndex + subChunkIt->second.Ranges.Count;
-        mDeviceContext->UpdateSubresource(bufResIt->second.Buffer, 0, &updateRange, pData, 0, 0);
+        mDeviceContext->UpdateSubresource(chunkIt->second.Buffer, 0, &updateRange, pData, 0, 0);
     }
 
     void BufferManager::UpdateIndexData(int8_t* const pData, int16_t stride, HashID hash)
@@ -576,9 +576,9 @@ namespace renderer
         ASSERT(hash > 0, "hash is zero or negative");
         ASSERT(pData, "pData is nullptr. nullptr이 아닌 유효한 pData를 전달해야 합니다.");
 
-        const auto& bufResIt = mIndexBuffers.find(stride);
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
-        if (subChunkIt == bufResIt->second.SubChunks.end())
+        const auto& chunkIt = mIndexBuffers.find(stride);
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
+        if (subChunkIt == chunkIt->second.SubChunks.end())
         {
             return;
         }
@@ -590,7 +590,7 @@ namespace renderer
         updateRange.bottom = 1;
         updateRange.left = subChunkIt->second.Ranges.StartIndex;
         updateRange.right = subChunkIt->second.Ranges.StartIndex + subChunkIt->second.Ranges.Count;
-        mDeviceContext->UpdateSubresource(bufResIt->second.Buffer, 0, &updateRange, pData, 0, 0);
+        mDeviceContext->UpdateSubresource(chunkIt->second.Buffer, 0, &updateRange, pData, 0, 0);
     }
 
     void BufferManager::MarkInvalidateDynamicBuf()
@@ -617,9 +617,9 @@ namespace renderer
         ASSERT(hash > 0, "hash is zero or negative");
         BufferRange range = { -1, -1 };
 
-        const auto& bufResIt = mVertexBuffers.find(stride);
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
-        if (subChunkIt != bufResIt->second.SubChunks.end())
+        const auto& chunkIt = mVertexBuffers.find(stride);
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
+        if (subChunkIt != chunkIt->second.SubChunks.end())
         {
             range = subChunkIt->second.Ranges;
         }
@@ -633,9 +633,9 @@ namespace renderer
         ASSERT(hash > 0, "hash is zero or negative");
         BufferRange range = { -1, -1 };
 
-        const auto& bufResIt = mIndexBuffers.find(stride);
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
-        if (subChunkIt != bufResIt->second.SubChunks.end())
+        const auto& chunkIt = mIndexBuffers.find(stride);
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
+        if (subChunkIt != chunkIt->second.SubChunks.end())
         {
             range = subChunkIt->second.Ranges;
         }
@@ -649,12 +649,12 @@ namespace renderer
         ASSERT(hash > 0, "hash is zero or negative");
         BufferRange range = { -1, -1 };
 
-        const auto& bufResIt = mVertexBuffers.find(stride);
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
-        if (subChunkIt != bufResIt->second.SubChunks.end())
+        const auto& chunkIt = mVertexBuffers.find(stride);
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
+        if (subChunkIt != chunkIt->second.SubChunks.end())
         {
-            range.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
-            range.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
+            range.Count = subChunkIt->second.Ranges.Count / chunkIt->first;
+            range.StartIndex = subChunkIt->second.Ranges.StartIndex / chunkIt->first;
         }
 
         return range;
@@ -666,12 +666,12 @@ namespace renderer
         ASSERT(hash > 0, "hash is zero or negative");
         BufferRange range = { -1, -1 };
 
-        const auto& bufResIt = mIndexBuffers.find(stride);
-        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
-        if (subChunkIt != bufResIt->second.SubChunks.end())
+        const auto& chunkIt = mIndexBuffers.find(stride);
+        const auto& subChunkIt = chunkIt->second.SubChunks.find(hash);
+        if (subChunkIt != chunkIt->second.SubChunks.end())
         {
-            range.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
-            range.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
+            range.Count = subChunkIt->second.Ranges.Count / chunkIt->first;
+            range.StartIndex = subChunkIt->second.Ranges.StartIndex / chunkIt->first;
         }
 
         return range;
@@ -679,26 +679,26 @@ namespace renderer
 
     ID3D11Buffer* BufferManager::GetVertexBuffer(int16_t stride) const
     {
-        const auto& bufResIt = mVertexBuffers.find(stride);
-        return bufResIt->second.Buffer;
+        const auto& chunkIt = mVertexBuffers.find(stride);
+        return chunkIt->second.Buffer;
     }
 
     ID3D11Buffer* BufferManager::GetIndexBuffer(int16_t stride) const
     {
-        const auto& bufResIt = mIndexBuffers.find(stride);
-        return bufResIt->second.Buffer;
+        const auto& chunkIt = mIndexBuffers.find(stride);
+        return chunkIt->second.Buffer;
     }
 
     ID3D11Buffer* BufferManager::GetVertexBufferDynamic(int16_t stride) const
     {
-        const auto& bufResIt = mVertexBuffersDynamic.find(stride);
-        return bufResIt->second.Buffer;
+        const auto& chunkIt = mVertexBuffersDynamic.find(stride);
+        return chunkIt->second.Buffer;
     }
 
     ID3D11Buffer* BufferManager::GetIndexBufferDynamic(int16_t stride) const
     {
-        const auto& bufResIt = mIndexBuffersDynamic.find(stride);
-        return bufResIt->second.Buffer;
+        const auto& chunkIt = mIndexBuffersDynamic.find(stride);
+        return chunkIt->second.Buffer;
     }
 
     int16_t BufferManager::GetIndexStrideSize() const
@@ -711,7 +711,7 @@ namespace renderer
         return sIndexFormatMap[static_cast<int8_t>(mIndexFormat)].Format;
     }
 
-    void BufferManager::resizeVertexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferChunk>::iterator& bufResIt)
+    void BufferManager::resizeVertexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferChunk>::iterator& chunkIt)
     {
         ID3D11Buffer* resizedBuffer = nullptr;
         D3D11_BUFFER_DESC bufferDesc = {};
@@ -725,7 +725,7 @@ namespace renderer
             return;
         }
 
-        if (bufResIt->second.CursorBytes > 0)
+        if (chunkIt->second.CursorBytes > 0)
         {
             D3D11_BOX updateRange = {};
             updateRange.front = 0;
@@ -733,16 +733,16 @@ namespace renderer
             updateRange.top = 0;
             updateRange.bottom = 1;
             updateRange.left = 0;
-            updateRange.right = bufResIt->second.CursorBytes;
-            mDeviceContext->CopySubresourceRegion(resizedBuffer, 0, 0, 0, 0, bufResIt->second.Buffer, 0, &updateRange);
+            updateRange.right = chunkIt->second.CursorBytes;
+            mDeviceContext->CopySubresourceRegion(resizedBuffer, 0, 0, 0, 0, chunkIt->second.Buffer, 0, &updateRange);
         }
 
-        std::swap(bufResIt->second.Buffer, resizedBuffer);
+        std::swap(chunkIt->second.Buffer, resizedBuffer);
         SAFETY_RELEASE(resizedBuffer);
-        bufResIt->second.TotalSizeBytes = bufferDesc.ByteWidth;
+        chunkIt->second.TotalSizeBytes = bufferDesc.ByteWidth;
     }
 
-    void BufferManager::resizeIndexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferChunk>::iterator& bufResIt)
+    void BufferManager::resizeIndexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferChunk>::iterator& chunkIt)
     {
         ID3D11Buffer* resizedBuffer = nullptr;
         D3D11_BUFFER_DESC bufferDesc = {};
@@ -756,7 +756,7 @@ namespace renderer
             return;
         }
 
-        if (bufResIt->second.CursorBytes > 0)
+        if (chunkIt->second.CursorBytes > 0)
         {
             D3D11_BOX updateRange = {};
             updateRange.front = 0;
@@ -764,12 +764,12 @@ namespace renderer
             updateRange.top = 0;
             updateRange.bottom = 1;
             updateRange.left = 0;
-            updateRange.right = bufResIt->second.CursorBytes;
-            mDeviceContext->CopySubresourceRegion(resizedBuffer, 0, 0, 0, 0, bufResIt->second.Buffer, 0, &updateRange);
+            updateRange.right = chunkIt->second.CursorBytes;
+            mDeviceContext->CopySubresourceRegion(resizedBuffer, 0, 0, 0, 0, chunkIt->second.Buffer, 0, &updateRange);
         }
 
-        std::swap(bufResIt->second.Buffer, resizedBuffer);
+        std::swap(chunkIt->second.Buffer, resizedBuffer);
         SAFETY_RELEASE(resizedBuffer);
-        bufResIt->second.TotalSizeBytes = bufferDesc.ByteWidth;
+        chunkIt->second.TotalSizeBytes = bufferDesc.ByteWidth;
     }
 }
