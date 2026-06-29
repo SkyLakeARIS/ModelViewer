@@ -128,6 +128,7 @@ namespace renderer
 
         rasterDesc.CullMode = D3D11_CULL_NONE;
         rasterDesc.FillMode = D3D11_FILL_SOLID;
+        // MEMO: CW winding으로 통일 
         rasterDesc.FrontCounterClockwise = false;
         result = mDevice->CreateRasterizerState(&rasterDesc, &mRasterStates[static_cast<uint32>(eRasterType::Basic)]);
         if (FAILED(result))
@@ -137,7 +138,6 @@ namespace renderer
         // 아웃라인용 래스터 스테이트
         rasterDesc.CullMode = D3D11_CULL_FRONT;
       //  rasterDesc.CullMode = D3D11_CULL_BACK;
-        rasterDesc.FrontCounterClockwise = false;
         // TODO: msdn 읽어보고 설정.
         rasterDesc.DepthBias = 1;
         result = mDevice->CreateRasterizerState(&rasterDesc, &mRasterStates[static_cast<uint32>(eRasterType::Outline)]);
@@ -147,8 +147,7 @@ namespace renderer
         }
 
         // 스카이박스용 래스터 스테이트
-        rasterDesc.CullMode = D3D11_CULL_NONE;
-        rasterDesc.FrontCounterClockwise = true;
+        rasterDesc.CullMode = D3D11_CULL_BACK;
         result = mDevice->CreateRasterizerState(&rasterDesc, &mRasterStates[static_cast<uint32>(eRasterType::Skybox)]);
         if (FAILED(result))
         {

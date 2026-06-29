@@ -19,6 +19,7 @@ namespace renderer
 
 
     // from: https://www.braynzarsoft.net/viewtutorial/q16390-20-cube-mapping-skybox
+    // fix: changed cap indices winding to CW for consistency.
     void MeshGenerator::CreateSphere(uint16_t latLines, uint16_t lonLines, Mesh& outMesh)
     {
         ASSERT(sBufferManager, "MeshGenerator not initialized. (Call the Initialize)");
@@ -65,15 +66,15 @@ namespace renderer
         int k = 0;
         for (uint32 l = 0U; l < lonLines - 1U; ++l)
         {
-            indices[k] = 0U;
+            indices[k] = l + 2U;
             indices[k + 1] = l + 1U;
-            indices[k + 2] = l + 2U;
+            indices[k + 2] = 0U;
             k += 3;
         }
 
-        indices[k] = 0U;
+        indices[k] = 1U;
         indices[k + 1] = lonLines;
-        indices[k + 2] = 1U;
+        indices[k + 2] = 0U;
         k += 3;
 
         for (uint32 i = 0U; i < latLines - 3U; ++i)
@@ -104,15 +105,15 @@ namespace renderer
 
         for (uint32 l = 0U; l < lonLines - 1U; ++l)
         {
-            indices[k] = numVertex - 1U;
+            indices[k] = (numVertex - 1U) - (l + 2U);
             indices[k + 1] = (numVertex - 1U) - (l + 1U);
-            indices[k + 2] = (numVertex - 1U) - (l + 2U);
+            indices[k + 2] = numVertex - 1U;
             k += 3;
         }
 
-        indices[k] = numVertex - 1U;
+        indices[k] = numVertex - 2U;
         indices[k + 1] = (numVertex - 1U) - lonLines;
-        indices[k + 2] = numVertex - 2U;
+        indices[k + 2] = numVertex - 1U;
 
 
         outMesh.VertexLayoutType = eInputLayout::P;
@@ -138,14 +139,15 @@ namespace renderer
         ASSERT(verticalLines >= 2, "verticalLines must be 2 or greater. passed(%d)", verticalLines);
         ASSERT(gapEachLine >= 1, "gapEachLine must be 1 or greater");
 
-        const int32_t numVertices = (horizontalLines * 2) * (verticalLines - 1) + (verticalLines - 1);
+        const uint32_t numRows = horizontalLines - 1;
+        const int32_t numVertices = (verticalLines * 2) * numRows + (numRows - 1) * 2;
         std::unique_ptr<XMFLOAT3[]> vertices = std::make_unique<XMFLOAT3[]>(numVertices);
 
         XMFLOAT3* cur = vertices.get();
         XMFLOAT2  pos(startPoint);
-        for (uint32_t lineY = 0; lineY < verticalLines - 1; ++lineY)
+        for (uint32_t lineY = 0; lineY < horizontalLines - 1; ++lineY)
         {
-            for (uint32_t lineX = 0; lineX < horizontalLines; ++lineX)
+            for (uint32_t lineX = 0; lineX < verticalLines; ++lineX)
             {
                 // triangle-strip
                 *cur = XMFLOAT3(pos.x, 0.0f, pos.y);
@@ -154,16 +156,21 @@ namespace renderer
                 ++cur;
                 pos.x += gapEachLine;
             }
-            *cur = *(cur - 1);
-            ++cur;
-            pos.x = startPoint.x;
-            pos.y += gapEachLine;
+            if (lineY < numRows - 1)
+            {
+                *cur = *(cur - 1);
+                ++cur;
+                pos.x = startPoint.x;
+                pos.y += gapEachLine;
+                *cur = XMFLOAT3(pos.x, 0.0f, pos.y);
+                ++cur;
+            }
         }
 
         outMesh.VertexLayoutType = eInputLayout::P;
 
         int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
-        const int32_t pathLength = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Grid_%d_%d.mesh", reinterpret_cast<const char*>(VIRTUAL_ROOT_PATH), horizontalLines, verticalLines);
+        const int32_t pathLength = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Grid_%d_%d.mesh", reinterpret_cast<const char*>(VIRTUAL_ROOT_PATH), verticalLines, horizontalLines);
         ASSERT(pathLength < util::MAX_PATH_LENGTH, "file path too long. length(%d), limit(%d)", pathLength, util::MAX_PATH_LENGTH);
 
         (void)memcpy(outMesh.MeshName, virtualFilePath, pathLength + 1);
