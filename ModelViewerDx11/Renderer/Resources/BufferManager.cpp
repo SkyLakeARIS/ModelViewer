@@ -99,7 +99,7 @@ namespace renderer
         for(int16_t layoutType = 0; layoutType < static_cast<int16_t>(eInputLayout::InputlayoutCount); ++layoutType)
         {
             const int16_t stride = GetVertexStrideSize(static_cast<eInputLayout>(layoutType));
-            BufferResource bufferRes = {};
+            BufferChunk bufferRes = {};
             if (mDevice->CreateBuffer(&bufferDesc, nullptr, &bufferRes.Buffer) == E_FAIL)
             {
                 ASSERT(false, "vertex buffer creation failed, check the options. layoutType(%d)", layoutType);
@@ -121,7 +121,7 @@ namespace renderer
         const int16_t indexStrideSize = sIndexFormatMap[static_cast<int8_t>(mIndexFormat)].Stride;
 
 
-        BufferResource indexBufResStatic = {};
+        BufferChunk indexBufResStatic = {};
         indexBufResStatic.SubChunks.reserve(256);
         if (mDevice->CreateBuffer(&bufferDesc, nullptr, &indexBufResStatic.Buffer) == E_FAIL)
         {
@@ -144,7 +144,7 @@ namespace renderer
         for (int16_t layoutType = 0; layoutType < static_cast<int16_t>(eInputLayout::InputlayoutCount); ++layoutType)
         {
             const int16_t stride = GetVertexStrideSize(static_cast<eInputLayout>(layoutType));
-            BufferResource bufferResDynamic = {};
+            BufferChunk bufferResDynamic = {};
             if (mDevice->CreateBuffer(&bufferDesc, nullptr, &bufferResDynamic.Buffer) == E_FAIL)
             {
                 ASSERT(false, "vertex buffer(dynamic) creation failed, check the options. layoutType(%d)", layoutType);
@@ -161,7 +161,7 @@ namespace renderer
 
         mIndexBuffersDynamic.reserve(static_cast<int16_t>(eInputLayout::InputlayoutCount));
 
-        BufferResource indexBufDynamic = {};
+        BufferChunk indexBufDynamic = {};
         if (mDevice->CreateBuffer(&bufferDesc, nullptr, &indexBufDynamic.Buffer) == E_FAIL)
         {
             ASSERT(false, "index buffer(dynamic) creation failed, check the options. layoutType(%d)", indexStrideSize);
@@ -711,7 +711,7 @@ namespace renderer
         return sIndexFormatMap[static_cast<int8_t>(mIndexFormat)].Format;
     }
 
-    void BufferManager::resizeVertexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt)
+    void BufferManager::resizeVertexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferChunk>::iterator& bufResIt)
     {
         ID3D11Buffer* resizedBuffer = nullptr;
         D3D11_BUFFER_DESC bufferDesc = {};
@@ -742,7 +742,7 @@ namespace renderer
         bufResIt->second.TotalSizeBytes = bufferDesc.ByteWidth;
     }
 
-    void BufferManager::resizeIndexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt)
+    void BufferManager::resizeIndexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferChunk>::iterator& bufResIt)
     {
         ID3D11Buffer* resizedBuffer = nullptr;
         D3D11_BUFFER_DESC bufferDesc = {};

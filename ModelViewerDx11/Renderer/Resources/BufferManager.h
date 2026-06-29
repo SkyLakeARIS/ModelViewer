@@ -20,8 +20,7 @@ namespace renderer
             BufferRange Ranges;
             int32_t RefCount;
         };
-        // TODO: chunk 류의 네이밍으로 바꾸는 게 좋을 것 같다.
-        struct BufferResource
+        struct BufferChunk
         {
             ID3D11Buffer* Buffer;
             // MEMO: store in Bytes
@@ -74,8 +73,8 @@ namespace renderer
         int16_t GetIndexStrideSize() const;
         DXGI_FORMAT GetIndexFormat() const;
     private:
-        void resizeVertexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
-        void resizeIndexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferResource>::iterator& bufResIt);
+        void resizeVertexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferChunk>::iterator& bufResIt);
+        void resizeIndexBuffer(uint32_t newSize, D3D11_USAGE usageType, uint32_t cpuAccessFlag, std::unordered_map<int16_t, BufferChunk>::iterator& bufResIt);
     public:
         static constexpr int32_t sVertexBufferDefaultSize = 4096;
         static constexpr int32_t sIndexBufferDefaultSize = 4096;
@@ -90,8 +89,8 @@ namespace renderer
         // TODO: FlatMap은 일단 구조를 잡고나서 도입하자.
         // MEMO: 0 offset bind를 하려면 버퍼 내에 서로 다른 stride를 가진 데이터가 존재하면 안될 것으로 생각되어 Buffer들을 분리한다.
         // MEMO: pair<vertex stride, Buffer> - stride 크기 별로 개별 버퍼를 관리
-        std::unordered_map<int16_t, BufferResource> mVertexBuffers;
-        std::unordered_map<int16_t, BufferResource> mIndexBuffers;
+        std::unordered_map<int16_t, BufferChunk> mVertexBuffers;
+        std::unordered_map<int16_t, BufferChunk> mIndexBuffers;
 
         // TODO: 일단 만들어는 놨으나 Add 함수에서 먼저 추가하기 전에 Ranges 공간을 확인하도록 로직을 수정해야 한다.
         // MEMO: 데이터 제거 시 빈공간에 대한 데이터 범위를 저장하여 데이터 추가시 체크
@@ -99,8 +98,8 @@ namespace renderer
         std::unordered_map<int16_t, std::vector<BufferRange>> mIndexRemovedRanges;
 
         // MEMO: 동적 데이터 전용
-        std::unordered_map<int16_t, BufferResource> mVertexBuffersDynamic;
-        std::unordered_map<int16_t, BufferResource> mIndexBuffersDynamic;
+        std::unordered_map<int16_t, BufferChunk> mVertexBuffersDynamic;
+        std::unordered_map<int16_t, BufferChunk> mIndexBuffersDynamic;
 
         bool mbNeedDiscardDynamicVertex;
         bool mbNeedDiscardDynamicIndex;
