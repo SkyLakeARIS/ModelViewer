@@ -1,10 +1,10 @@
 #pragma once
 #include <unordered_map>
+#include "RenderTypes.h"
 #include "../../framework.h"
 
 namespace renderer
 {
-    struct BufferRange;
 
     class BufferManager
     {
@@ -15,11 +15,17 @@ namespace renderer
             IndexListFormatCount
         };
     private:
+        struct SubChunk
+        {
+            BufferRange Ranges;
+            int32_t RefCount;
+        };
+        // TODO: chunk 류의 네이밍으로 바꾸는 게 좋을 것 같다.
         struct BufferResource
         {
             ID3D11Buffer* Buffer;
             // MEMO: store in Bytes
-            std::unordered_map<HashID, BufferRange> Ranges;
+            std::unordered_map<HashID, SubChunk> SubChunks;
             int32_t TotalSizeBytes;
             int32_t CursorBytes;
         };

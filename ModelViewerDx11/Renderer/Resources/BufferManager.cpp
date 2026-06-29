@@ -32,7 +32,7 @@ namespace renderer
         for (auto& buffer : mVertexBuffers)
         {
             SAFETY_RELEASE(buffer.second.Buffer);
-            buffer.second.Ranges.clear();
+            buffer.second.SubChunks.clear();
         }
         mVertexBuffers.clear();
 
@@ -46,7 +46,7 @@ namespace renderer
         for (auto& buffer : mIndexBuffers)
         {
             SAFETY_RELEASE(buffer.second.Buffer);
-            buffer.second.Ranges.clear();
+            buffer.second.SubChunks.clear();
         }
         mIndexBuffers.clear();
 
@@ -61,14 +61,14 @@ namespace renderer
         for (auto& buffer : mVertexBuffersDynamic)
         {
             SAFETY_RELEASE(buffer.second.Buffer);
-            buffer.second.Ranges.clear();
+            buffer.second.SubChunks.clear();
         }
         mVertexBuffersDynamic.clear();
 
         for (auto& buffer : mIndexBuffersDynamic)
         {
             SAFETY_RELEASE(buffer.second.Buffer);
-            buffer.second.Ranges.clear();
+            buffer.second.SubChunks.clear();
         }
         mIndexBuffersDynamic.clear();
     }
@@ -105,7 +105,7 @@ namespace renderer
                 ASSERT(false, "vertex buffer creation failed, check the options. layoutType(%d)", layoutType);
                 return false;
             }
-            bufferRes.Ranges.reserve(128);
+            bufferRes.SubChunks.reserve(128);
             bufferRes.TotalSizeBytes = vertexBufferByteSizeStatic;
             mVertexBuffers.insert(std::make_pair(stride, std::move(bufferRes)));
             std::vector<BufferRange> ranges;
@@ -122,7 +122,7 @@ namespace renderer
 
 
         BufferResource indexBufResStatic = {};
-        indexBufResStatic.Ranges.reserve(256);
+        indexBufResStatic.SubChunks.reserve(256);
         if (mDevice->CreateBuffer(&bufferDesc, nullptr, &indexBufResStatic.Buffer) == E_FAIL)
         {
             ASSERT(false, "index buffer creation failed, check the options. layoutType(%d)", indexStrideSize);
@@ -150,7 +150,7 @@ namespace renderer
                 ASSERT(false, "vertex buffer(dynamic) creation failed, check the options. layoutType(%d)", layoutType);
                 return false;
             }
-            bufferResDynamic.Ranges.reserve(16);
+            bufferResDynamic.SubChunks.reserve(16);
             bufferResDynamic.TotalSizeBytes = vertexBufferByteSizeDynamic;
             mVertexBuffersDynamic.insert(std::make_pair(stride, std::move(bufferResDynamic)));
         }
@@ -167,7 +167,7 @@ namespace renderer
             ASSERT(false, "index buffer(dynamic) creation failed, check the options. layoutType(%d)", indexStrideSize);
             return false;
         }
-        indexBufDynamic.Ranges.reserve(32);
+        indexBufDynamic.SubChunks.reserve(32);
         indexBufDynamic.TotalSizeBytes = indexBufferByteSizeDynamic;
         mIndexBuffersDynamic.insert(std::make_pair(indexStrideSize, std::move(indexBufDynamic)));
         std::vector<BufferRange> rangesDynamic;
@@ -188,13 +188,14 @@ namespace renderer
 
         auto bufResIt = mVertexBuffers.find(stride);
 
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
         // TODO: 나중에 <파일 명 - 해시> Map을 만들어서 같은 데이터를 중복 삽입하는 건지 해시함수 충돌 발생인지 구분할 필요가 있음.
-        if(rangeIt != bufResIt->second.Ranges.end())
+        if(subChunkIt != bufResIt->second.SubChunks.end())
         {
             // MEMO: in vertex count (not bytes). convert bytes -> stride
-            outRangeInBuffer.Count = rangeIt->second.Count / bufResIt->first;
-            outRangeInBuffer.StartIndex = rangeIt->second.StartIndex / bufResIt->first;
+            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
+            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
+            ++subChunkIt->second.RefCount;
             return;
         }
 
@@ -254,15 +255,16 @@ namespace renderer
         updateRange.right = writeCursorInBuffer + dataByteSize;
         mDeviceContext->UpdateSubresource(bufResIt->second.Buffer, 0, &updateRange, pData, 0, 0);
 
-        BufferRange range = {};
-        range.StartIndex = writeCursorInBuffer;
-        range.Count = dataByteSize;
+        SubChunk subChunk = {};
+        subChunk.Ranges.StartIndex = writeCursorInBuffer;
+        subChunk.Ranges.Count = dataByteSize;
+        subChunk.RefCount = 1;
 
-        bufResIt->second.Ranges.insert(std::make_pair(hash, range));
+        bufResIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
 
         // MEMO: in vertex count (not bytes). convert bytes -> stride
-        outRangeInBuffer.Count = range.Count / bufResIt->first;
-        outRangeInBuffer.StartIndex = range.StartIndex / bufResIt->first;
+        outRangeInBuffer.Count = subChunk.Ranges.Count / bufResIt->first;
+        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / bufResIt->first;
     }
 
     void BufferManager::AddIndex(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer)
@@ -277,12 +279,13 @@ namespace renderer
 
         auto bufResIt = mIndexBuffers.find(stride);
 
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
-        if (rangeIt != bufResIt->second.Ranges.end())
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        if (subChunkIt != bufResIt->second.SubChunks.end())
         {
             // MEMO: in vertex count (not bytes). convert bytes -> stride
-            outRangeInBuffer.Count = rangeIt->second.Count / bufResIt->first;
-            outRangeInBuffer.StartIndex = rangeIt->second.StartIndex / bufResIt->first;
+            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
+            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
+            ++subChunkIt->second.RefCount;
             return;
         }
 
@@ -342,15 +345,16 @@ namespace renderer
         updateRange.right = writeCursorInBuffer + dataByteSize;
         mDeviceContext->UpdateSubresource(bufResIt->second.Buffer, 0, &updateRange, pData, 0, 0);
 
-        BufferRange range = {};
-        range.StartIndex = writeCursorInBuffer;
-        range.Count = dataByteSize;
+        SubChunk subChunk = {};
+        subChunk.Ranges.StartIndex = writeCursorInBuffer;
+        subChunk.Ranges.Count = dataByteSize;
+        subChunk.RefCount = 1;
 
-        bufResIt->second.Ranges.insert(std::make_pair(hash, range));
+        bufResIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
 
         // MEMO: in vertex count (not bytes). convert bytes -> stride
-        outRangeInBuffer.Count = range.Count / bufResIt->first;
-        outRangeInBuffer.StartIndex = range.StartIndex / bufResIt->first;
+        outRangeInBuffer.Count = subChunk.Ranges.Count / bufResIt->first;
+        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / bufResIt->first;
     }
 
     void BufferManager::AddVertexDynamic(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride, BufferRange& outRangeInBuffer)
@@ -365,12 +369,12 @@ namespace renderer
 
         auto bufResIt = mVertexBuffersDynamic.find(stride);
 
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
-        if (rangeIt != bufResIt->second.Ranges.end())
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        if (subChunkIt != bufResIt->second.SubChunks.end())
         {
             // MEMO: in vertex count (not bytes). convert bytes -> stride
-            outRangeInBuffer.Count = rangeIt->second.Count / bufResIt->first;
-            outRangeInBuffer.StartIndex = rangeIt->second.StartIndex / bufResIt->first;
+            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
+            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
             return;
         }
 
@@ -390,16 +394,17 @@ namespace renderer
 
         mDeviceContext->Unmap(bufResIt->second.Buffer, 0);
 
-        BufferRange range = {};
-        range.StartIndex = bufResIt->second.CursorBytes;
-        range.Count = dataByteSize;
+        SubChunk subChunk = {};
+        subChunk.Ranges.StartIndex = bufResIt->second.CursorBytes;
+        subChunk.Ranges.Count = dataByteSize;
+        // MEMO: 동적 데이터에는 필요 없음.
 
         bufResIt->second.CursorBytes += dataByteSize;
-        bufResIt->second.Ranges.insert(std::make_pair(hash, range));
+        bufResIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
 
         // MEMO: in vertex count (not bytes). convert bytes -> stride
-        outRangeInBuffer.Count = range.Count / bufResIt->first;
-        outRangeInBuffer.StartIndex = range.StartIndex / bufResIt->first;
+        outRangeInBuffer.Count = subChunk.Ranges.Count / bufResIt->first;
+        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / bufResIt->first;
     }
 
     void BufferManager::AddIndexDynamic(const int8_t* const pData, int32_t dataByteSize, HashID hash, int16_t stride,
@@ -415,12 +420,12 @@ namespace renderer
 
         auto bufResIt = mIndexBuffersDynamic.find(stride);
 
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
-        if (rangeIt != bufResIt->second.Ranges.end())
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        if (subChunkIt != bufResIt->second.SubChunks.end())
         {
             // MEMO: in vertex count (not bytes). convert bytes -> stride
-            outRangeInBuffer.Count = rangeIt->second.Count / bufResIt->first;
-            outRangeInBuffer.StartIndex = rangeIt->second.StartIndex / bufResIt->first;
+            outRangeInBuffer.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
+            outRangeInBuffer.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
             return;
         }
 
@@ -437,20 +442,21 @@ namespace renderer
         mDeviceContext->Map(bufResIt->second.Buffer, 0, mapType, 0, &mappedRes);
 
         int8_t* gpuBuffer = reinterpret_cast<int8_t*>(mappedRes.pData);
-        memcpy(gpuBuffer + rangeIt->second.StartIndex, pData, dataByteSize);
+        memcpy(gpuBuffer + subChunkIt->second.Ranges.StartIndex, pData, dataByteSize);
 
         mDeviceContext->Unmap(bufResIt->second.Buffer, 0);
 
-        BufferRange range = {};
-        range.StartIndex = bufResIt->second.CursorBytes;
-        range.Count = dataByteSize;
+        SubChunk subChunk = {};
+        subChunk.Ranges.StartIndex = bufResIt->second.CursorBytes;
+        subChunk.Ranges.Count = dataByteSize;
+        // MEMO: 동적 데이터에는 필요 없음.
 
-        bufResIt->second.Ranges.insert(std::make_pair(hash, range));
+        bufResIt->second.SubChunks.insert(std::make_pair(hash, subChunk));
         bufResIt->second.CursorBytes += dataByteSize;
 
         // MEMO: in vertex count (not bytes). convert bytes -> stride
-        outRangeInBuffer.Count = range.Count / bufResIt->first;
-        outRangeInBuffer.StartIndex = range.StartIndex / bufResIt->first;
+        outRangeInBuffer.Count = subChunk.Ranges.Count / bufResIt->first;
+        outRangeInBuffer.StartIndex = subChunk.Ranges.StartIndex / bufResIt->first;
     }
 
     void BufferManager::RemoveVertexData(int16_t stride, HashID hash)
@@ -459,37 +465,41 @@ namespace renderer
         ASSERT(hash > 0, "hash is zero or negative");
 
         const auto& bufResIt = mVertexBuffers.find(stride);
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
         // TODO: RefCount를 통해서 바로 제거되지 않도록 작업해야 한다. (Add 함수도 마찬가지로 중복 데이터가 삽입되면 RefUp)
-        if(rangeIt != bufResIt->second.Ranges.end())
+        if(subChunkIt != bufResIt->second.SubChunks.end())
         {
-            const auto& removedRangeIt = mVertexRemovedRanges.find(stride);
-            removedRangeIt->second.push_back(rangeIt->second);
-
-            bufResIt->second.Ranges.erase(rangeIt);
-            // TODO: 나중에 별도 Merge 함수로 분리하여, 정한 기준에 따라서 주기적으로 병합을 시도하는 것이 필요함.
-            // MEMO: 연속된 빈공간 병합 시도
-            if(removedRangeIt->second.size() >= 2)
+            --subChunkIt->second.RefCount;
+            if (subChunkIt->second.RefCount <= 0)
             {
-                std::sort(removedRangeIt->second.begin(), removedRangeIt->second.end(), BufferRangeIncrCompare);
-                auto cursorIt = removedRangeIt->second.begin();
-                // 1. 병합되고 나서 vector size가 1개 일 때.
-                // 2. nextRangeIt이 end 일 때.
-                while((cursorIt + 1) != removedRangeIt->second.end())
+                const auto& removedRangeIt = mVertexRemovedRanges.find(stride);
+                removedRangeIt->second.push_back(subChunkIt->second.Ranges);
+
+                bufResIt->second.SubChunks.erase(subChunkIt);
+                // TODO: 나중에 별도 Merge 함수로 분리하여, 정한 기준에 따라서 주기적으로 병합을 시도하는 것이 필요함.
+                // MEMO: 연속된 빈공간 병합 시도
+                if (removedRangeIt->second.size() >= 2)
                 {
-                    const auto nextRangeIt = cursorIt + 1;
-                    if ((cursorIt->StartIndex + cursorIt->Count) == nextRangeIt->StartIndex)
+                    std::sort(removedRangeIt->second.begin(), removedRangeIt->second.end(), BufferRangeIncrCompare);
+                    auto cursorIt = removedRangeIt->second.begin();
+                    // 1. 병합되고 나서 vector size가 1개 일 때.
+                    // 2. nextRangeIt이 end 일 때.
+                    while ((cursorIt + 1) != removedRangeIt->second.end())
                     {
-                        cursorIt->Count += nextRangeIt->Count;
-                        // TODO: optimize - 현재 로직 구조로는 제거를 빠르게 할 수 없는 것 같다. 다른 좋은 방안 찾는게 필요
-                        removedRangeIt->second.erase(nextRangeIt);
-                        // TODO: optimize - 이렇게하면 항상 처음으로 돌아가므로 중간에 병합된 경우 다시 처음부터 순회해야하는 비효율 존재. 빠른 구현을 위해 우선 이렇게 함.
-                        // RemoveIndexData도 마찬가지로 작업
-                        cursorIt = removedRangeIt->second.begin();
-                    }
-                    else
-                    {
-                        ++cursorIt;
+                        const auto nextRangeIt = cursorIt + 1;
+                        if ((cursorIt->StartIndex + cursorIt->Count) == nextRangeIt->StartIndex)
+                        {
+                            cursorIt->Count += nextRangeIt->Count;
+                            // TODO: optimize - 현재 로직 구조로는 제거를 빠르게 할 수 없는 것 같다. 다른 좋은 방안 찾는게 필요
+                            removedRangeIt->second.erase(nextRangeIt);
+                            // TODO: optimize - 이렇게하면 항상 처음으로 돌아가므로 중간에 병합된 경우 다시 처음부터 순회해야하는 비효율 존재. 빠른 구현을 위해 우선 이렇게 함.
+                            // RemoveIndexData도 마찬가지로 작업
+                            cursorIt = removedRangeIt->second.begin();
+                        }
+                        else
+                        {
+                            ++cursorIt;
+                        }
                     }
                 }
             }
@@ -502,29 +512,33 @@ namespace renderer
         ASSERT(hash > 0, "hash is zero or negative");
 
         const auto& bufResIt = mIndexBuffers.find(stride);
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
-        if (rangeIt != bufResIt->second.Ranges.end())
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        if (subChunkIt != bufResIt->second.SubChunks.end())
         {
-            const auto& removedRangeIt = mIndexRemovedRanges.find(stride);
-            removedRangeIt->second.push_back(rangeIt->second);
-
-            bufResIt->second.Ranges.erase(rangeIt);
-            if (removedRangeIt->second.size() >= 2)
+            --subChunkIt->second.RefCount;
+            if(subChunkIt->second.RefCount <= 0)
             {
-                auto cursorIt = removedRangeIt->second.begin();
+                const auto& removedRangeIt = mIndexRemovedRanges.find(stride);
+                removedRangeIt->second.push_back(subChunkIt->second.Ranges);
 
-                while ((cursorIt + 1) != removedRangeIt->second.end())
+                bufResIt->second.SubChunks.erase(subChunkIt);
+                if (removedRangeIt->second.size() >= 2)
                 {
-                    const auto nextRangeIt = cursorIt + 1;
-                    if ((cursorIt->StartIndex + cursorIt->Count) == nextRangeIt->StartIndex)
+                    auto cursorIt = removedRangeIt->second.begin();
+
+                    while ((cursorIt + 1) != removedRangeIt->second.end())
                     {
-                        cursorIt->Count += nextRangeIt->Count;
-                        removedRangeIt->second.erase(nextRangeIt);
-                        cursorIt = removedRangeIt->second.begin();
-                    }
-                    else
-                    {
-                        ++cursorIt;
+                        const auto nextRangeIt = cursorIt + 1;
+                        if ((cursorIt->StartIndex + cursorIt->Count) == nextRangeIt->StartIndex)
+                        {
+                            cursorIt->Count += nextRangeIt->Count;
+                            removedRangeIt->second.erase(nextRangeIt);
+                            cursorIt = removedRangeIt->second.begin();
+                        }
+                        else
+                        {
+                            ++cursorIt;
+                        }
                     }
                 }
             }
@@ -538,8 +552,8 @@ namespace renderer
         ASSERT(pData, "pData is nullptr. nullptr이 아닌 유효한 pData를 전달해야 합니다.");
 
         const auto& bufResIt = mVertexBuffers.find(stride);
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
-        if (rangeIt == bufResIt->second.Ranges.end())
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        if (subChunkIt == bufResIt->second.SubChunks.end())
         {
             return;
         }
@@ -551,8 +565,8 @@ namespace renderer
         updateRange.back = 1;
         updateRange.top = 0;
         updateRange.bottom = 1;
-        updateRange.left = rangeIt->second.StartIndex;
-        updateRange.right = rangeIt->second.StartIndex + rangeIt->second.Count;
+        updateRange.left = subChunkIt->second.Ranges.StartIndex;
+        updateRange.right = subChunkIt->second.Ranges.StartIndex + subChunkIt->second.Ranges.Count;
         mDeviceContext->UpdateSubresource(bufResIt->second.Buffer, 0, &updateRange, pData, 0, 0);
     }
 
@@ -563,8 +577,8 @@ namespace renderer
         ASSERT(pData, "pData is nullptr. nullptr이 아닌 유효한 pData를 전달해야 합니다.");
 
         const auto& bufResIt = mIndexBuffers.find(stride);
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
-        if (rangeIt == bufResIt->second.Ranges.end())
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        if (subChunkIt == bufResIt->second.SubChunks.end())
         {
             return;
         }
@@ -574,8 +588,8 @@ namespace renderer
         updateRange.back = 1;
         updateRange.top = 0;
         updateRange.bottom = 1;
-        updateRange.left = rangeIt->second.StartIndex;
-        updateRange.right = rangeIt->second.StartIndex + rangeIt->second.Count;
+        updateRange.left = subChunkIt->second.Ranges.StartIndex;
+        updateRange.right = subChunkIt->second.Ranges.StartIndex + subChunkIt->second.Ranges.Count;
         mDeviceContext->UpdateSubresource(bufResIt->second.Buffer, 0, &updateRange, pData, 0, 0);
     }
 
@@ -586,14 +600,14 @@ namespace renderer
         for (auto& bufStrideIt : mVertexBuffersDynamic)
         {
             bufStrideIt.second.CursorBytes = 0;
-            bufStrideIt.second.Ranges.clear();
+            bufStrideIt.second.SubChunks.clear();
         }
 
         mbNeedDiscardDynamicIndex = true;
         for (auto& bufStrideIt : mIndexBuffersDynamic)
         {
             bufStrideIt.second.CursorBytes = 0;
-            bufStrideIt.second.Ranges.clear();
+            bufStrideIt.second.SubChunks.clear();
         }
     }
 
@@ -604,10 +618,10 @@ namespace renderer
         BufferRange range = { -1, -1 };
 
         const auto& bufResIt = mVertexBuffers.find(stride);
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
-        if (rangeIt != bufResIt->second.Ranges.end())
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        if (subChunkIt != bufResIt->second.SubChunks.end())
         {
-            range = rangeIt->second;
+            range = subChunkIt->second.Ranges;
         }
 
         return range;
@@ -620,10 +634,10 @@ namespace renderer
         BufferRange range = { -1, -1 };
 
         const auto& bufResIt = mIndexBuffers.find(stride);
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
-        if (rangeIt != bufResIt->second.Ranges.end())
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        if (subChunkIt != bufResIt->second.SubChunks.end())
         {
-            range = rangeIt->second;
+            range = subChunkIt->second.Ranges;
         }
 
         return range;
@@ -636,11 +650,11 @@ namespace renderer
         BufferRange range = { -1, -1 };
 
         const auto& bufResIt = mVertexBuffers.find(stride);
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
-        if (rangeIt != bufResIt->second.Ranges.end())
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        if (subChunkIt != bufResIt->second.SubChunks.end())
         {
-            range.Count = rangeIt->second.Count / bufResIt->first;
-            range.StartIndex = rangeIt->second.StartIndex / bufResIt->first;
+            range.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
+            range.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
         }
 
         return range;
@@ -653,11 +667,11 @@ namespace renderer
         BufferRange range = { -1, -1 };
 
         const auto& bufResIt = mIndexBuffers.find(stride);
-        const auto& rangeIt = bufResIt->second.Ranges.find(hash);
-        if (rangeIt != bufResIt->second.Ranges.end())
+        const auto& subChunkIt = bufResIt->second.SubChunks.find(hash);
+        if (subChunkIt != bufResIt->second.SubChunks.end())
         {
-            range.Count = rangeIt->second.Count / bufResIt->first;
-            range.StartIndex = rangeIt->second.StartIndex / bufResIt->first;
+            range.Count = subChunkIt->second.Ranges.Count / bufResIt->first;
+            range.StartIndex = subChunkIt->second.Ranges.StartIndex / bufResIt->first;
         }
 
         return range;
