@@ -132,7 +132,12 @@ void Application::Run()
         core::Timer::Tick();
 
         const double startTime = core::Timer::GetNowMS();
-        const double deltaTime = startTime - lastFrameTime;
+        double deltaTime = startTime - lastFrameTime;
+        // MEMO: 디버거 대응. deltaTime이 너무 크면 시간을 재조정한다.
+        if(deltaTime > 100.0)
+        {
+            deltaTime = RenderIntervalTime;
+        }
 
         if (RenderIntervalTime >= deltaTime)
         {
