@@ -57,7 +57,6 @@ private:
     scene::Camera* mCamera;
     scene::Sky* mSkybox;
     scene::Light* mLight;
-    renderer::Plane* mPlane;
     scene::Floor* mFloor;
     renderer::BufferManager* mBufferManager;
     renderer::TextureManager* mTextureManager;

@@ -27,7 +27,6 @@ Application::Application()
     , mCamera(nullptr)
     , mSkybox(nullptr)
     , mLight(nullptr)
-    , mPlane(nullptr)
     , mFloor(nullptr)
     , mBufferManager(nullptr)
     , mTextureManager(nullptr)
@@ -46,7 +45,6 @@ Application::~Application()
     delete mDirectInput;
     mDirectInput = nullptr;
     delete mFloor;
-    delete mPlane;
     delete mSkybox;
     delete mImporter;
     delete mLight;
@@ -208,13 +206,8 @@ bool Application::initializeScene()
     mLight->Initialize(mTextureManager, *mRenderer);
     mLight->SetupCascade(*mRenderer);
 
-    // debug quad
-    // 깊이 텍스쳐 확인용
-    mPlane = new renderer::Plane();
     const XMFLOAT3 planePosition(0.0, 0.0, -1.0);
     const XMFLOAT3 planeScale(0.5f, 0.5f, 0.5f);
-    mPlane->SetPosition(planePosition);
-    mPlane->SetScale(planeScale);
 
     mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
 
@@ -373,8 +366,6 @@ void Application::renderScene()
     mLight->DrawDebug(*mRenderer);
 }
 
-    mPlane->Update();
-    mPlane->DrawTexture(*mRenderer);
 void Application::renderUI()
 {
     mShadowDebugPanel->Draw(*mRenderer);
