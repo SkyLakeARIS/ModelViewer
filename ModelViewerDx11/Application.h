@@ -1,5 +1,6 @@
 #pragma once
 #include "framework.h"
+#include "UI/DebugPanel.h"
 
 class Window;
 
@@ -41,6 +42,7 @@ private:
 
     void preprocess();
     void renderScene();
+    void renderUI();
 private:
 
     int16_t mWindowWidth;
@@ -61,4 +63,5 @@ private:
     renderer::TextureManager* mTextureManager;
     renderer::ResourceManager* mResourceManager;
     core::DirectInput* mDirectInput;
+    ui::DebugPanel* mShadowDebugPanel;
 };

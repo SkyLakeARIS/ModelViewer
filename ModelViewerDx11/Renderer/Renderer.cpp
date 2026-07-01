@@ -196,8 +196,9 @@ namespace renderer
                 {eCbType::CbLightProperty, sizeof(CbLightProperty)},
                 {eCbType::CbMaterial, sizeof(CbMaterial)},
                 {eCbType::CbColor, sizeof(CbMaterial)},
+                {eCbType::CbScreenSpaceMatrix, sizeof(CbScreenSpaceMatrix)},
             };
-
+        static_assert(sizeof(cbMapTable) / sizeof(ConstantBufferMap) == static_cast<uint8_t>(eCbType::ConstantBufferCount));
         D3D11_BUFFER_DESC desc = {};
         desc.Usage = D3D11_USAGE_DEFAULT;
         desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;

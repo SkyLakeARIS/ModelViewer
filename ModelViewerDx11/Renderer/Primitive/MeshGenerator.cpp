@@ -219,4 +219,47 @@ namespace renderer
         sBufferManager->AddIndex(reinterpret_cast<const int8_t*>(indices), sizeof(indices), outMesh.MeshHash, strideIndex, outMesh.IndexRange);
 
     }
+
+    void MeshGenerator::CreateScreenPlane(int16_t originX, int16_t originY, int16_t width, int16_t height, Mesh& outMesh)
+    {
+        ASSERT(sBufferManager, "MeshGenerator not initialized. (Call the Initialize)");
+        ASSERT(width > 0, "width must be > 0");
+        ASSERT(height > 0, "height must be > 0");
+        ASSERT(originX >= 0, "originX must be >= 0");
+        ASSERT(originY >= 0, "originY must be >= 0");
+
+        const VertexPT vertices[] =
+        {
+            {XMFLOAT3(static_cast<float>(originX), static_cast<float>(originY + height), 1.0f), XMFLOAT2(0.0f, 1.0f)}, // lb
+            {XMFLOAT3(static_cast<float>(originX), static_cast<float>(originY), 1.0f), XMFLOAT2(0.0f, 0.0f)}, // lt
+            {XMFLOAT3(static_cast<float>(originX + width), static_cast<float>(originY), 1.0f), XMFLOAT2(1.0f, 0.0f)}, // rt
+            {XMFLOAT3(static_cast<float>(originX + width), static_cast<float>(originY + height), 1.0f), XMFLOAT2(1.0f, 1.0f)}, // rb
+        };
+
+        constexpr uint32_t indices[] =
+        {
+            0,
+            1,
+            2,
+            0,
+            2,
+            3,
+        };
+
+        outMesh.VertexLayoutType = eInputLayout::PT;
+
+        int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
+        const int32_t pathLength = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_ScreenPlane_%d_%d_%d_%d.mesh", reinterpret_cast<const char*>(VIRTUAL_ROOT_PATH), originX, originY, width, height);
+        ASSERT(pathLength < util::MAX_PATH_LENGTH, "file path too long. length(%d), limit(%d)", pathLength, util::MAX_PATH_LENGTH);
+
+        (void)memcpy(outMesh.MeshName, virtualFilePath, pathLength + 1);
+        outMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
+
+        const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexLayoutType);
+        const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
+
+        sBufferManager->AddVertex(reinterpret_cast<const int8_t*>(vertices), sizeof(vertices), outMesh.MeshHash, strideVertex, outMesh.VertexRange);
+        sBufferManager->AddIndex(reinterpret_cast<const int8_t*>(indices), sizeof(indices), outMesh.MeshHash, strideIndex, outMesh.IndexRange);
+
+    }
 }

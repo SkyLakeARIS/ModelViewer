@@ -33,6 +33,7 @@ Application::Application()
     , mTextureManager(nullptr)
     , mResourceManager(nullptr)
     , mDirectInput(nullptr)
+    , mShadowDebugPanel(nullptr)
 {
     mRenderer = new renderer::Renderer();
     mImporter = new renderer::ModelImporter();
@@ -40,6 +41,7 @@ Application::Application()
 
 Application::~Application()
 {
+    delete mShadowDebugPanel;
     mDirectInput->Release();
     delete mDirectInput;
     mDirectInput = nullptr;
@@ -153,7 +155,7 @@ void Application::Run()
 
         preprocess();
         renderScene();
-
+        renderUI();
         mRenderer->Present();
 
         ++frameCount;
@@ -216,6 +218,8 @@ bool Application::initializeScene()
 
     mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
 
+    mShadowDebugPanel = new ui::DebugPanel(0, 0, 200, 200);
+    mShadowDebugPanel->SetDebugType(renderer::eRenderTarget::Shadow);
     return true;
 }
 
@@ -332,6 +336,10 @@ void Application::updateScene(double deltaTime)
 
 
     mLight->SetupCascade(*mRenderer);
+   const XMMATRIX uiProjMat = XMMatrixOrthographicOffCenterLH(0.0, mWindowWidth, mWindowHeight, 0.0, 0.1f, 100.0f);
+    renderer::CbScreenSpaceMatrix cbScreenSpaceMatrix = {};
+    cbScreenSpaceMatrix.Matrix = XMMatrixTranspose(uiProjMat);
+    mRenderer->UpdateCB(renderer::eCbType::CbScreenSpaceMatrix, &cbScreenSpaceMatrix);
 }
 
 void Application::preprocess()
@@ -363,7 +371,11 @@ void Application::renderScene()
     mLight->Draw(*mRenderer);
     mLight->Update(*mRenderer);
     mLight->DrawDebug(*mRenderer);
+}
 
     mPlane->Update();
     mPlane->DrawTexture(*mRenderer);
+void Application::renderUI()
+{
+    mShadowDebugPanel->Draw(*mRenderer);
 }

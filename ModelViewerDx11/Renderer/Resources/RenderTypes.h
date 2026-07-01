@@ -68,7 +68,7 @@ namespace renderer
     typedef struct CbMatrix
     {
         XMMATRIX Matrix;
-    }CbWorld, CbViewProj, CbLightViewProjMatrix;
+    }CbWorld, CbViewProj, CbLightViewProjMatrix, CbScreenSpaceMatrix;
 
     typedef struct CbFloat3
     {
@@ -92,6 +92,7 @@ namespace renderer
         CbLightProperty,
         CbMaterial,
         CbColor,
+        CbScreenSpaceMatrix,
         ConstantBufferCount
     };
 
