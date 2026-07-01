@@ -141,7 +141,7 @@ void Application::Run()
             deltaTime = RenderIntervalTime;
         }
 
-        if (RenderIntervalTime >= deltaTime)
+        if (RenderIntervalTime > deltaTime)
         {
             YieldProcessor();
             continue;
