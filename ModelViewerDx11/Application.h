@@ -38,6 +38,7 @@ private:
     bool initializeScene();
     bool initializeManagers();
 
+    // TODO: input update와 scene update 로직 분리하기
     void updateScene(double deltaTime);
 
     void preprocess();

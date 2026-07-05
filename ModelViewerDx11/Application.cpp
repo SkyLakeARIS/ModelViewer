@@ -339,6 +339,7 @@ void Application::updateScene(double deltaTime)
 
 
     mLight->SetupCascade(*mRenderer);
+    // TODO: improve - 이후에 창 크기 말고 viewport 사이즈로 바꾸는 것으로 검토(급하진 않음)
    const XMMATRIX uiProjMat = XMMatrixOrthographicOffCenterLH(0.0, mWindowWidth, mWindowHeight, 0.0, 0.1f, 100.0f);
     renderer::CbScreenSpaceMatrix cbScreenSpaceMatrix = {};
     cbScreenSpaceMatrix.Matrix = XMMatrixTranspose(uiProjMat);

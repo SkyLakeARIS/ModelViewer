@@ -3,6 +3,7 @@
 
 namespace renderer
 {
+    // TODO: eVertexFormat 으로 바꾸는게 더 명확한 네임이 될 것 같다.
     enum class eInputLayout : uint8_t
     {
         PTN,    // pos, normal, tex
