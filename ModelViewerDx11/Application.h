@@ -1,5 +1,6 @@
 #pragma once
 #include "framework.h"
+#include "Scene/Billboard.h"
 #include "UI/DebugPanel.h"
 
 class Window;
@@ -14,7 +15,6 @@ namespace scene
 
 namespace renderer
 {
-    class Plane;
     class Model;
     class ModelImporter;
     class TextureManager;
@@ -57,6 +57,7 @@ private:
     scene::Camera* mCamera;
     scene::Sky* mSkybox;
     scene::Light* mLight;
+    scene::Billboard* mLightIcon;
     scene::Floor* mFloor;
     renderer::BufferManager* mBufferManager;
     renderer::TextureManager* mTextureManager;

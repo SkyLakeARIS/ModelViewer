@@ -1,11 +1,8 @@
 #include "Light.h"
 #include "Camera.h"
-#include "../Util/Macro.h"
-#include "../Renderer/Primitive/Plane.h"
 #include "../Renderer/Renderer.h"
 #include "../Renderer/Primitive/MeshGenerator.h"
 #include "../Renderer/Resources/BufferManager.h"
-#include "../Renderer/Resources/TextureManager.h"
 #include "../Util/Util.h"
 
 namespace scene
@@ -16,14 +13,10 @@ namespace scene
         , mColor(color)
         , mMatProj(XMMatrixIdentity())
         , mMatViewProj(XMMatrixIdentity())
-        , mMatWorld(XMMatrixIdentity())
-        , mIconTexHash(0)
         , mNearPlane(nearPlane)
         , mFarPlane(farPlane)
         , mCamera(camera)
     {
-        mMesh = new renderer::Plane();
-        mMesh->SetPosition(mPosition);
 
         mLines.reserve(24 * eCascadeLevel::Level_4);
         mCascadePlaneDistances[0] = nearPlane; // 0.1
@@ -39,60 +32,6 @@ namespace scene
 
     Light::~Light()
     {
-        if (mMesh)
-        {
-            delete mMesh;
-            mMesh = nullptr;
-        }
-
-    }
-
-    void Light::Initialize(renderer::TextureManager* const texManager, renderer::Renderer& renderer)
-    {
-        const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/lightIcon.png");
-        texManager->AddTexture(filePath, mIconTexHash);
-        ASSERT(mIconTexHash, "icon texture fail to add");
-
-        mMesh->SetTexHash(mIconTexHash);
-
-        // alpha blend 
-        D3D11_BLEND_DESC blendDesc = {};
-        blendDesc.RenderTarget[0].BlendEnable = true;
-        blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-        blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-        blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-        blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-        blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-        blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-        blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-        renderer.CreateBlendState(blendDesc, mBlendHash);
-    }
-
-    void Light::Update(renderer::Renderer& renderer)
-    {
-        mMesh->Update();
-        mMesh->GetWorldMatrix(mMatWorld);
-
-        renderer::CbWorld cbMatWorld;
-        cbMatWorld.Matrix = XMMatrixTranspose(mMatWorld);
-        renderer.UpdateCB(renderer::eCbType::CbWorld, &cbMatWorld);
-    }
-
-    void Light::Draw(renderer::Renderer& renderer)
-    {
-        // MEMO: 임시로 CB 업데이트하도록 강제로 넣음. (cascade 테스트) update, rendering 주기가 달라서.
-        Update(renderer);
-
-        renderer.BindInputLayoutTo(renderer::eInputLayout::PT);
-        renderer.BindShaderTo(renderer::eShader::RenderToTexture);
-
-        renderer.BindRasterStateByType(renderer::eRasterType::Basic);
-        renderer.BindBlendStateByHash(mBlendHash, nullptr, 0xffffffff);
-
-        renderer.BindCbToVsByType(0U, 1U, renderer::eCbType::CbWorld);
-        renderer.BindCbToVsByType(1U, 1U, renderer::eCbType::CbViewProj);
-
-        mMesh->Draw(renderer);
     }
 
     void Light::DrawDebug(renderer::Renderer& renderer)
@@ -170,9 +109,9 @@ namespace scene
         return XMFLOAT4(mDirection.x, mDirection.y, mDirection.z, 1.0f);
     }
 
-    XMFLOAT4 Light::GetPosition() const
+    XMFLOAT3 Light::GetPosition() const
     {
-        return XMFLOAT4(mPosition.x, mPosition.y, mPosition.z, 1.0f);
+        return XMFLOAT3(mPosition.x, mPosition.y, mPosition.z);
     }
 
     XMFLOAT4 Light::GetColor() const

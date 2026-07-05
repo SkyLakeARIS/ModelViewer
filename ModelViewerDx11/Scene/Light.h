@@ -5,8 +5,6 @@
 namespace renderer
 {
     class Renderer;
-    class TextureManager;
-    class Plane;
 }
 
 namespace scene
@@ -24,16 +22,13 @@ namespace scene
         Light(XMFLOAT3 pos, XMFLOAT3 dir, XMFLOAT3 color, Camera* camera, float nearPlane, float farPlane, renderer::Renderer& renderer);
         ~Light();
 
-        void Initialize(renderer::TextureManager* const texManager, renderer::Renderer& renderer);
-        void Update(renderer::Renderer& renderer);
-        void Draw(renderer::Renderer& renderer);
         // TODO: 별도 함수보다 GUI 추가되면 Debug모드 추가하여 on/off 방식으로 처리
         void DrawDebug(renderer::Renderer& renderer);
 
         void SetupCascade(renderer::Renderer& renderer);
 
         XMFLOAT4 GetDirection() const;
-        XMFLOAT4 GetPosition() const;
+        XMFLOAT3 GetPosition() const;
         XMFLOAT4 GetColor() const;
         const XMMATRIX* const GetViewProjMatrix() const;
 
@@ -55,11 +50,6 @@ namespace scene
         XMMATRIX mMatProj;
         XMMATRIX mMatViewProj;
 
-        renderer::Plane* mMesh;
-        XMMATRIX mMatWorld;
-        HashID mBlendHash;
-
-        HashID mIconTexHash;
         std::vector<XMFLOAT3> mLines;
         renderer::Mesh mMeshDebug;
 

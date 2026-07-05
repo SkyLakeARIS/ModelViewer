@@ -4,7 +4,6 @@
 #include "Renderer/Renderer.h"
 #include "Renderer/Importer/ModelImporter.h"
 #include "Renderer/Primitive/MeshGenerator.h"
-#include "Renderer/Primitive/Plane.h"
 #include "Renderer/Resources/BufferManager.h"
 #include "Renderer/Resources/Model.h"
 #include "Renderer/Resources/ResourceManager.h"
@@ -27,6 +26,7 @@ Application::Application()
     , mCamera(nullptr)
     , mSkybox(nullptr)
     , mLight(nullptr)
+    , mLightIcon(nullptr)
     , mFloor(nullptr)
     , mBufferManager(nullptr)
     , mTextureManager(nullptr)
@@ -48,6 +48,7 @@ Application::~Application()
     delete mSkybox;
     delete mImporter;
     delete mLight;
+    delete mLightIcon;
     delete mCharacter;
     delete mCamera;
 
@@ -203,7 +204,6 @@ bool Application::initializeScene()
   //  gLight = new Light(XMFLOAT3(0.0f, 50.0f, 70.0f), gCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), gCamera, 0.1f, 300.0f);
 
     mLight = new scene::Light(XMFLOAT3(0.0f, 20.0f, 50.0f), mCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), mCamera, 0.1f, 500.0f, *mRenderer);
-    mLight->Initialize(mTextureManager, *mRenderer);
     mLight->SetupCascade(*mRenderer);
 
     const XMFLOAT3 planePosition(0.0, 0.0, -1.0);
@@ -213,6 +213,16 @@ bool Application::initializeScene()
 
     mShadowDebugPanel = new ui::DebugPanel(0, 0, 200, 200);
     mShadowDebugPanel->SetDebugType(renderer::eRenderTarget::Shadow);
+
+    mLightIcon = new scene::Billboard();
+    mLightIcon->Initialize(*mRenderer);
+
+    const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/lightIcon.png");
+    HashID lightIconTexID = 0;
+    mTextureManager->AddTexture(filePath, lightIconTexID);
+    ASSERT(lightIconTexID, "icon texture fail to add");
+
+    mLightIcon->SetTexture(lightIconTexID);
     return true;
 }
 
@@ -333,6 +343,9 @@ void Application::updateScene(double deltaTime)
     renderer::CbScreenSpaceMatrix cbScreenSpaceMatrix = {};
     cbScreenSpaceMatrix.Matrix = XMMatrixTranspose(uiProjMat);
     mRenderer->UpdateCB(renderer::eCbType::CbScreenSpaceMatrix, &cbScreenSpaceMatrix);
+
+    mLightIcon->SetPosition(mLight->GetPosition());
+    mLightIcon->UpdateScaleMatrix(*mCamera);
 }
 
 void Application::preprocess()
@@ -360,10 +373,8 @@ void Application::renderScene()
     mCharacter->Update(*mRenderer);
     mCharacter->Draw(*mRenderer);
 
-    mLight->Update(*mRenderer);
-    mLight->Draw(*mRenderer);
-    mLight->Update(*mRenderer);
     mLight->DrawDebug(*mRenderer);
+    mLightIcon->Draw(*mRenderer);
 }
 
 void Application::renderUI()
