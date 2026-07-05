@@ -183,7 +183,6 @@
     <ClInclude Include="Renderer\Resources\Model.h" />
     <ClInclude Include="Renderer\Importer\ModelImporter.h" />
     <ClInclude Include="ModelViewerDx11.h" />
-    <ClInclude Include="Renderer\Primitive\Plane.h" />
     <ClInclude Include="Renderer\Renderer.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Scene\Sky.h" />
@@ -211,7 +210,6 @@
     <ClCompile Include="Renderer\Resources\Model.cpp" />
     <ClCompile Include="Renderer\Importer\ModelImporter.cpp" />
     <ClCompile Include="ModelViewerDx11.cpp" />
-    <ClCompile Include="Renderer\Primitive\Plane.cpp" />
     <ClCompile Include="Renderer\Renderer.cpp" />
     <ClCompile Include="Scene\Sky.cpp" />
     <ClCompile Include="Core\Timer.cpp" />
