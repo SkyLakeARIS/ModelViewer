@@ -206,9 +206,6 @@ bool Application::initializeScene()
     mLight = new scene::Light(XMFLOAT3(0.0f, 20.0f, 50.0f), mCharacter->GetCenterPoint(), XMFLOAT3(1.0f, 1.0f, 1.0f), mCamera, 0.1f, 500.0f, *mRenderer);
     mLight->SetupCascade(*mRenderer);
 
-    const XMFLOAT3 planePosition(0.0, 0.0, -1.0);
-    const XMFLOAT3 planeScale(0.5f, 0.5f, 0.5f);
-
     mFloor = new scene::Floor(XMFLOAT2(0.0f, 0.0f), 2, 10, 10);
 
     mShadowDebugPanel = new ui::DebugPanel(0, 0, 200, 200);

@@ -259,16 +259,8 @@ namespace renderer
                             if (currentMesh->GetElementUVCount() > 0)
                             {
                                 FbxGeometryElementUV* texture = currentMesh->GetElementUV(0);
-                                if (texture->GetMappingMode() == FbxGeometryElement::eByControlPoint
-                                    && texture->GetReferenceMode() == FbxGeometryElement::eIndexToDirect)
-                                {
-                                    size_t indexOfUV = texture->GetIndexArray().GetAt(indexOfVertex);
-                                    uv = texture->GetDirectArray().GetAt(indexOfVertex).mData;
-                                }
-                                else
-                                {
-                                    uv = texture->GetDirectArray().GetAt(indexOfVertex).mData;
-                                }
+
+                                uv = texture->GetDirectArray().GetAt(indexOfVertex).mData;
 
                                 vertexInfo.TexCoord.x = uv[0];
                                 vertexInfo.TexCoord.y = 1.0f - uv[1];
