@@ -1,0 +1,135 @@
+#pragma once
+#include "../../framework.h"
+
+namespace renderer
+{
+    // TODO: eVertexFormat 으로 바꾸는게 더 명확한 네임이 될 것 같다.
+    enum class eInputLayout : uint8_t
+    {
+        PTN,    // pos, normal, tex
+        PT,     // pos, tex
+        P,      // pos
+        InputlayoutCount
+    };
+
+    struct VertexPTN // 4bytes align
+    {
+        XMFLOAT3 Position;
+        XMFLOAT2 TexCoord;
+        XMFLOAT3 Normal;
+        float    Reserve1;
+    };
+
+    struct VertexPT // 4bytes align
+    {
+        XMFLOAT3 Position;
+        XMFLOAT2 TexCoord;
+    };
+
+    struct VertexP // 4bytes align
+    {
+        XMFLOAT3 Position;
+    };
+
+    inline constexpr int16_t GetVertexStrideSize(eInputLayout vertexAttrib)
+    {
+        constexpr int16_t VertexStrideMap[static_cast<int8_t>(eInputLayout::InputlayoutCount)] =
+        {
+            sizeof(VertexPTN),
+            sizeof(VertexPT),
+            sizeof(VertexP)
+        };
+        return VertexStrideMap[static_cast<int8_t>(vertexAttrib)];
+    }
+
+    // 모델링 프로그램에서 미리 계산된 값으로 사용
+    struct Material // 16 bytes align
+    {
+        XMFLOAT3 Diffuse;
+        float    Reserve0;
+        XMFLOAT3 Ambient;
+        float    Reserve1;
+        XMFLOAT3 Specular;
+        float    Reserve2;
+        XMFLOAT3 Emissive;
+        float    Reserve3;
+        float    Opacity;       // 알파값으로 사용
+        float    Reflectivity;
+        float    Shininess;     // 스페큘러 거듭제곱 값
+        float    Reserve4;
+    };
+    typedef Material CbMaterial;
+
+    struct BufferRange
+    {
+        int32_t StartIndex;
+        int32_t Count;
+    };
+
+    typedef struct CbMatrix
+    {
+        XMMATRIX Matrix;
+    }CbWorld, CbViewProj, CbLightViewProjMatrix, CbScreenSpaceMatrix;
+
+    typedef struct CbFloat3
+    {
+        XMFLOAT3    Float3;
+        float       Reserve;
+    } CbCameraPosition, CbOutlineProperty, CbColor;
+
+    typedef struct CbTwoVec4
+    {
+        XMFLOAT4    First;
+        XMFLOAT4    Second;
+    }CbLightProperty;
+
+    enum class eCbType : uint8_t
+    {
+        CbWorld,
+        CbViewProj,
+        CbLightViewProjMatrix,
+        CbCameraPosition,
+        CbOutlineProperty,
+        CbLightProperty,
+        CbMaterial,
+        CbColor,
+        CbScreenSpaceMatrix,
+        ConstantBufferCount
+    };
+
+    enum class eRasterType
+    {
+        Basic,
+        Outline,
+        Skybox,
+        CullBack,
+        RasterCount,
+    };
+
+    enum class eSamplerType
+    {
+        AnisotropicWrap,
+        SamplerCount
+    };
+
+
+    enum class eShader : uint32_t
+    {
+        Outline,
+        Skybox,
+        Shadow,
+        BasicWithShadow,
+        RenderToTexture,
+        Color,
+        ShaderCount
+    };
+
+    // RenderTarget, DepthStencil 
+    enum class eRenderTarget : uint8_t
+    {
+        Default,
+        Shadow,
+        RenderTargetCount
+    };
+
+}

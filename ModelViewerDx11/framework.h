@@ -1,4 +1,4 @@
-﻿// header.h: 표준 시스템 포함 파일
+// header.h: 표준 시스템 포함 파일
 // 또는 프로젝트 특정 포함 파일이 들어 있는 포함 파일입니다.
 //
 
@@ -33,6 +33,7 @@
 #include <fbxsdk.h>
 
 // Windows 헤더 파일
+#define NOMINMAX
 #include <windows.h>
 
 // C 런타임 헤더 파일입니다.
@@ -42,38 +43,12 @@
 #include <memory.h>
 #include <tchar.h>
 #include <vector>
-
+#include <crtdbg.h>
+#include <cstdint>
 // my header
-#include "Type.h"
-#include "Timer.h"
-#include "Input.h"
+#include "Util/Type.h"
+#include "Core/Timer.h"
+#include "Core/Input.h"
 
-// macro
-
-#define SAFETY_RELEASE(obj)     \
- if((obj) != nullptr)           \
-{                               \
-     obj->Release();            \
-     obj = nullptr;             \
-}                               \
-
-#define ASSERT(expr, msg)                                               \
- if(!(expr))                                                            \
-{                                                                       \
-     fprintf(stderr, "%s (%d), msg: %s\n", __FILE__, __LINE__, msg);    \
-     __debugbreak();                                                    \
-}                                                                       \
-
-#ifdef _DEBUG
-#define SET_PRIVATE_DATA(obj, objectNameStr)         \
-    if(obj != nullptr)                               \
-    {                                                \
-        obj->SetPrivateData(                         \
-            WKPDID_D3DDebugObjectName,               \
-            sizeof(objectNameStr)-1,                 \
-            objectNameStr);                          \
-    }                                                \
-
-#else
-#define SET_PRIVATE_DATA(obj, objectNameStr)
-#endif
+//
+using namespace DirectX;
