@@ -361,8 +361,6 @@ namespace renderer
 
     bool Renderer::initialize(HWND handleWindow, int16_t width, int16_t height, int16_t frameRate)
     {
-        HRESULT result = S_OK;
-
         mWindowWidth = width;
         mWindowHeight = height;
 
@@ -380,8 +378,7 @@ namespace renderer
         swapDesc.SampleDesc.Quality = 0;
         swapDesc.Windowed = TRUE;
 
-        result = CreateDeviceAndSetup(swapDesc, width, height, true);
-        if (FAILED(result))
+        if (FAILED(CreateDeviceAndSetup(swapDesc, width, height, true)))
         {
             ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
             return false;
@@ -395,22 +392,19 @@ namespace renderer
             return false;
         }
 
-        result = CreateShadowRenderTarget();
-        if (FAILED(result))
+        if (FAILED(CreateShadowRenderTarget()))
         {
             ASSERT(false, "FAIL : CreateShadowRenderTarget");
             return false;
         }
 
-        result = createSamplerState();
-        if (FAILED(result))
+        if (FAILED(createSamplerState()))
         {
             ASSERT(false, "FAIL : createSamplerState");
             return false;
         }
 
-        result = createPresetBlendStates();
-        if (FAILED(result))
+        if (!createPresetBlendStates())
         {
             ASSERT(false, "FAIL : create preset blendStates");
             return false;
