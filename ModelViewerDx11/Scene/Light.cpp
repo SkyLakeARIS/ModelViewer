@@ -57,7 +57,7 @@ namespace scene
         XMVECTOR vPosition = XMLoadFloat3(&mPosition);
         XMVECTOR vDirection = XMLoadFloat3(&mDirection);
         XMFLOAT3 lookAt;
-        XMStoreFloat3(&lookAt, (vPosition + vDirection));
+        XMStoreFloat3(&lookAt, XMVectorAdd(vPosition, vDirection));
         mMatView = XMMatrixLookAtLH(XMLoadFloat3(&mPosition), XMLoadFloat3(&lookAt), XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f));
         mMatProj = XMMatrixOrthographicLH(-10.0f, 10.0f, mNearPlane, mFarPlane);
         mMatViewProj = mMatView * mMatProj;
@@ -76,7 +76,8 @@ namespace scene
         {
             XMVECTOR vecPointToWorld = XMLoadFloat3(&PointsInNDC[i]);
             vecPointToWorld          = XMVector3Transform(vecPointToWorld, lightViewProjInv);
-            vecPointToWorld /= vecPointToWorld.m128_f32[3];
+            const XMVECTOR vecDividerW = XMVectorReplicate(vecPointToWorld.m128_f32[3]);
+            vecPointToWorld = XMVectorDivide(vecPointToWorld, vecDividerW);
             XMStoreFloat3(&pointToWorld[i], vecPointToWorld);
         }
 
