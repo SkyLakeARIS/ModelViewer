@@ -21,7 +21,7 @@ namespace scene
     {
     }
 
-    void Billboard::Initialize(renderer::Renderer& renderer)
+    void Billboard::Initialize()
     {
 
         renderer::MeshGenerator::CreatePlane(mMesh);

@@ -261,7 +261,7 @@ bool Application::initializeScene()
     mGBufferAmbientDebugPanel->SetDebugType(renderer::TextureManager::sGBufferAmbientTexHash, gBufferAmbientTexSerial);
 
     mLightIcon = new scene::Billboard();
-    mLightIcon->Initialize(*mRenderer);
+    mLightIcon->Initialize();
 
     const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/lightIcon.png");
     HashID lightIconTexID = 0;
