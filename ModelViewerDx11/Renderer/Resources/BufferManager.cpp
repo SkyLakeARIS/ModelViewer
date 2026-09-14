@@ -20,6 +20,8 @@ namespace renderer
         : mDevice(device)
         , mDeviceContext(deviceContext)
         , mIndexFormat(indexFormat)
+        , mbNeedDiscardDynamicVertex(false)
+        , mbNeedDiscardDynamicIndex(false)
     {
         ASSERT(mDevice, "device is nullptr. pass the valid device");
         ASSERT(mDeviceContext, "deviceContext is nullptr. pass the valid deviceContext");

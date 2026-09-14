@@ -3,14 +3,17 @@
 namespace scene
 {
     Camera::Camera(XMVECTOR vEye, XMVECTOR vLookAt, XMVECTOR vUp, int16_t windowWidth, int16_t windowHeight)
-    : mRadiusOfSphere(2.0f)
+    : mPositionInSphere()
+    , mRadiusOfSphere(2.0f)
     , mvEye(vEye)
     , mvLookAtCenter(vLookAt)
     , mvUp(vUp)
+    , mvForward()
+    , mvRight()
     , mScreenWidth(windowWidth)
     , mScreenHeight(windowHeight)
+    , mMatView()
     {
-
         /*
          * 직교좌표에서 구면좌표로 역계산.
          * 카메라 위치와 가상의 구면 위치와 동기화하기 위함.

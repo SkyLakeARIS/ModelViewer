@@ -95,6 +95,7 @@ namespace renderer
         , mDepthStencilViewList{nullptr}
         , mRtvDsMapTable{}
         , mRenderTargetSRVs{}
+        , mRenderTargetBindDescMap{}
         , mViewportFull()
         , mViewportTex()
         , mRasterStates{nullptr}

@@ -11,8 +11,10 @@ namespace scene
         : mPosition(pos)
         , mDirection(dir)
         , mColor(color)
+        , mMatView()
         , mMatProj(XMMatrixIdentity())
         , mMatViewProj(XMMatrixIdentity())
+        , mMeshDebug()
         , mNearPlane(nearPlane)
         , mFarPlane(farPlane)
     {
