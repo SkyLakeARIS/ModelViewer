@@ -158,7 +158,7 @@ namespace renderer
             maxBound[2] = std::max<double>(maxBound[2], maxMeshBound[1]);
 #ifdef _DEBUG
             size_t numConverted = 0;
-            const int32_t meshNameLengthDebug = strlen(currentMesh->GetName());
+            const int32_t meshNameLengthDebug = static_cast<int32_t>(strlen(currentMesh->GetName()));
             wchar_t* meshNameDebugOutput = new wchar_t[meshNameLengthDebug+1];
 
             (void)mbstowcs_s(&numConverted, meshNameDebugOutput, meshNameLengthDebug+1, currentMesh->GetName(), meshNameLengthDebug);
@@ -171,7 +171,7 @@ namespace renderer
             ASSERT(numConverted <= meshNameLengthDebug + 1, "버퍼 초과");
             ASSERT(numConverted > 0, "복사된 문자가 없음.");
 #endif
-            const int32_t meshNameLength = strlen(currentMesh->GetName());
+            const int32_t meshNameLength = static_cast<int32_t>(strlen(currentMesh->GetName()));
             ASSERT(meshNameLength < util::MAX_NAME_LENGTH, "MeshName too long.");
             memcpy(newMeshData.MeshName, currentMesh->GetName(), meshNameLength + 1);
 

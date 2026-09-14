@@ -124,7 +124,7 @@ namespace scene
         if (mMeshDebug.MeshHash == 0)
         {
             int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
-            const int16_t wroteCount = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Light_Debug_Line.mesh",
+            const int32_t wroteCount = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Light_Debug_Line.mesh",
                 reinterpret_cast<const char*>(renderer::MeshGenerator::VIRTUAL_ROOT_PATH));
 
             (void)memcpy(mMeshDebug.MeshName, virtualFilePath, wroteCount + 1);
@@ -150,7 +150,7 @@ namespace scene
 
         const int16_t strideVertex = renderer::GetVertexStrideSize(mMeshDebug.VertexFormat);
         renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
-        bufferManager->AddVertexDynamic(reinterpret_cast<int8_t*>(mLines.data()), strideVertex * mLines.size(), subMesh.SubMeshHash, strideVertex, subMesh.VertexRange);
+        bufferManager->AddVertexDynamic(reinterpret_cast<int8_t*>(mLines.data()), static_cast<uint32_t>(strideVertex) * static_cast<uint32_t>(mLines.size()), subMesh.SubMeshHash, strideVertex, subMesh.VertexRange);
 
         mMeshDebug.VertexRange = subMesh.VertexRange;
     }
