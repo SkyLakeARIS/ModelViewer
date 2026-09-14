@@ -339,7 +339,7 @@ void Application::processInput(double deltaTime)
      *  direct input ver
      */
 
-    unsigned char* gKeyboard = mDirectInput->GetKeyboardPress();
+    const unsigned char* gKeyboard = mDirectInput->GetKeyboardPress();
 
     if (!(mDirectInput->GetControlMode() & static_cast<uint32_t>(core::eControlFlags::KEYBOARD_MOVEMENT_MODE)))
     {

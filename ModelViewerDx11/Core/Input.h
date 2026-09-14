@@ -30,7 +30,7 @@ namespace core
 
         void                GetMousePosition(int& mouseX, int& mouseY) const;
         void                GetMouseDeltaPosition(int& deltaX, int& deltaY) const;
-        unsigned char* GetKeyboardPress();
+        const unsigned char* GetKeyboardPress() const;
         uint32_t              GetControlMode() const;
 
     private:
