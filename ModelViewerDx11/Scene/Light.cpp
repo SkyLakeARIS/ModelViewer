@@ -11,8 +11,10 @@ namespace scene
         : mPosition(pos)
         , mDirection(dir)
         , mColor(color)
+        , mMatView()
         , mMatProj(XMMatrixIdentity())
         , mMatViewProj(XMMatrixIdentity())
+        , mMeshDebug()
         , mNearPlane(nearPlane)
         , mFarPlane(farPlane)
     {
@@ -55,7 +57,7 @@ namespace scene
         XMVECTOR vPosition = XMLoadFloat3(&mPosition);
         XMVECTOR vDirection = XMLoadFloat3(&mDirection);
         XMFLOAT3 lookAt;
-        XMStoreFloat3(&lookAt, (vPosition + vDirection));
+        XMStoreFloat3(&lookAt, XMVectorAdd(vPosition, vDirection));
         mMatView = XMMatrixLookAtLH(XMLoadFloat3(&mPosition), XMLoadFloat3(&lookAt), XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f));
         mMatProj = XMMatrixOrthographicLH(-10.0f, 10.0f, mNearPlane, mFarPlane);
         mMatViewProj = mMatView * mMatProj;
@@ -74,7 +76,8 @@ namespace scene
         {
             XMVECTOR vecPointToWorld = XMLoadFloat3(&PointsInNDC[i]);
             vecPointToWorld          = XMVector3Transform(vecPointToWorld, lightViewProjInv);
-            vecPointToWorld /= vecPointToWorld.m128_f32[3];
+            const XMVECTOR vecDividerW = XMVectorReplicate(vecPointToWorld.m128_f32[3]);
+            vecPointToWorld = XMVectorDivide(vecPointToWorld, vecDividerW);
             XMStoreFloat3(&pointToWorld[i], vecPointToWorld);
         }
 
@@ -122,7 +125,7 @@ namespace scene
         if (mMeshDebug.MeshHash == 0)
         {
             int8_t virtualFilePath[util::MAX_PATH_LENGTH] = {};
-            const int16_t wroteCount = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Light_Debug_Line.mesh",
+            const int32_t wroteCount = sprintf_s(reinterpret_cast<char*>(virtualFilePath), util::MAX_PATH_LENGTH, "%sPrimitive_Light_Debug_Line.mesh",
                 reinterpret_cast<const char*>(renderer::MeshGenerator::VIRTUAL_ROOT_PATH));
 
             (void)memcpy(mMeshDebug.MeshName, virtualFilePath, wroteCount + 1);
@@ -148,7 +151,7 @@ namespace scene
 
         const int16_t strideVertex = renderer::GetVertexStrideSize(mMeshDebug.VertexFormat);
         renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
-        bufferManager->AddVertexDynamic(reinterpret_cast<int8_t*>(mLines.data()), strideVertex * mLines.size(), subMesh.SubMeshHash, strideVertex, subMesh.VertexRange);
+        bufferManager->AddVertexDynamic(reinterpret_cast<int8_t*>(mLines.data()), static_cast<uint32_t>(strideVertex) * static_cast<uint32_t>(mLines.size()), subMesh.SubMeshHash, strideVertex, subMesh.VertexRange);
 
         mMeshDebug.VertexRange = subMesh.VertexRange;
     }

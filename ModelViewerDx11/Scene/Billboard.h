@@ -18,7 +18,7 @@ namespace scene
         Billboard();
         ~Billboard();
 
-        void Initialize(renderer::Renderer& renderer);
+        void Initialize();
 
         void SubmitCommand(std::vector<renderer::RenderPacket>& commandList);
 

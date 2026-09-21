@@ -3,14 +3,17 @@
 namespace scene
 {
     Camera::Camera(XMVECTOR vEye, XMVECTOR vLookAt, XMVECTOR vUp, int16_t windowWidth, int16_t windowHeight)
-    : mRadiusOfSphere(2.0f)
+    : mPositionInSphere()
+    , mRadiusOfSphere(2.0f)
     , mvEye(vEye)
     , mvLookAtCenter(vLookAt)
     , mvUp(vUp)
+    , mvForward()
+    , mvRight()
     , mScreenWidth(windowWidth)
     , mScreenHeight(windowHeight)
+    , mMatView()
     {
-
         /*
          * 직교좌표에서 구면좌표로 역계산.
          * 카메라 위치와 가상의 구면 위치와 동기화하기 위함.
@@ -22,8 +25,8 @@ namespace scene
         eyePos.y = XMConvertToRadians(eyePos.y);
         eyePos.z = XMConvertToRadians(eyePos.z);
 
-        mAnglesRad.x = atan(eyePos.x / -eyePos.z);
-        mAnglesRad.y = acos(eyePos.y);
+        mAnglesRad.x = atanf(eyePos.x / -eyePos.z);
+        mAnglesRad.y = acosf(eyePos.y);
 
         mFov = XMConvertToRadians(60.0f);
 
@@ -39,9 +42,9 @@ namespace scene
     {
         // (반지름) r이 1인 단위 구체로 생각하고 계산 후, radius만큼 거리를 조정한다.
         XMFLOAT3 positionInSphere;
-        positionInSphere.x = sin(mAnglesRad.y) * sin(mAnglesRad.x);
-        positionInSphere.y = cos(mAnglesRad.y);
-        positionInSphere.z = -(sin(mAnglesRad.y) * cos(mAnglesRad.x));
+        positionInSphere.x = sinf(mAnglesRad.y) * sinf(mAnglesRad.x);
+        positionInSphere.y = cosf(mAnglesRad.y);
+        positionInSphere.z = -(sinf(mAnglesRad.y) * cosf(mAnglesRad.x));
 
         const XMVECTOR newPositionInOrbit = XMVectorScale(XMLoadFloat3(&positionInSphere), mRadiusOfSphere);
         // 가상의 구체를 통해 얻은 좌표로 실제 위치인 mvLookAtCenter를 중심으로 하는 궤도로 이동

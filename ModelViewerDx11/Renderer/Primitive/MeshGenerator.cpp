@@ -218,8 +218,8 @@ namespace renderer
         point2 = XMLoadFloat3(&(curVertices + 1)->Position);
         point3 = XMLoadFloat3(&(curVertices + 2)->Position);
 
-        XMVECTOR vP1ToP2 = point2 - point1;
-        XMVECTOR vP1ToP3 = point3 - point1;
+        XMVECTOR vP1ToP2 = XMVectorSubtract(point2, point1);
+        XMVECTOR vP1ToP3 = XMVectorSubtract(point3, point1);
         XMVECTOR vNormal = XMVector3Cross(vP1ToP2, vP1ToP3);
         vNormal = XMVector3Normalize(vNormal);
         for (uint32_t index = 0; index < numVertices; ++index)

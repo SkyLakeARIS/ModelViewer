@@ -254,7 +254,7 @@ namespace core
         deltaY = mMouseState.lY;
     }
 
-    unsigned char* DirectInput::GetKeyboardPress()
+    const unsigned char* DirectInput::GetKeyboardPress() const
     {
         return mKeyboardState;
     }

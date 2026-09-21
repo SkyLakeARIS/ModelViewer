@@ -15,11 +15,11 @@ namespace scene
         renderer::MeshGenerator::CreateGrid(startPoint, numLineX, numLineY, gapEachLine, mMesh);
         for (auto& subMesh : mMesh.SubMeshes)
         {
-            subMesh.Material.Factors.Diffuse = XMFLOAT3(0.0f, 1.0f, 0.0f);
+            subMesh.Material.Factors.Diffuse = XMFLOAT3(0.80f, 0.72f, 0.56f);
             subMesh.Material.Factors.IsLitOn = static_cast<float>(true);
             subMesh.Material.Factors.Ambient = XMFLOAT3(0.2f, 0.2f, 0.2f);
-            subMesh.Material.Factors.Shininess = 1;
-            subMesh.Material.Factors.Specular = XMFLOAT3(0.0f, 0.8f, 0.0f);
+            subMesh.Material.Factors.Shininess = 8;
+            subMesh.Material.Factors.Specular = XMFLOAT3(0.16f, 0.144f, 0.112f);
         }
     }
 

@@ -20,6 +20,8 @@ namespace renderer
         : mDevice(device)
         , mDeviceContext(deviceContext)
         , mIndexFormat(indexFormat)
+        , mbNeedDiscardDynamicVertex(false)
+        , mbNeedDiscardDynamicIndex(false)
     {
         ASSERT(mDevice, "device is nullptr. pass the valid device");
         ASSERT(mDeviceContext, "deviceContext is nullptr. pass the valid deviceContext");
@@ -620,7 +622,7 @@ namespace renderer
         bufferDesc.Usage = usageType;
         bufferDesc.ByteWidth = newSize * 2;
         bufferDesc.CPUAccessFlags = cpuAccessFlag;
-        if (mDevice->CreateBuffer(&bufferDesc, nullptr, &resizedBuffer) == E_FAIL)
+        if (FAILED(mDevice->CreateBuffer(&bufferDesc, nullptr, &resizedBuffer)))
         {
             ASSERT(false, "buffer creation failed while resizing. check the options. tried buffer type (%d), BufferUsage(%d), size(%d), cpuFlag(%d)", bufferDesc.BindFlags, bufferDesc.Usage, bufferDesc.ByteWidth, bufferDesc.CPUAccessFlags);
             return;
