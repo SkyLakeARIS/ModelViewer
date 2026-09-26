@@ -10,7 +10,7 @@ Window::Window(HINSTANCE hInstance)
     , mWindowClassName{}
 {
     LoadStringW(mHandleInstance, IDS_APP_TITLE, mAppTitleName, MAX_WINDOW_NAME_LENGTH);
-    LoadStringW(mHandleInstance, IDC_MODELVIEWERDX11, mWindowClassName, MAX_WINDOW_NAME_LENGTH);
+    LoadStringW(mHandleInstance, IDC_MODELVIEWER, mWindowClassName, MAX_WINDOW_NAME_LENGTH);
 }
 
 HWND Window::MakeWindow(int16_t windowWidth, int16_t windowHeight)
@@ -44,7 +44,7 @@ void Window::RegisterWindowClass() const
     wcex.hIcon = LoadIcon(mHandleInstance, MAKEINTRESOURCE(IDI_MODELVIEWERDX11));
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MODELVIEWERDX11);
+    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MODELVIEWER);
     wcex.lpszClassName = mWindowClassName;
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
