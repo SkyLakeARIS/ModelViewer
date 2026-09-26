@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include <algorithm>
 #include "../Util/Macro.h"
 #include "Resources/BufferManager.h"
 #include "Resources/TextureManager.h"
@@ -84,14 +85,477 @@ namespace renderer
     }
 
     VkRenderer::VkRenderer()
+        : mWindowHeight(0)
+        , mWindowWidth(0)
+        , mVkInstance(nullptr)
+        , mPhysicalDevice()
+        , mPhysicalDeviceProperties()
+        , mDevice(nullptr)
+        , mSurface(nullptr)
+        , mSwapChain(nullptr)
     {}
 
     VkRenderer::~VkRenderer()
     {
+        mImages.clear();
+        std::vector<VkImage>().swap(mImages);
+        mImageViews.clear();
+        std::vector<VkImageView>().swap(mImageViews);
+        vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
+        vkDestroySurfaceKHR(mVkInstance, mSurface, nullptr);
+        vkDestroyDevice(mDevice, nullptr);
+        vkDestroyInstance(mVkInstance, nullptr);
     }
 
     bool VkRenderer::initializeWithVulkan(HWND handleWindow, HINSTANCE handleInstance, int16_t width, int16_t height, const char* const appName)
     {
+        mWindowWidth = width;
+        mWindowHeight = height;
+
+        if(createInstance(appName) == false)
+        {
+            return false;
+        }
+
+        if(createSurface(handleWindow, handleInstance) == false)
+        {
+            return false;
+        }
+
+        if(choosePhysicalDevice() == false)
+        {
+            return false;
+        }
+
+        if(createLogicalDevice() == false)
+        {
+            return false;
+        }
+
+        if(createSwapChain(width, height) == false)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool VkRenderer::createInstance(const char* const appName)
+    {
+        VkResult result = VK_SUCCESS;
+        constexpr const char* const RequiredLayers[] =
+        {
+#ifdef _DEBUG
+            "VK_LAYER_KHRONOS_validation",
+#endif
+        };
+
+        std::vector<const char*> instanceLayers(std::begin(RequiredLayers), std::end(RequiredLayers));
+        instanceLayers.push_back(nullptr);
+
+        std::vector<VkExtensionProperties> extensions;
+        for (const auto& layerName : instanceLayers)
+        {
+            const uint32_t extensionCount = extensions.size();
+            uint32_t layerExtensionCount = 0;
+            result = vkEnumerateInstanceExtensionProperties(layerName, &layerExtensionCount, nullptr);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "Instance Extensions 쿼리 실패 resultCode(%d)", result);
+            }
+
+            extensions.resize(extensionCount + layerExtensionCount);
+            result = vkEnumerateInstanceExtensionProperties(layerName, &layerExtensionCount, &extensions[extensionCount]);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "Instance Extensions 구성 실패 resultCode(%d)", result);
+            }
+        }
+
+        std::vector<const char*> requiredExtensionNames;
+        requiredExtensionNames.reserve(extensions.size());
+
+        for (const auto& extension : extensions)
+        {
+            requiredExtensionNames.push_back(extension.extensionName);
+        }
+        
+        VkApplicationInfo appInfo = {};
+        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+        appInfo.pApplicationName = appName;
+        appInfo.pEngineName = appName;
+        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+        appInfo.apiVersion = VK_API_VERSION_1_4;
+
+        VkInstanceCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        createInfo.pApplicationInfo = &appInfo;
+        createInfo.enabledExtensionCount = requiredExtensionNames.size();
+        createInfo.ppEnabledExtensionNames = requiredExtensionNames.data();
+        createInfo.enabledLayerCount = std::size(RequiredLayers);
+        createInfo.ppEnabledLayerNames = RequiredLayers;
+
+        result = vkCreateInstance(&createInfo, nullptr, &mVkInstance);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "Instance 생성 실패 resultCode(%d)", result);
+            return false;
+        }
+
+        return true;
+    }
+
+    bool VkRenderer::createSurface(HWND handleWindow, HINSTANCE handleInstance)
+    {
+        VkWin32SurfaceCreateInfoKHR win32SurfaceCreateInfo{};
+        win32SurfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+        win32SurfaceCreateInfo.hwnd = handleWindow;
+        win32SurfaceCreateInfo.hinstance = handleInstance;
+
+        const VkResult result = vkCreateWin32SurfaceKHR(mVkInstance, &win32SurfaceCreateInfo, nullptr, &mSurface);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "surface(Win32) 생성 실패 resultCode(%d)", result);
+            return false;
+        }
+
+        return true;
+    }
+
+    bool VkRenderer::choosePhysicalDevice()
+    {
+        uint32_t physicalDeviceCount = 0;
+        VkResult result = vkEnumeratePhysicalDevices(mVkInstance, &physicalDeviceCount, nullptr);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "PhysicalDevices 쿼리 실패 resultCode(%d)", result);
+        }
+
+        std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+        result = vkEnumeratePhysicalDevices(mVkInstance, &physicalDeviceCount, physicalDevices.data());
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "PhysicalDevices 구성 실패 resultCode(%d)", result);
+        }
+
+        constexpr uint32_t DeviceTypeScoreTable[] =
+        {
+            0,
+            3000,
+            4000,
+            2000,
+            1000,
+        };
+        uint32_t highScore = 0;
+        bool bSupportGraphicsQueueChosenDevice = false;
+        for (const auto& physicalDevice : physicalDevices)
+        {
+            uint32_t score = 0;
+            // MEMO: App이 선호하는 GPU 정보 및 요구하는 API 버전 정보를 확인하는 부분
+            VkPhysicalDeviceProperties2 deviceProperties2{};
+            deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+            vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
+
+            score = DeviceTypeScoreTable[deviceProperties2.properties.deviceType];
+            score += deviceProperties2.properties.apiVersion > VK_API_VERSION_1_3 ? 1000 : 0;
+            score += deviceProperties2.properties.apiVersion > VK_API_VERSION_1_4 ? 1000 : 0;
+
+            VkPhysicalDeviceVulkan11Features deviceFeatures11{};
+            deviceFeatures11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+            VkPhysicalDeviceVulkan12Features deviceFeatures12{};
+            deviceFeatures12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+            deviceFeatures12.pNext = &deviceFeatures11;
+            VkPhysicalDeviceVulkan13Features deviceFeatures13{};
+            deviceFeatures13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+            deviceFeatures13.pNext = &deviceFeatures12;
+
+            VkPhysicalDeviceFeatures2 deviceFeatures{};
+            deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+            deviceFeatures.pNext = &deviceFeatures13;
+            vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
+
+            if (deviceFeatures12.bufferDeviceAddress == false)
+            {
+                continue;
+            }
+
+            if (deviceFeatures12.descriptorIndexing == false)
+            {
+                continue;
+            }
+
+            if (deviceFeatures13.dynamicRendering == false)
+            {
+                continue;
+            }
+
+            if (deviceFeatures13.synchronization2 == false)
+            {
+                continue;
+            }
+
+            uint32_t queueFamilyCount = 0;
+            vkGetPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyCount, nullptr);
+            VkQueueFamilyProperties2 queueFamilyProperty{};
+            queueFamilyProperty.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
+            std::vector<VkQueueFamilyProperties2> queueFamilyProperties(queueFamilyCount, queueFamilyProperty);
+
+            vkGetPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyCount, queueFamilyProperties.data());
+
+            bool bSupportGraphicsQueue = false;
+            VkBool32 isSupportSurface = VK_FALSE;
+            for (uint32_t queueFamily = 0; queueFamily < queueFamilyProperties.size(); ++queueFamily)
+            {
+                if (queueFamilyProperties[queueFamily].queueFamilyProperties.queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT)
+                {
+                    result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily, mSurface, &isSupportSurface);
+                    if (result != VK_SUCCESS)
+                    {
+                        ASSERT(false, "SurfaceSupport 조회 실패 resultCode(%d)", result);
+                    }
+                    bSupportGraphicsQueue = true;
+                }
+            }
+
+            if (bSupportGraphicsQueue == false || isSupportSurface == VK_FALSE)
+            {
+                continue;
+            }
+
+            if (score > highScore)
+            {
+                highScore = score;
+                mPhysicalDevice = physicalDevice;
+                mPhysicalDeviceProperties = std::move(deviceProperties2);
+                bSupportGraphicsQueueChosenDevice = bSupportGraphicsQueue;
+            }
+        }
+
+        if (bSupportGraphicsQueueChosenDevice == false)
+        {
+            ASSERT(false, "선택된 GPU가 GraphicsQueue를 지원하지 않습니다.");
+            return false;
+        }
+
+        if (mPhysicalDeviceProperties.properties.apiVersion < VK_API_VERSION_1_3)
+        {
+            ASSERT(false, "선택된 GPU가 요구하는 버전을 지원하지 않습니다.");
+            return false;
+        }
+
+        return true;
+    }
+
+    bool VkRenderer::createLogicalDevice()
+    {
+        uint32_t graphicsQueueIndex = UINT32_MAX;
+        uint32_t queueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties2(mPhysicalDevice, &queueFamilyCount, nullptr);
+
+        VkQueueFamilyProperties2 queueFamilyProperty{};
+        queueFamilyProperty.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
+        std::vector<VkQueueFamilyProperties2> queueFamilyProperties(queueFamilyCount, queueFamilyProperty);
+        vkGetPhysicalDeviceQueueFamilyProperties2(mPhysicalDevice, &queueFamilyCount, queueFamilyProperties.data());
+
+        for (uint32_t queueFamily = 0; queueFamily < queueFamilyProperties.size(); ++queueFamily)
+        {
+            if (queueFamilyProperties[queueFamily].queueFamilyProperties.queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT)
+            {
+                graphicsQueueIndex = queueFamily;
+            }
+        }
+        ASSERT(graphicsQueueIndex < UINT32_MAX, "QueueFamilyIndex 가 유효하지 않습니다.");
+
+        uint32_t deviceExtensionCount = 0;
+        VkResult result = vkEnumerateDeviceExtensionProperties(mPhysicalDevice, nullptr, &deviceExtensionCount, nullptr);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "PhysicalDevices DeviceExtension 쿼리 실패 resultCode(%d)", result);
+        }
+
+        std::vector<VkExtensionProperties> deviceExtensions(deviceExtensionCount);
+        result = vkEnumerateDeviceExtensionProperties(mPhysicalDevice, nullptr, &deviceExtensionCount, deviceExtensions.data());
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "PhysicalDevices DeviceExtension 구성 실패 resultCode(%d)", result);
+        }
+
+        std::vector<const char*> requiredDeviceExtensionNames;
+        requiredDeviceExtensionNames.reserve(deviceExtensionCount);
+
+        for (const auto& extension : deviceExtensions)
+        {
+            if (strcmp(extension.extensionName, VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) == 0)
+            {
+                continue;
+            }
+            requiredDeviceExtensionNames.push_back(extension.extensionName);
+        }
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = graphicsQueueIndex;
+        queueCreateInfo.queueCount = 1;
+        float queuePriority = 0.5f;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+
+        VkPhysicalDeviceVulkan11Features deviceFeatures11{};
+        deviceFeatures11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+        VkPhysicalDeviceVulkan12Features deviceFeatures12{};
+        deviceFeatures12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+        deviceFeatures12.pNext = &deviceFeatures11;
+        VkPhysicalDeviceVulkan13Features deviceFeatures13{};
+        deviceFeatures13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        deviceFeatures13.pNext = &deviceFeatures12;
+
+        VkPhysicalDeviceFeatures2 deviceFeatures{};
+        deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        deviceFeatures.pNext = &deviceFeatures13;
+        vkGetPhysicalDeviceFeatures2(mPhysicalDevice, &deviceFeatures);
+
+
+        VkDeviceCreateInfo deviceCreateInfo{
+            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            &deviceFeatures,
+            0,
+            1,
+            &queueCreateInfo,
+            0,
+            nullptr,
+            static_cast<uint32_t>(requiredDeviceExtensionNames.size()),
+            requiredDeviceExtensionNames.data(),
+            nullptr
+        };
+
+        result = vkCreateDevice(mPhysicalDevice, &deviceCreateInfo, nullptr, &mDevice);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "device 생성 실패 resultCode(%d)", result);
+            return false;
+        }
+
+        return true;
+    }
+
+    bool VkRenderer::createSwapChain(uint16_t width, uint16_t height)
+    {
+        VkSurfaceCapabilities2KHR surfaceCapabilities{};
+        surfaceCapabilities.sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
+
+        VkPhysicalDeviceSurfaceInfo2KHR deviceSurfaceInfo{};
+        deviceSurfaceInfo.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR;
+        deviceSurfaceInfo.surface = mSurface;
+
+        VkResult result = vkGetPhysicalDeviceSurfaceCapabilities2KHR(mPhysicalDevice, &deviceSurfaceInfo, &surfaceCapabilities);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "SurfaceCapabilities2 쿼리 실패 resultCode(%d)", result);
+            return false;
+        }
+
+        uint32_t surfaceFormatCount = 0;
+        result = vkGetPhysicalDeviceSurfaceFormats2KHR(mPhysicalDevice, &deviceSurfaceInfo, &surfaceFormatCount, nullptr);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "SurfaceFormats2 쿼리 실패 resultCode(%d)", result);
+            return false;
+        }
+
+        VkSurfaceFormat2KHR surfaceFormat{};
+        surfaceFormat.sType = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR;
+        std::vector<VkSurfaceFormat2KHR> surfaceFormats(surfaceFormatCount, surfaceFormat);
+        result = vkGetPhysicalDeviceSurfaceFormats2KHR(mPhysicalDevice, &deviceSurfaceInfo, &surfaceFormatCount, surfaceFormats.data());
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "SurfaceFormats2 구성 실패 resultCode(%d)", result);
+            return false;
+        }
+
+        uint32_t surfacePresentModeCount = 0;
+        result = vkGetPhysicalDeviceSurfacePresentModesKHR(mPhysicalDevice, mSurface, &surfacePresentModeCount, nullptr);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "SurfacePresentModes 쿼리 실패 resultCode(%d)", result);
+            return false;
+        }
+
+        std::vector<VkPresentModeKHR> surfacePresentModes(surfacePresentModeCount);
+        result = vkGetPhysicalDeviceSurfacePresentModesKHR(mPhysicalDevice, mSurface, &surfacePresentModeCount, surfacePresentModes.data());
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "SurfacePresentModes 구성 실패 resultCode(%d)", result);
+            return false;
+        }
+
+        VkSwapchainCreateInfoKHR swapChainCreateInfo{};
+        swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        swapChainCreateInfo.surface = mSurface;
+
+        for (const auto& format : surfaceFormats)
+        {
+            // MEMO: preferred format
+            if (format.surfaceFormat.format == VkFormat::VK_FORMAT_R8G8B8A8_SRGB && format.surfaceFormat.colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR)
+            {
+                swapChainCreateInfo.imageFormat = format.surfaceFormat.format;
+                swapChainCreateInfo.imageColorSpace = format.surfaceFormat.colorSpace;
+            }
+        }
+
+        swapChainCreateInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+        for (const auto& mode : surfacePresentModes)
+        {
+            // MEMO: preferred mode
+            if (mode == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
+            {
+                swapChainCreateInfo.presentMode = mode;
+            }
+        }
+
+        if (surfaceCapabilities.surfaceCapabilities.currentExtent.width == UINT_MAX && surfaceCapabilities.surfaceCapabilities.currentExtent.height == UINT_MAX)
+        {
+            swapChainCreateInfo.imageExtent.width = std::clamp(static_cast<uint32_t>(width), surfaceCapabilities.surfaceCapabilities.minImageExtent.width, surfaceCapabilities.surfaceCapabilities.maxImageExtent.width);
+            swapChainCreateInfo.imageExtent.height = std::clamp(static_cast<uint32_t>(height), surfaceCapabilities.surfaceCapabilities.minImageExtent.height, surfaceCapabilities.surfaceCapabilities.maxImageExtent.height);
+        }
+        else
+        {
+            swapChainCreateInfo.imageExtent = surfaceCapabilities.surfaceCapabilities.currentExtent;
+        }
+
+        swapChainCreateInfo.minImageCount = (surfaceCapabilities.surfaceCapabilities.maxImageCount > 0) ? surfaceCapabilities.surfaceCapabilities.maxImageCount : 3;
+        swapChainCreateInfo.minImageCount = (swapChainCreateInfo.minImageCount > surfaceCapabilities.surfaceCapabilities.maxImageCount) ? surfaceCapabilities.surfaceCapabilities.maxImageCount : swapChainCreateInfo.minImageCount;
+
+        swapChainCreateInfo.imageArrayLayers = 1;
+        swapChainCreateInfo.imageUsage = VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        swapChainCreateInfo.imageSharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+        swapChainCreateInfo.preTransform = surfaceCapabilities.surfaceCapabilities.currentTransform;
+        swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        swapChainCreateInfo.clipped = VK_TRUE;
+        swapChainCreateInfo.oldSwapchain = nullptr;
+
+        result = vkCreateSwapchainKHR(mDevice, &swapChainCreateInfo, nullptr, &mSwapChain);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "SwapChain 생성 실패 resultCode(%d)", result);
+            return false;
+        }
+
+        ASSERT(mImages.empty(), "images가 비어있지 않습니다. (리소스를 재생성하고 있는 경우 처리가 필요)");
+        uint32_t imageCount = 0;
+        result = vkGetSwapchainImagesKHR(mDevice, mSwapChain, &imageCount, nullptr);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "SwapChain Images 쿼리 실패 resultCode(%d)", result);
+            return false;
+        }
+
+        mImages.resize(imageCount);
+        result = vkGetSwapchainImagesKHR(mDevice, mSwapChain, &imageCount, mImages.data());
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "SwapChain Images 구성 실패 resultCode(%d)", result);
+            return false;
+        }
 
         return true;
     }

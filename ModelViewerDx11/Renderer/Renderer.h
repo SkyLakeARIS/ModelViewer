@@ -19,6 +19,28 @@ namespace renderer
         ~VkRenderer();
 
         bool initializeWithVulkan(HWND handleWindow, HINSTANCE handleInstance, int16_t width, int16_t height, const char* const appName);
+
+    private:
+        bool createInstance(const char* const appName);
+        bool createSurface(HWND handleWindow, HINSTANCE handleInstance);
+        bool choosePhysicalDevice();
+        bool createLogicalDevice();
+        bool createSwapChain(uint16_t width, uint16_t height);
+
+    private:
+        int16_t mWindowHeight;
+        int16_t mWindowWidth;
+
+        VkInstance mVkInstance;
+
+        VkPhysicalDevice mPhysicalDevice;
+        VkPhysicalDeviceProperties2 mPhysicalDeviceProperties;
+        VkDevice mDevice;
+
+        VkSurfaceKHR mSurface;
+        VkSwapchainKHR mSwapChain;
+        std::vector<VkImage> mImages;
+        std::vector<VkImageView> mImageViews;
     };
 
     class Renderer final : IUnknown
