@@ -39,22 +39,22 @@ namespace renderer
 
     void ModelImporter::Release()
     {
-        if (!mFbxScene)
+        if (mFbxScene)
         {
             mFbxScene->Destroy();
         }
 
-        if (!mImporter)
+        if (mImporter)
         {
             mImporter->Destroy();
         }
 
-        if (!mSetting)
+        if (mSetting)
         {
             mSetting->Destroy();
         }
 
-        if (!mFbxManager)
+        if (mFbxManager)
         {
             mFbxManager->Destroy();
         }
