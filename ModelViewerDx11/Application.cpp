@@ -50,7 +50,6 @@ Application::Application()
     , mGBufferSpecularDebugPanel(nullptr)
     , mGBufferAmbientDebugPanel(nullptr)
 {
-    mRenderer = new renderer::Renderer();
     mImporter = new renderer::ModelImporter();
     mCommandList.reserve(64);
 }
@@ -81,9 +80,6 @@ Application::~Application()
     delete mResourceManager;
     delete mShaderManager;
     delete mRenderer;
-#ifdef _DEBUG
-    renderer::Renderer::CheckLiveObjects();
-#endif
 }
 
 bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int32_t nCmdShow)
@@ -104,7 +100,7 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     mWindow->DisplayWindow(nCmdShow);
     mWindow->RefreshWindow();
 
-    
+    mRenderer = new renderer::Renderer();
     if (FAILED(mRenderer->initialize(handleWindow, mWindowWidth, mWindowHeight, mAppFrameRate)))
     {
         ASSERT(false, "Fail to initialize shaders");

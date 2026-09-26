@@ -113,6 +113,9 @@ namespace renderer
         mBufferManager = nullptr;
         mTextureManager = nullptr;
         mShaderManager = nullptr;
+#ifdef _DEBUG
+        renderer::Renderer::CheckLiveObjects();
+#endif
     }
 
     bool Renderer::createRasterState()
