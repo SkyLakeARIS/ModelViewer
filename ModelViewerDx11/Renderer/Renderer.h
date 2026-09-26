@@ -12,6 +12,15 @@ namespace renderer
     class BufferManager;
     class TextureManager;
 
+    class VkRenderer final
+    {
+    public:
+        VkRenderer();
+        ~VkRenderer();
+
+        bool initializeWithVulkan(HWND handleWindow, HINSTANCE handleInstance, int16_t width, int16_t height, const char* const appName);
+    };
+
     class Renderer final : IUnknown
     {
     private:

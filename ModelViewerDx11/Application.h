@@ -26,6 +26,7 @@ namespace scene
 
 namespace renderer
 {
+    class VkRenderer;
     class Model;
     class ModelImporter;
     class TextureManager;
@@ -77,6 +78,7 @@ private:
     std::vector<renderer::RenderPacket> mCommandList;
     renderer::RenderPacketCache mCommandCache;
     renderer::Renderer* mRenderer;
+    renderer::VkRenderer* mVkRenderer;
     renderer::ModelImporter* mImporter;
     renderer::Model* mCharacter;
     scene::Camera* mCamera;

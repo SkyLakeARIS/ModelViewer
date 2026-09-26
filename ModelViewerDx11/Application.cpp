@@ -31,6 +31,7 @@ Application::Application()
     , mCurSubMeshIndexFocusModel(0)
     , mCommandCache()
     , mRenderer(nullptr)
+    , mVkRenderer(nullptr)
     , mImporter(nullptr)
     , mCharacter(nullptr)
     , mCamera(nullptr)
@@ -80,6 +81,7 @@ Application::~Application()
     delete mResourceManager;
     delete mShaderManager;
     delete mRenderer;
+    delete mVkRenderer;
 }
 
 bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int32_t nCmdShow)
@@ -145,6 +147,12 @@ bool Application::InitializeWithWindowsVk(HINSTANCE hInstance, HINSTANCE hPrevIn
     mWindow->DisplayWindow(nCmdShow);
     mWindow->RefreshWindow();
 
+    mVkRenderer = new renderer::VkRenderer();
+    if (FAILED(mVkRenderer->initializeWithVulkan(handleWindow, hInstance, mWindowWidth, mWindowHeight, mWindow->GetAppNameA())))
+    {
+        ASSERT(false, "Fail to initialize shaders");
+        return false;
+    }
 
     mDirectInput = new core::DirectInput(hInstance, handleWindow, mWindowWidth, mWindowHeight);
     if (FAILED(mDirectInput->Initialize()))

@@ -83,6 +83,19 @@ namespace renderer
         TextureManager::sGBufferAmbientTexSerialID = mTextureManager->GetTextureSerial(TextureManager::sGBufferAmbientTexHash);
     }
 
+    VkRenderer::VkRenderer()
+    {}
+
+    VkRenderer::~VkRenderer()
+    {
+    }
+
+    bool VkRenderer::initializeWithVulkan(HWND handleWindow, HINSTANCE handleInstance, int16_t width, int16_t height, const char* const appName)
+    {
+
+        return true;
+    }
+
     Renderer::Renderer()
         : mRefCount(1)
         , mWindowHeight(0)
