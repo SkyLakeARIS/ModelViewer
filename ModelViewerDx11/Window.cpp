@@ -6,16 +6,20 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 Window::Window(HINSTANCE hInstance)
     : mHandleWindow(nullptr)
     , mHandleInstance(hInstance)
-    , mAppTitleName{}
+    , mAppTitleNameW{}
+    , mAppTitleNameA{}
     , mWindowClassName{}
 {
-    LoadStringW(mHandleInstance, IDS_APP_TITLE, mAppTitleName, MAX_WINDOW_NAME_LENGTH);
+    LoadStringW(mHandleInstance, IDS_APP_TITLE, mAppTitleNameW, MAX_WINDOW_NAME_LENGTH);
     LoadStringW(mHandleInstance, IDC_MODELVIEWER, mWindowClassName, MAX_WINDOW_NAME_LENGTH);
+
+    size_t convertedCount = 0;
+    (void)wcstombs_s(&convertedCount, mAppTitleNameA, sizeof(mAppTitleNameA), mAppTitleNameW, sizeof(mAppTitleNameA) - 1);
 }
 
 HWND Window::MakeWindow(int16_t windowWidth, int16_t windowHeight)
 {
-    mHandleWindow = CreateWindowW(mWindowClassName, mAppTitleName, WS_OVERLAPPEDWINDOW,
+    mHandleWindow = CreateWindowW(mWindowClassName, mAppTitleNameW, WS_OVERLAPPEDWINDOW,
         0, 0, windowWidth, windowHeight, nullptr, nullptr, mHandleInstance, nullptr);
     return mHandleWindow;
 }
@@ -70,6 +74,11 @@ bool Window::ProcessMessages()
 HWND Window::GetHandle() const
 {
     return mHandleWindow;
+}
+
+const char* Window::GetAppNameA() const
+{
+    return mAppTitleNameA;
 }
 
 LRESULT Window::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
