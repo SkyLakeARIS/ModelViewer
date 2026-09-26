@@ -43,17 +43,26 @@ public:
     ~Application();
 
     bool InitializeWithWindows(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int32_t nCmdShow);
-
+    bool InitializeWithWindowsVk(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int32_t nCmdShow);
     void Run();
+    void RunWithVulkan();
 
 private:
     bool initializeScene();
     bool initializeManagers();
 
+    bool initializeSceneVulkan();
+    bool initializeManagersVulkan();
+
     void processInput(double deltaTime);
     void updateScene();
 
     void renderScene();
+
+    void processInputVulkan(double deltaTime);
+    void updateSceneVulkan();
+
+    void renderSceneVulkan();
 
 private:
 

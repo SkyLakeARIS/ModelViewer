@@ -9,11 +9,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                       _In_ int       nCmdShow)
 {
     Application* app = new Application();
-    if(app->InitializeWithWindows(hInstance, hPrevInstance, lpCmdLine, nCmdShow))
+    if (app->InitializeWithWindowsVk(hInstance, hPrevInstance, lpCmdLine, nCmdShow))
     {
-        app->Run();
+        app->RunWithVulkan();
     }
-
     delete app;
     return 0;
 }

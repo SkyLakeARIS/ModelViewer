@@ -126,6 +126,37 @@ bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInst
     return true;
 }
 
+bool Application::InitializeWithWindowsVk(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine,
+    int32_t nCmdShow)
+{
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
+
+    mWindow = new Window(hInstance);
+
+    mWindow->RegisterWindowClass();
+
+    const HWND handleWindow = mWindow->MakeWindow(mWindowWidth, mWindowHeight);
+    if (!handleWindow)
+    {
+        return false;
+    }
+
+    mWindow->DisplayWindow(nCmdShow);
+    mWindow->RefreshWindow();
+
+
+    mDirectInput = new core::DirectInput(hInstance, handleWindow, mWindowWidth, mWindowHeight);
+    if (FAILED(mDirectInput->Initialize()))
+    {
+        ASSERT(false, "모델데이터 초기화 실패 SetupGeometry");
+        return false;
+    }
+    mImporter->Initialize();
+
+    return true;
+}
+
 void Application::Run()
 {
     const float RenderIntervalTime = 1000.0f / static_cast<float>(mAppFrameRate);
@@ -189,6 +220,68 @@ void Application::Run()
         if (mRenderer->CheckDeviceLost(bReinitDevice))
         {
             break;
+        }
+    }
+}
+
+void Application::RunWithVulkan()
+{
+
+    if(!initializeManagersVulkan())
+    {
+        return;
+    }
+
+    if(!initializeSceneVulkan())
+    {
+        return;
+    }
+
+    const float RenderIntervalTime = 1000.0f / static_cast<float>(mAppFrameRate);
+
+    core::Timer::Tick();
+    // MEMO: 첫 프레임이 안정적으로 돌도록 함. 프로그램 내에서 FrameTime이 일관되도록
+    double lastFrameTime = core::Timer::GetNowMS();
+    double lastFPSTime = core::Timer::GetNowMS();
+    int16_t frameCount = 0;
+    while (true)
+    {
+        if (mWindow->ProcessMessages())
+        {
+            break;
+        }
+
+        core::Timer::Tick();
+
+        const double startTime = core::Timer::GetNowMS();
+        double deltaTime = startTime - lastFrameTime;
+        // MEMO: 디버거 대응. deltaTime이 너무 크면 시간을 재조정한다.
+        if (deltaTime > 100.0)
+        {
+            deltaTime = RenderIntervalTime;
+        }
+
+        if (RenderIntervalTime > deltaTime)
+        {
+            YieldProcessor();
+            continue;
+        }
+
+        lastFrameTime = startTime;
+
+        processInputVulkan(deltaTime);
+        updateSceneVulkan();
+
+        renderSceneVulkan();
+
+        ++frameCount;
+        if (startTime - lastFPSTime >= 1000.0)
+        {
+            OutputDebugString(L"Render FPS : ");
+            OutputDebugString(std::to_wstring(frameCount).c_str());
+            OutputDebugString(L"\n");
+            lastFPSTime += 1000.0;
+            frameCount = 0;
         }
     }
 }
@@ -324,6 +417,25 @@ bool Application::initializeManagers()
 
     mRenderer->SetManagers(mBufferManager, mTextureManager, mShaderManager);
     renderer::MeshGenerator::Initialize(mBufferManager);
+    return true;
+}
+
+bool Application::initializeSceneVulkan()
+{
+    core::Timer::Initialize();
+
+    mCamera = new scene::Camera(
+        XMVectorSet(0.0f, 10.0f, -15.0f, 0.0f)
+        , XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f)
+        , XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+        mWindowWidth,
+        mWindowHeight);
+
+    return true;
+}
+
+bool Application::initializeManagersVulkan()
+{
     return true;
 }
 
@@ -684,4 +796,96 @@ void Application::renderScene()
             }
         }
     }
+}
+
+void Application::processInputVulkan(double deltaTime)
+{
+
+    mDirectInput->UpdateInput();
+
+    /*
+     *  direct input ver
+     */
+
+    const unsigned char* gKeyboard = mDirectInput->GetKeyboardPress();
+
+    if (!(mDirectInput->GetControlMode() & static_cast<uint32_t>(core::eControlFlags::KEYBOARD_MOVEMENT_MODE)))
+    {
+        int mouseX = 0;
+        int mouseY = 0;
+        mDirectInput->GetMouseDeltaPosition(mouseX, mouseY);
+        if (!(mouseX == 0 && mouseY == 0))
+        {
+            constexpr float KEYBOARD_SPEED = 0.1f;
+            mCamera->RotateAxis(XMConvertToRadians(static_cast<float>(mouseX)) * static_cast<float>(deltaTime) * KEYBOARD_SPEED, XMConvertToRadians(static_cast<float>(mouseY)) * static_cast<float>(deltaTime) * KEYBOARD_SPEED);
+        }
+    }
+    else
+    {
+        constexpr float MOUSE_SPEED = 10.0f;
+        if (gKeyboard[DIK_W] & 0x80)
+        {
+            mCamera->RotateAxis(0.0f, XMConvertToRadians(-(MOUSE_SPEED * static_cast<float>(deltaTime))));
+        }
+
+        if (gKeyboard[DIK_S] & 0x80)
+        {
+            mCamera->RotateAxis(0.0f, XMConvertToRadians(MOUSE_SPEED * static_cast<float>(deltaTime)));
+        }
+        if (gKeyboard[DIK_A] & 0x80)
+        {
+            mCamera->RotateAxis(XMConvertToRadians(-(MOUSE_SPEED * static_cast<float>(deltaTime))), 0.0f);
+        }
+
+        if (gKeyboard[DIK_D] & 0x80)
+        {
+            mCamera->RotateAxis(XMConvertToRadians(MOUSE_SPEED * static_cast<float>(deltaTime)), 0.0f);
+        }
+    }
+
+    // 마우스 휠 처리 이전에 임시용.
+    // 카메라와 물체간의 거리 조절(구체 크기 확대/축소)
+    constexpr float MOVEMENT_SPEED = 0.01f;
+    if (gKeyboard[DIK_Q] & 0x80)
+    {
+        mCamera->AddRadiusSphere(static_cast<float>(deltaTime * MOVEMENT_SPEED));
+    }
+
+    if (gKeyboard[DIK_E] & 0x80)
+    {
+        mCamera->AddRadiusSphere(static_cast<float>(-deltaTime * MOVEMENT_SPEED));
+    }
+
+    // 키보드<-> 마우스 조작 전환
+    static bool bPressCKey = false;
+    if (!(gKeyboard[DIK_C] & 0x80) && bPressCKey)
+    {
+        mDirectInput->SetControlMode(static_cast<uint32_t>(core::eControlFlags::KEYBOARD_MOVEMENT_MODE));
+    }
+    bPressCKey = gKeyboard[DIK_C] & 0x80;
+
+    if (gKeyboard[DIK_Z] & 0x80)
+    {
+        mCamera->AddHeight(static_cast<float>(-deltaTime) * MOVEMENT_SPEED);
+    }
+
+    if (gKeyboard[DIK_X] & 0x80)
+    {
+        mCamera->AddHeight(static_cast<float>(deltaTime) * MOVEMENT_SPEED);
+    }
+
+    if (gKeyboard[DIK_ESCAPE] & 0x80)
+    {
+        SendMessage(mWindow->GetHandle(), WM_DESTROY, 0, 0);
+    }
+}
+
+void Application::updateSceneVulkan()
+{
+
+}
+
+void Application::renderSceneVulkan()
+{
+
 }
