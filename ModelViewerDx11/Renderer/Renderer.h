@@ -14,6 +14,18 @@ namespace renderer
 
     class VkRenderer final
     {
+    private:
+        struct PerFrame
+        {
+            VkCommandPool Pool;
+            VkCommandBuffer Buffer;
+            VkSemaphore ImageReadySemaphore;
+            VkSemaphore PresentFinishedSemaphore;
+            VkFence DrawFinishedFence;
+        };
+
+        // MEMO: Pool-Buffer = 1:1, 더블버퍼링
+        static constexpr uint8_t sOverlappedFrame = 2;
     public:
         VkRenderer();
         ~VkRenderer();
@@ -26,7 +38,7 @@ namespace renderer
         bool choosePhysicalDevice();
         bool createLogicalDevice();
         bool createSwapChain(uint16_t width, uint16_t height);
-
+        bool createFrame();
     private:
         int16_t mWindowHeight;
         int16_t mWindowWidth;
@@ -35,12 +47,15 @@ namespace renderer
 
         VkPhysicalDevice mPhysicalDevice;
         VkPhysicalDeviceProperties2 mPhysicalDeviceProperties;
+        uint32_t mGraphicsQueueIndex;
         VkDevice mDevice;
 
         VkSurfaceKHR mSurface;
         VkSwapchainKHR mSwapChain;
         std::vector<VkImage> mImages;
         std::vector<VkImageView> mImageViews;
+
+        PerFrame mFrames[sOverlappedFrame];
     };
 
     class Renderer final : IUnknown

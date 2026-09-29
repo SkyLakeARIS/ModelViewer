@@ -90,13 +90,22 @@ namespace renderer
         , mVkInstance(nullptr)
         , mPhysicalDevice()
         , mPhysicalDeviceProperties()
+        , mGraphicsQueueIndex(UINT_MAX)
         , mDevice(nullptr)
         , mSurface(nullptr)
         , mSwapChain(nullptr)
+        , mFrames{}
     {}
 
     VkRenderer::~VkRenderer()
     {
+        for(const auto& frame : mFrames)
+        {
+            vkDestroyCommandPool(mDevice, frame.Pool, nullptr);
+            vkDestroySemaphore(mDevice, frame.PresentFinishedSemaphore, nullptr);
+            vkDestroySemaphore(mDevice, frame.ImageReadySemaphore, nullptr);
+            vkDestroyFence(mDevice, frame.DrawFinishedFence, nullptr);
+        }
         mImages.clear();
         std::vector<VkImage>().swap(mImages);
         mImageViews.clear();
@@ -133,6 +142,11 @@ namespace renderer
         }
 
         if(createSwapChain(width, height) == false)
+        {
+            return false;
+        }
+
+        if(createFrame() == false)
         {
             return false;
         }
@@ -399,6 +413,7 @@ namespace renderer
         float queuePriority = 0.5f;
         queueCreateInfo.pQueuePriorities = &queuePriority;
 
+        mGraphicsQueueIndex = graphicsQueueIndex;
 
         VkPhysicalDeviceVulkan11Features deviceFeatures11{};
         deviceFeatures11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
@@ -555,6 +570,67 @@ namespace renderer
         {
             ASSERT(false, "SwapChain Images 구성 실패 resultCode(%d)", result);
             return false;
+        }
+
+        return true;
+    }
+
+    bool VkRenderer::createFrame()
+    {
+        ASSERT(mGraphicsQueueIndex != UINT_MAX, "mGraphicsQueueIndex가 유효하지 않습니다.");
+        VkCommandPoolCreateInfo poolCreateInfo{};
+        poolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        poolCreateInfo.flags = VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        poolCreateInfo.queueFamilyIndex = mGraphicsQueueIndex;
+
+        VkCommandBufferAllocateInfo bufferAllocateInfo{};
+        bufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        bufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        bufferAllocateInfo.commandBufferCount = 1;
+
+        VkSemaphoreCreateInfo semaphoreCreateInfo{};
+        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        VkFenceCreateInfo fenceCreateInfo{};
+        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+        for (auto& frame : mFrames)
+        {
+            VkResult result = vkCreateCommandPool(mDevice, &poolCreateInfo, nullptr, &frame.Pool);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "CommandPool 생성 실패 resultCode(%d)", result);
+                return false;
+            }
+
+            bufferAllocateInfo.commandPool = frame.Pool;
+            result = vkAllocateCommandBuffers(mDevice, &bufferAllocateInfo, &frame.Buffer);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "CommandBuffer 생성 실패 resultCode(%d)", result);
+                return false;
+            }
+
+            result = vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &frame.ImageReadySemaphore);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "Semaphore(ImageReady) 생성 실패 resultCode(%d)", result);
+                return false;
+            }
+
+            result = vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &frame.PresentFinishedSemaphore);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "Semaphore(PresentFinished) 생성 실패 resultCode(%d)", result);
+                return false;
+            }
+
+            result = vkCreateFence(mDevice, &fenceCreateInfo, nullptr, &frame.DrawFinishedFence);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "Fence 생성 실패 resultCode(%d)", result);
+                return false;
+            }
         }
 
         return true;
