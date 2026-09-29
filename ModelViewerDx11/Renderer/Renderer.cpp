@@ -102,7 +102,7 @@ namespace renderer
         for(const auto& frame : mFrames)
         {
             vkDestroyCommandPool(mDevice, frame.Pool, nullptr);
-            vkDestroySemaphore(mDevice, frame.PresentFinishedSemaphore, nullptr);
+            vkDestroySemaphore(mDevice, frame.RenderFinishedSemaphore, nullptr);
             vkDestroySemaphore(mDevice, frame.ImageReadySemaphore, nullptr);
             vkDestroyFence(mDevice, frame.DrawFinishedFence, nullptr);
         }
@@ -618,7 +618,7 @@ namespace renderer
                 return false;
             }
 
-            result = vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &frame.PresentFinishedSemaphore);
+            result = vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &frame.RenderFinishedSemaphore);
             if (result != VK_SUCCESS)
             {
                 ASSERT(false, "Semaphore(PresentFinished) 생성 실패 resultCode(%d)", result);

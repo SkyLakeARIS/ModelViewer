@@ -20,7 +20,7 @@ namespace renderer
             VkCommandPool Pool;
             VkCommandBuffer Buffer;
             VkSemaphore ImageReadySemaphore;
-            VkSemaphore PresentFinishedSemaphore;
+            VkSemaphore RenderFinishedSemaphore;
             VkFence DrawFinishedFence;
         };
 
