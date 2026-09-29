@@ -92,8 +92,11 @@ namespace renderer
         , mPhysicalDeviceProperties()
         , mGraphicsQueueIndex(UINT_MAX)
         , mDevice(nullptr)
+        , mQueue(nullptr)
         , mSurface(nullptr)
+        , mSurfaceFormat()
         , mSwapChain(nullptr)
+        , mSwapChainExtent()
         , mFrames{}
     {}
 
@@ -108,6 +111,10 @@ namespace renderer
         }
         mImages.clear();
         std::vector<VkImage>().swap(mImages);
+        for (auto& imageView : mImageViews)
+        {
+            vkDestroyImageView(mDevice, imageView, nullptr);
+        }
         mImageViews.clear();
         std::vector<VkImageView>().swap(mImageViews);
         vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
@@ -142,6 +149,11 @@ namespace renderer
         }
 
         if(createSwapChain(width, height) == false)
+        {
+            return false;
+        }
+
+        if (createImageViews() == false)
         {
             return false;
         }
@@ -450,6 +462,12 @@ namespace renderer
             return false;
         }
 
+        VkDeviceQueueInfo2 deviceQueueInfo{};
+        deviceQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2;
+        deviceQueueInfo.queueFamilyIndex = queueFamilyCount;
+        deviceQueueInfo.queueIndex = graphicsQueueIndex;
+
+        vkGetDeviceQueue2(mDevice, &deviceQueueInfo, &mQueue);
         return true;
     }
 
@@ -516,6 +534,8 @@ namespace renderer
                 swapChainCreateInfo.imageColorSpace = format.surfaceFormat.colorSpace;
             }
         }
+        mSurfaceFormat.format = swapChainCreateInfo.imageFormat;
+        mSurfaceFormat.colorSpace = swapChainCreateInfo.imageColorSpace;
 
         swapChainCreateInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
         for (const auto& mode : surfacePresentModes)
@@ -539,6 +559,8 @@ namespace renderer
 
         swapChainCreateInfo.minImageCount = (surfaceCapabilities.surfaceCapabilities.maxImageCount > 0) ? surfaceCapabilities.surfaceCapabilities.maxImageCount : 3;
         swapChainCreateInfo.minImageCount = (swapChainCreateInfo.minImageCount > surfaceCapabilities.surfaceCapabilities.maxImageCount) ? surfaceCapabilities.surfaceCapabilities.maxImageCount : swapChainCreateInfo.minImageCount;
+
+        mSwapChainExtent = swapChainCreateInfo.imageExtent;
 
         swapChainCreateInfo.imageArrayLayers = 1;
         swapChainCreateInfo.imageUsage = VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -572,6 +594,34 @@ namespace renderer
             return false;
         }
 
+        return true;
+    }
+
+    bool VkRenderer::createImageViews()
+    {
+        ASSERT(mImageViews.empty(), "image views가 비어있지 않습니다. (리소스를 재생성하고 있는 경우 처리가 필요)");
+        mImageViews.reserve(mImages.size());
+
+        VkImageViewCreateInfo viewCreateInfo{};
+        viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewCreateInfo.format = mSurfaceFormat.format;
+        viewCreateInfo.components = {}; // VK_COMPONENT_SWIZZLE_IDENTITY
+        viewCreateInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+        for (const auto& image : mImages)
+        {
+            viewCreateInfo.image = image;
+
+            VkImageView imageView{};
+            const VkResult result = vkCreateImageView(mDevice, &viewCreateInfo, nullptr, &imageView);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "ImageView 생성 실패 resultCode(%d)", result);
+                continue;
+            }
+            mImageViews.push_back(std::move(imageView));
+        }
         return true;
     }
 

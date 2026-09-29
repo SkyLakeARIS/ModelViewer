@@ -38,6 +38,7 @@ namespace renderer
         bool choosePhysicalDevice();
         bool createLogicalDevice();
         bool createSwapChain(uint16_t width, uint16_t height);
+        bool createImageViews();
         bool createFrame();
     private:
         int16_t mWindowHeight;
@@ -49,9 +50,12 @@ namespace renderer
         VkPhysicalDeviceProperties2 mPhysicalDeviceProperties;
         uint32_t mGraphicsQueueIndex;
         VkDevice mDevice;
+        VkQueue mQueue;
 
         VkSurfaceKHR mSurface;
+        VkSurfaceFormatKHR mSurfaceFormat;
         VkSwapchainKHR mSwapChain;
+        VkExtent2D mSwapChainExtent;
         std::vector<VkImage> mImages;
         std::vector<VkImageView> mImageViews;
 
