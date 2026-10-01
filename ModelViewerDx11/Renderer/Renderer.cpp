@@ -287,6 +287,7 @@ namespace renderer
             score += deviceProperties2.properties.apiVersion > VK_API_VERSION_1_3 ? 1000 : 0;
             score += deviceProperties2.properties.apiVersion > VK_API_VERSION_1_4 ? 1000 : 0;
 
+            // MEMO: 다 얻어오기보다, 필수 요구사항을 검사할 대상들만 얻어와 처리하도록 한다
             VkPhysicalDeviceVulkan11Features deviceFeatures11{};
             deviceFeatures11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
             VkPhysicalDeviceVulkan12Features deviceFeatures12{};
@@ -435,10 +436,13 @@ namespace renderer
         VkPhysicalDeviceVulkan13Features deviceFeatures13{};
         deviceFeatures13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
         deviceFeatures13.pNext = &deviceFeatures12;
+    	VkPhysicalDeviceVulkan14Features deviceFeatures14{};
+        deviceFeatures14.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
+        deviceFeatures14.pNext = &deviceFeatures13;
 
         VkPhysicalDeviceFeatures2 deviceFeatures{};
         deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        deviceFeatures.pNext = &deviceFeatures13;
+        deviceFeatures.pNext = &deviceFeatures14;
         vkGetPhysicalDeviceFeatures2(mPhysicalDevice, &deviceFeatures);
 
 
