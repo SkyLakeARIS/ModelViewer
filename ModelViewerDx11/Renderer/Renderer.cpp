@@ -98,10 +98,14 @@ namespace renderer
         , mSwapChain(nullptr)
         , mSwapChainExtent()
         , mFrames{}
+        , mFrameCount(0)
+        , mCurImageIndex(0)
     {}
 
     VkRenderer::~VkRenderer()
     {
+        const VkResult result = vkDeviceWaitIdle(mDevice);
+        ASSERT(result == VK_SUCCESS, "vkDeviceWaitIdle 실패. result(%u)", result);
         for(const auto& frame : mFrames)
         {
             vkDestroyCommandPool(mDevice, frame.Pool, nullptr);
@@ -164,6 +168,119 @@ namespace renderer
         }
 
         return true;
+    }
+
+    void VkRenderer::WaitForLastFrame() const
+    {
+        const PerFrame curFrame = getCurrentFrameResource();
+        // wait 1sec = 1'000'000'000
+        const VkResult result = vkWaitForFences(mDevice, 1, &curFrame.DrawFinishedFence, VK_TRUE, 1'000'000'000); 
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "Fence Wait LastFrame 실패 resultCode(%d)", result);
+        }
+        (void)vkResetFences(mDevice, 1, &curFrame.DrawFinishedFence);
+    }
+
+    void VkRenderer::BeginRender()
+    {
+        const PerFrame curFrame = getCurrentFrameResource();
+
+        mCurImageIndex = acquireSwapChainImage(curFrame);
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo{};
+        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        commandBufferBeginInfo.flags = VkCommandBufferUsageFlagBits::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        // MEMO: 암묵적 초기화
+        const VkResult result = vkBeginCommandBuffer(curFrame.Buffer, &commandBufferBeginInfo);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "vkBeginCommandBuffer 실패 resultCode(%d)", result);
+        }
+
+        transitionImageLayout(curFrame.Buffer, mCurImageIndex, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_2_NONE, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT , VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+        constexpr VkClearValue ClearColorValue{0.4f, 0.8f, 0.6f, 1.0f};
+        constexpr VkImageSubresourceRange subresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
+
+        VkRenderingAttachmentInfo renderingAttachmentInfo{};
+        renderingAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        renderingAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        renderingAttachmentInfo.imageView = mImageViews[mCurImageIndex];
+        renderingAttachmentInfo.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+        renderingAttachmentInfo.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+        renderingAttachmentInfo.clearValue = ClearColorValue;
+
+        VkRenderingInfo renderingInfo{};
+        renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        renderingInfo.pColorAttachments = &renderingAttachmentInfo;
+        renderingInfo.colorAttachmentCount = 1;
+        renderingInfo.layerCount = 1;
+        renderingInfo.renderArea = { {0, 0}, mSwapChainExtent };
+        vkCmdBeginRendering(curFrame.Buffer, &renderingInfo);
+    }
+
+    void VkRenderer::EndRender()
+    {
+        const PerFrame curFrame = getCurrentFrameResource();
+
+        vkCmdEndRendering(curFrame.Buffer);
+
+        transitionImageLayout(curFrame.Buffer, mCurImageIndex, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT);
+        vkEndCommandBuffer(curFrame.Buffer);
+    }
+
+    void VkRenderer::SubmitCommands() const
+    {
+        const PerFrame curFrame = getCurrentFrameResource();
+
+        VkCommandBufferSubmitInfo commandBufferSubmitInfo{};
+        commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+        commandBufferSubmitInfo.commandBuffer = curFrame.Buffer;
+
+        VkSemaphoreSubmitInfo renderFinishedSubmitInfo{};
+        renderFinishedSubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        renderFinishedSubmitInfo.semaphore = curFrame.RenderFinishedSemaphore;
+        renderFinishedSubmitInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
+        renderFinishedSubmitInfo.value = 1;
+
+        VkSemaphoreSubmitInfo imageReadySubmitInfo{};
+        imageReadySubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        imageReadySubmitInfo.semaphore = curFrame.ImageReadySemaphore;
+        imageReadySubmitInfo.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR;
+        imageReadySubmitInfo.value = 1;
+
+        VkSubmitInfo2 submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+        submitInfo.pCommandBufferInfos = &commandBufferSubmitInfo;
+        submitInfo.commandBufferInfoCount = 1;
+        submitInfo.pWaitSemaphoreInfos = &imageReadySubmitInfo;
+        submitInfo.waitSemaphoreInfoCount = 1;
+        submitInfo.pSignalSemaphoreInfos = &renderFinishedSubmitInfo;
+        submitInfo.signalSemaphoreInfoCount = 1;
+        vkQueueSubmit2(mQueue, 1, & submitInfo, curFrame.DrawFinishedFence);
+    }
+
+    void VkRenderer::Present() const
+    {
+        const PerFrame curFrame = getCurrentFrameResource();
+
+        VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        presentInfo.pSwapchains = &mSwapChain;
+        presentInfo.swapchainCount = 1;
+        presentInfo.pImageIndices = &mCurImageIndex;
+
+        presentInfo.pWaitSemaphores = &curFrame.RenderFinishedSemaphore;
+        presentInfo.waitSemaphoreCount = 1;
+
+        vkQueuePresentKHR(mQueue, &presentInfo);
+    }
+
+    void VkRenderer::CountFrame()
+    {
+        ++mFrameCount;
+        mFrameCount = (mFrameCount == UINT64_MAX) ? mFrameCount % sOverlappedFrame : mFrameCount;
     }
 
     bool VkRenderer::createInstance(const char* const appName)
@@ -647,6 +764,7 @@ namespace renderer
 
         VkFenceCreateInfo fenceCreateInfo{};
         fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
         for (auto& frame : mFrames)
         {
@@ -688,6 +806,58 @@ namespace renderer
         }
 
         return true;
+    }
+
+    uint32_t VkRenderer::acquireSwapChainImage(const PerFrame& frame)
+    {
+        uint32_t nextImageIndex = UINT32_MAX;
+        VkAcquireNextImageInfoKHR acqNextImageInfo{};
+        acqNextImageInfo.sType = VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR;
+        acqNextImageInfo.semaphore = frame.ImageReadySemaphore;
+        acqNextImageInfo.swapchain = mSwapChain;
+        acqNextImageInfo.timeout = 1'000'000'000; // 1sec
+        acqNextImageInfo.deviceMask = 1;
+
+        const VkResult result = vkAcquireNextImage2KHR(mDevice, &acqNextImageInfo, &nextImageIndex);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "next image 획득 실패 resultCode(%d)", result);
+        }
+        ASSERT(nextImageIndex < mImages.size(), "유효하지 않은 image Index를 획득했거나, index 획득에 실패했습니다.  nextImageIndex(%u)", nextImageIndex);
+        return nextImageIndex;
+    }
+
+    void VkRenderer::transitionImageLayout(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask)
+    {
+        VkImageMemoryBarrier2 imageBarrier{};
+        imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+        imageBarrier.image = mImages[imageIndex];
+
+        imageBarrier.srcAccessMask = srcAccessMask;
+        imageBarrier.dstAccessMask = dstAccessMask;
+
+        imageBarrier.srcStageMask = srcStageMask;
+        imageBarrier.dstStageMask = dstStageMask;
+
+        imageBarrier.oldLayout = oldLayout;
+        imageBarrier.newLayout = newLayout;
+
+        VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageBarrier.subresourceRange = VkImageSubresourceRange{ aspectMask, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
+
+
+        VkDependencyInfo dependencyInfo{};
+        dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+        dependencyInfo.dependencyFlags = {};
+        dependencyInfo.imageMemoryBarrierCount = 1;
+        dependencyInfo.pImageMemoryBarriers = &imageBarrier;
+        vkCmdPipelineBarrier2(commandBuffer, &dependencyInfo);
+    }
+
+    VkRenderer::PerFrame VkRenderer::getCurrentFrameResource() const
+    {
+        const uint32_t curFrameIndex = mFrameCount % sOverlappedFrame;
+        return mFrames[curFrameIndex];
     }
 
     Renderer::Renderer()

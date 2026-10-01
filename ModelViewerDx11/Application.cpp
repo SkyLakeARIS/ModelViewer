@@ -280,8 +280,17 @@ void Application::RunWithVulkan()
         processInputVulkan(deltaTime);
         updateSceneVulkan();
 
+        mVkRenderer->WaitForLastFrame();
+        mVkRenderer->BeginRender();
+
         renderSceneVulkan();
 
+        mVkRenderer->EndRender();
+
+        mVkRenderer->SubmitCommands();
+        mVkRenderer->Present();
+
+        mVkRenderer->CountFrame();
         ++frameCount;
         if (startTime - lastFPSTime >= 1000.0)
         {

@@ -32,6 +32,14 @@ namespace renderer
 
         bool initializeWithVulkan(HWND handleWindow, HINSTANCE handleInstance, int16_t width, int16_t height, const char* const appName);
 
+        void WaitForLastFrame() const;
+        void BeginRender();
+        void EndRender();
+
+        void SubmitCommands() const;
+        void Present() const;
+
+        void CountFrame();
     private:
         bool createInstance(const char* const appName);
         bool createSurface(HWND handleWindow, HINSTANCE handleInstance);
@@ -40,6 +48,10 @@ namespace renderer
         bool createSwapChain(uint16_t width, uint16_t height);
         bool createImageViews();
         bool createFrame();
+
+        uint32_t acquireSwapChainImage(const PerFrame& frame);
+        void transitionImageLayout(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask);
+        PerFrame getCurrentFrameResource() const;
     private:
         int16_t mWindowHeight;
         int16_t mWindowWidth;
@@ -60,6 +72,8 @@ namespace renderer
         std::vector<VkImageView> mImageViews;
 
         PerFrame mFrames[sOverlappedFrame];
+        uint64_t mFrameCount;
+        uint32_t mCurImageIndex;
     };
 
     class Renderer final : IUnknown
