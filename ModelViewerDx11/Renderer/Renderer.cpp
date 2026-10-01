@@ -468,7 +468,7 @@ namespace renderer
 
         VkDeviceQueueInfo2 deviceQueueInfo{};
         deviceQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2;
-        deviceQueueInfo.queueFamilyIndex = queueFamilyCount;
+        deviceQueueInfo.queueFamilyIndex = graphicsQueueIndex;
         deviceQueueInfo.queueIndex = graphicsQueueIndex;
 
         vkGetDeviceQueue2(mDevice, &deviceQueueInfo, &mQueue);
