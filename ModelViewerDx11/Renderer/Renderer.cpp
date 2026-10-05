@@ -109,10 +109,15 @@ namespace renderer
         for(const auto& frame : mFrames)
         {
             vkDestroyCommandPool(mDevice, frame.Pool, nullptr);
-            vkDestroySemaphore(mDevice, frame.RenderFinishedSemaphore, nullptr);
             vkDestroySemaphore(mDevice, frame.ImageReadySemaphore, nullptr);
             vkDestroyFence(mDevice, frame.DrawFinishedFence, nullptr);
         }
+
+    	for(const auto& semaphore : mRenderFinishedSemaphores)
+        {
+            vkDestroySemaphore(mDevice, semaphore, nullptr);
+        }
+
         mImages.clear();
         std::vector<VkImage>().swap(mImages);
         for (auto& imageView : mImageViews)
@@ -163,6 +168,11 @@ namespace renderer
         }
 
         if(createFrame() == false)
+        {
+            return false;
+        }
+
+        if(createSyncObjects() == false)
         {
             return false;
         }
@@ -240,7 +250,7 @@ namespace renderer
 
         VkSemaphoreSubmitInfo renderFinishedSubmitInfo{};
         renderFinishedSubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-        renderFinishedSubmitInfo.semaphore = curFrame.RenderFinishedSemaphore;
+        renderFinishedSubmitInfo.semaphore = mRenderFinishedSemaphores[mCurImageIndex];
         renderFinishedSubmitInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
         renderFinishedSubmitInfo.value = 1;
 
@@ -271,7 +281,7 @@ namespace renderer
         presentInfo.swapchainCount = 1;
         presentInfo.pImageIndices = &mCurImageIndex;
 
-        presentInfo.pWaitSemaphores = &curFrame.RenderFinishedSemaphore;
+        presentInfo.pWaitSemaphores = &mRenderFinishedSemaphores[mCurImageIndex];
         presentInfo.waitSemaphoreCount = 1;
 
         vkQueuePresentKHR(mQueue, &presentInfo);
@@ -790,13 +800,6 @@ namespace renderer
                 return false;
             }
 
-            result = vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &frame.RenderFinishedSemaphore);
-            if (result != VK_SUCCESS)
-            {
-                ASSERT(false, "Semaphore(PresentFinished) 생성 실패 resultCode(%d)", result);
-                return false;
-            }
-
             result = vkCreateFence(mDevice, &fenceCreateInfo, nullptr, &frame.DrawFinishedFence);
             if (result != VK_SUCCESS)
             {
@@ -805,6 +808,24 @@ namespace renderer
             }
         }
 
+        return true;
+    }
+
+    bool VkRenderer::createSyncObjects()
+    {
+        VkSemaphoreCreateInfo semaphoreCreateInfo{};
+        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        mRenderFinishedSemaphores.resize(mImages.size());
+        for (auto& semaphore: mRenderFinishedSemaphores)
+        {
+            const VkResult result = vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &semaphore);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "Semaphore(RenderFinished) 생성 실패 resultCode(%d)", result);
+                return false;
+            }
+        }
         return true;
     }
 

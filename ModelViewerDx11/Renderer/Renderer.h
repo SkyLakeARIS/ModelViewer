@@ -20,7 +20,6 @@ namespace renderer
             VkCommandPool Pool;
             VkCommandBuffer Buffer;
             VkSemaphore ImageReadySemaphore;
-            VkSemaphore RenderFinishedSemaphore;
             VkFence DrawFinishedFence;
         };
 
@@ -48,6 +47,7 @@ namespace renderer
         bool createSwapChain(uint16_t width, uint16_t height);
         bool createImageViews();
         bool createFrame();
+        bool createSyncObjects();
 
         uint32_t acquireSwapChainImage(const PerFrame& frame);
         void transitionImageLayout(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask);
@@ -72,6 +72,7 @@ namespace renderer
         std::vector<VkImageView> mImageViews;
 
         PerFrame mFrames[sOverlappedFrame];
+        std::vector<VkSemaphore> mRenderFinishedSemaphores;
         uint64_t mFrameCount;
         uint32_t mCurImageIndex;
     };
