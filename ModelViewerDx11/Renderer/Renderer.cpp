@@ -248,25 +248,25 @@ namespace renderer
         commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
         commandBufferSubmitInfo.commandBuffer = curFrame.Buffer;
 
-        VkSemaphoreSubmitInfo renderFinishedSubmitInfo{};
-        renderFinishedSubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-        renderFinishedSubmitInfo.semaphore = mRenderFinishedSemaphores[mCurImageIndex];
-        renderFinishedSubmitInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
-        renderFinishedSubmitInfo.value = 1;
+        VkSemaphoreSubmitInfo signalSemaphoreSubmitInfo{};
+        signalSemaphoreSubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        signalSemaphoreSubmitInfo.semaphore = mRenderFinishedSemaphores[mCurImageIndex];
+        signalSemaphoreSubmitInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
+        signalSemaphoreSubmitInfo.value = 1;
 
-        VkSemaphoreSubmitInfo imageReadySubmitInfo{};
-        imageReadySubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-        imageReadySubmitInfo.semaphore = curFrame.ImageReadySemaphore;
-        imageReadySubmitInfo.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR;
-        imageReadySubmitInfo.value = 1;
+        VkSemaphoreSubmitInfo waitSemaphoreSubmitInfo{};
+        waitSemaphoreSubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        waitSemaphoreSubmitInfo.semaphore = curFrame.ImageReadySemaphore;
+        waitSemaphoreSubmitInfo.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR;
+        waitSemaphoreSubmitInfo.value = 1;
 
         VkSubmitInfo2 submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
         submitInfo.pCommandBufferInfos = &commandBufferSubmitInfo;
         submitInfo.commandBufferInfoCount = 1;
-        submitInfo.pWaitSemaphoreInfos = &imageReadySubmitInfo;
+        submitInfo.pWaitSemaphoreInfos = &waitSemaphoreSubmitInfo;
         submitInfo.waitSemaphoreInfoCount = 1;
-        submitInfo.pSignalSemaphoreInfos = &renderFinishedSubmitInfo;
+        submitInfo.pSignalSemaphoreInfos = &signalSemaphoreSubmitInfo;
         submitInfo.signalSemaphoreInfoCount = 1;
         vkQueueSubmit2(mQueue, 1, & submitInfo, curFrame.DrawFinishedFence);
     }
