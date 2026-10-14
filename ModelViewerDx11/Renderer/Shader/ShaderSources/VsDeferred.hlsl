@@ -57,7 +57,7 @@ PsInput main(VsInput vsInput)
     PsInput psInput;
     psInput.Position = vsInput.Position;
     psInput.TexCoord = vsInput.TexCoord;
-    psInput.CameraPosition = Position;
+    psInput.CameraPosition = Position.xyz;
     psInput.LightColor = vLightColor;
     psInput.LightDir = vLightDir;
     psInput.MatLightViewProj = MatLightViewProj;

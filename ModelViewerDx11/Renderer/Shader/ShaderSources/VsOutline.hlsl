@@ -41,7 +41,7 @@ PsInput main(VsInput vsInput)
 {
     PsInput psInput;
     float outlineWidth = 0.01f;
-    psInput.Position = mul(float4(vsInput.Normal.xyz * outlineWidth + vsInput.Position.xyz, 1.0f), MatWorld);
+    psInput.Position = mul(float4(vsInput.Normal.xyz * OutlineWidth + vsInput.Position.xyz, 1.0f), MatWorld);
     psInput.Position = mul(float4(psInput.Position.xyz, 1.0f), MatViewProj);
     psInput.TexCoord = vsInput.TexCoord;
 	return psInput;

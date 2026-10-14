@@ -41,7 +41,7 @@ PsInput main(VsInput vsInput)
     PsInput psInput;
 
     psInput.Position = mul(vsInput.Position, MatWorld);
-    psInput.WorldPosition = psInput.Position;
+    psInput.WorldPosition = psInput.Position.xyz;
     psInput.Position = mul(psInput.Position, MatOrtho);
 
     psInput.TexCoord = vsInput.TexCoord;

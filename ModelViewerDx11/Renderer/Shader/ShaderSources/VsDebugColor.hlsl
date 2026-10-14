@@ -37,7 +37,7 @@ PsInput main(VsInput vsInput)
     PsInput psInput;
     psInput.Position = mul(vsInput.Position, MatWorld);
     psInput.WorldNormal = float3(0.0f, 1.0f, 0.0f);
-    psInput.WorldPosition = psInput.Position;
+    psInput.WorldPosition = psInput.Position.xyz;
     psInput.Position = mul(psInput.Position, MatViewProj);
 
     psInput.TexCoord = float2(0.0f, 0.0f);
