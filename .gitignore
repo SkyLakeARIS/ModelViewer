@@ -426,5 +426,6 @@ $RECYCLE.BIN/
 *.fbx
 */models/*.*
 */textures/*.*
-
+*.spv
+*.asm
 # End of https://www.toptal.com/developers/gitignore/api/csharp,windows
