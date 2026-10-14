@@ -148,7 +148,7 @@ bool Application::InitializeWithWindowsVk(HINSTANCE hInstance, HINSTANCE hPrevIn
     mWindow->RefreshWindow();
 
     mVkRenderer = new renderer::VkRenderer();
-    if (FAILED(mVkRenderer->initializeWithVulkan(handleWindow, hInstance, mWindowWidth, mWindowHeight, mWindow->GetAppNameA())))
+    if (!(mVkRenderer->initializeWithVulkan(handleWindow, hInstance, mWindowWidth, mWindowHeight, mWindow->GetAppNameA())))
     {
         ASSERT(false, "Fail to initialize shaders");
         return false;
