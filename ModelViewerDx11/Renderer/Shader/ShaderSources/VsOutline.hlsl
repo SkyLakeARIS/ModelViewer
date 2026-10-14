@@ -26,9 +26,9 @@ cbuffer CbOutline : register(b6)
 
 struct VsInput
 {
-    float4 Position : POSITION;
-    float2 TexCoord : TEXCOORD0;
-    float3 Normal : NORMAL;
+    [[vk::location(0)]] float4 Position : POSITION;
+    [[vk::location(1)]] float2 TexCoord : TEXCOORD0;
+    [[vk::location(2)]] float3 Normal : NORMAL;
 };
 
 struct PsInput

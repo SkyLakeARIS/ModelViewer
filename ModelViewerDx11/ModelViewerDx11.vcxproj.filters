@@ -209,28 +209,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Renderer\Shader\ShaderSources\LayoutP.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\LayoutPT.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\LayoutPTN.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsBasicWithShadow.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsColor.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsDeferred.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsOutline.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsShadow.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsSkybox.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsTexture.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsTextureMRT.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsBasicWithShadow.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsDebugColor.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsDeferred.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsOutline.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsScreen.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsShadow.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsSimple.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsSkybox.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsTexture.hlsl" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
 </Project>

@@ -21,7 +21,7 @@ cbuffer CbMatViewProj : register(b1)
 
 struct VsInput
 {
-    float4 Position : POSITION;
+    [[vk::location(0)]] float4 Position : POSITION;
 };
 
 struct PsInput
