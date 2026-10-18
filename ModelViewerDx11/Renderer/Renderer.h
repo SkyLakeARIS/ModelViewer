@@ -26,11 +26,73 @@ namespace renderer
         // MEMO: Pool-Buffer = 1:1, 더블버퍼링
         static constexpr uint8_t sOverlappedFrame = 2;
     public:
+        struct SubDataRange
+        {
+            uint32_t StartIndex;
+            uint32_t Count;
+        };
+        struct BufferInfo
+        {
+            VkBuffer Buffer;
+            VkDeviceMemory Memory;
+            uint32_t Alignment;
+            uint32_t AllocationSize;
+            uint32_t Cursor;
+            std::unordered_map<HashID, SubDataRange> SubResources;
+        };
+
+        struct ShaderStage
+        {
+            VkShaderModule ShaderModule;
+            VkPipelineShaderStageCreateInfo PipelineShaderStage;
+        };
+        struct DescriptorInfo
+        {
+            VkDescriptorType Type;
+            uint32_t Count;
+        };
+        struct ShaderLayout
+        {
+            VkDescriptorSetLayout SetLayout;
+            VkPipelineLayout PipelineLayout;
+            std::vector<DescriptorInfo> DescriptorInfos;
+        };
+        struct ShaderDescriptor
+        {
+            VkDescriptorSet Set[sOverlappedFrame];
+            VkDescriptorPool Pool;
+        };
+        // pipeline
+        struct PipelineStateBitField
+        {
+            uint64_t Value;
+            uint64_t BitWidth;
+        };
+        // Texture
+        struct TextureInfo
+        {
+            VkImage Image;
+            VkDeviceMemory ImageMemory;
+            VkImageView ImageView;
+            uint32_t Layout;
+            uint32_t Access;
+        };
+        enum class eSamplerType
+        {
+            Linear,
+            SamplerCount,
+        };
+    public:
         VkRenderer();
         ~VkRenderer();
 
         bool initializeWithVulkan(HWND handleWindow, HINSTANCE handleInstance, int16_t width, int16_t height, const char* const appName);
-
+        // TODO: 모델 띄운 후, 구조 개선 작업에서 전부 분리할 것들.
+        void PrepareObjects();
+        void UpdateScene(std::vector<std::pair<renderer::eCbType, void*>>& uniforms);
+        void RenderScene();
+        void DrawIndexed(uint32_t indexCount, uint32_t vertexOffset, uint32_t indexOffset);
+        //
         void WaitForLastFrame() const;
         void BeginRender();
         void EndRender();
@@ -39,6 +101,36 @@ namespace renderer
         void Present() const;
 
         void CountFrame();
+
+        VkPipeline GetPipeline(HashID hash);
+        // pipeline - test
+        void SetSimplePipeline(HashID hash);
+        // Shader
+        bool CreateShaderStage(const char* const path, bool bMakeAsPixelShader, HashID& outShaderStageHash);
+        bool CreateShaderLayout(eShader shader);
+        bool CreateDescriptorSet();
+        bool UpdateDescriptorSet(eShader shader);
+        void UpdateUniformData(void* const pData, uint32_t sizeInBytes, BufferInfo uniformBuffer);
+        // pipeline
+        bool TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, HashID VsStageHash, HashID PsStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
+        HashID MakePipelineHash(eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
+        // Buffer
+        bool CreateBuffer(uint32_t requestSizeInBytes, uint32_t usage, uint32_t flag, uint32_t queueFamilyIndex, bool bUseStaging, BufferInfo& outBufferInfo);
+        void AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
+        void AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
+        // Buffer - common
+        void copyBufferStaging(VkBuffer srcBuf, VkBuffer dstBuf, uint32_t copySize);
+        void copyBufferToImageStaging(VkBuffer srcBuf, VkImage dstImage, VkBufferImageCopy2& region);
+        void uploadBuffer(const void* const pData, uint32_t sizeInBytes, uint32_t offset, VkDeviceMemory memory);
+        void uploadBufferStaging(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t sizeInBytes, uint32_t srcOffset, uint32_t dstOffset);
+        bool allocateMemory(uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory);
+        // Texture
+        bool CreateTexture(const int8_t* const filePath, HashID& outHash, bool bIsDDS);
+        bool createSamplers();
+        // Texture - common
+        void createImage(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, VkImageType type, VkFormat format, bool bUseStaging, VkMemoryPropertyFlagBits memoryProperty, VkDeviceMemory& outImageMemory, VkImage& outImage);
+        void getMemoryType(VkMemoryRequirements memoryRequirements, uint32_t flag, uint32_t& outMemoryType);
+
     private:
         bool createInstance(const char* const appName);
         bool createSurface(HWND handleWindow, HINSTANCE handleInstance);
@@ -48,10 +140,14 @@ namespace renderer
         bool createImageViews();
         bool createFrame();
         bool createSyncObjects();
-
+        bool createGraphicsPipeline(eShader shader, HashID vsStageHash, HashID psStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass, VkPipeline& outPipeline);
+        bool createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const;
+        bool createCommandBuffers(VkCommandPool commandPool, uint32_t bufferCount, VkCommandBufferLevel level, VkCommandBuffer& outBuffers) const;
         uint32_t acquireSwapChainImage(const PerFrame& frame);
         void transitionImageLayout(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask);
+        void transitionImageLayoutNew(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask);
         PerFrame getCurrentFrameResource() const;
+        uint32_t getCurrentFrameIndex() const;
     private:
         int16_t mWindowHeight;
         int16_t mWindowWidth;
@@ -75,6 +171,25 @@ namespace renderer
         std::vector<VkSemaphore> mRenderFinishedSemaphores;
         uint64_t mFrameCount;
         uint32_t mCurImageIndex;
+        // pipeline
+        VkPipeline mSimplePipeline;
+        std::unordered_map<HashID, PipelineStateBitField> mPipelineBitLayout;
+        std::unordered_map<HashID, VkPipeline> mPipelines;
+        // shader
+        std::unordered_map<HashID, ShaderStage> mShaderInfos;
+        std::unordered_map<eShader, ShaderLayout> mShaderLayouts;
+        // buffer
+        BufferInfo mVertexBuffer;
+        BufferInfo mIndexBuffer;
+        BufferInfo mUbPerFrames[sOverlappedFrame];
+        BufferInfo mUbPerObjects[sOverlappedFrame];
+        // MEMO: 현재는 싱글스레드이므로 1:N 으로 set을 생성(cmdPool처럼해도 되고 이렇게 해도 됨)
+        ShaderDescriptor mShaderDescriptors[static_cast<uint8_t>(eShader::ShaderCount)];
+        bool mbStagingEnabled;
+        // Texture
+        std::unordered_map<HashID, TextureInfo> mTextures;
+        std::unordered_map<eSamplerType, VkSampler> mSamplers;
+
     };
 
     class Renderer final : IUnknown

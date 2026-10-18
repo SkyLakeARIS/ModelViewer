@@ -4,6 +4,11 @@
 
 namespace renderer
 {
+    enum class eBufferType
+    {
+	    Vertex,
+        Index,
+    };
 
     class BufferManager
     {

@@ -1,6 +1,8 @@
 #include "Renderer.h"
 #include <algorithm>
+#include <fstream>
 #include "../Util/Macro.h"
+#include "../Util/Util.h"
 #include "Resources/BufferManager.h"
 #include "Resources/TextureManager.h"
 #include "Shader/ShaderManager.h"
@@ -100,12 +102,75 @@ namespace renderer
         , mFrames{}
         , mFrameCount(0)
         , mCurImageIndex(0)
-    {}
+        , mSimplePipeline(nullptr)
+        , mVertexBuffer()
+        , mIndexBuffer()
+        , mUbPerFrames{}
+        , mUbPerObjects{}
+        , mShaderDescriptors{}
+        , mbStagingEnabled(false)
+    {
+    }
 
     VkRenderer::~VkRenderer()
     {
         const VkResult result = vkDeviceWaitIdle(mDevice);
         ASSERT(result == VK_SUCCESS, "vkDeviceWaitIdle 실패. result(%u)", result);
+
+        for(const auto& textureIt : mTextures)
+        {
+            vkFreeMemory(mDevice, textureIt.second.ImageMemory, nullptr);
+            vkDestroyImageView(mDevice, textureIt.second.ImageView, nullptr);
+            vkDestroyImage(mDevice, textureIt.second.Image, nullptr);
+        }
+
+        for(const auto& samplerIt : mSamplers)
+        {
+            vkDestroySampler(mDevice, samplerIt.second, nullptr);
+        }
+
+        for(const auto& shaderDescriptor : mShaderDescriptors)
+        {
+            vkDestroyDescriptorPool(mDevice, shaderDescriptor.Pool, nullptr);
+        }
+
+        for(const auto& pipelineIt : mPipelines)
+        {
+            vkDestroyPipeline(mDevice, pipelineIt.second, nullptr);
+        }
+        mPipelines.clear();
+
+        for(const auto& shaderLayoutIt : mShaderLayouts)
+        {
+            vkDestroyPipelineLayout(mDevice, shaderLayoutIt.second.PipelineLayout, nullptr);
+            vkDestroyDescriptorSetLayout(mDevice, shaderLayoutIt.second.SetLayout, nullptr);
+        }
+        mShaderLayouts.clear();
+
+        for(const auto& shaderInfo : mShaderInfos)
+        {
+            vkDestroyShaderModule(mDevice, shaderInfo.second.ShaderModule, nullptr);
+        }
+        mShaderInfos.clear();
+
+        for (const auto& uniformBuffer : mUbPerFrames)
+        {
+            vkFreeMemory(mDevice, uniformBuffer.Memory, nullptr);
+            vkDestroyBuffer(mDevice, uniformBuffer.Buffer, nullptr);
+        }
+        for (const auto& uniformBuffer : mUbPerObjects)
+        {
+            vkFreeMemory(mDevice, uniformBuffer.Memory, nullptr);
+            vkDestroyBuffer(mDevice, uniformBuffer.Buffer, nullptr);
+        }
+        vkFreeMemory(mDevice, mVertexBuffer.Memory, nullptr);
+        vkDestroyBuffer(mDevice, mVertexBuffer.Buffer, nullptr);
+        mVertexBuffer.SubResources.clear();
+
+        vkFreeMemory(mDevice, mIndexBuffer.Memory, nullptr);
+        vkDestroyBuffer(mDevice, mIndexBuffer.Buffer, nullptr);
+        mIndexBuffer.SubResources.clear();
+
         for(const auto& frame : mFrames)
         {
             vkDestroyCommandPool(mDevice, frame.Pool, nullptr);
@@ -177,7 +242,84 @@ namespace renderer
             return false;
         }
 
+        if(createSamplers() == false)
+        {
+            return false;
+        }
+
         return true;
+    }
+
+    void VkRenderer::PrepareObjects()
+    {
+        CreateBuffer(771336 * 2, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mVertexBuffer);
+        CreateBuffer(189792 * 2, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mIndexBuffer);
+        for (auto& mUniformBuffer : mUbPerFrames)
+        {
+            CreateBuffer(1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mUniformBuffer);
+        }
+        for (auto& mUniformBuffer : mUbPerObjects)
+        {
+            CreateBuffer(1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mUniformBuffer);
+        }
+        const int8_t* const modelFilePath = reinterpret_cast<int8_t*>("/AssetData/textures/Unagi_Body_D.png");
+        HashID texHash;
+        CreateTexture(modelFilePath, texHash, false);
+    }
+
+    void VkRenderer::UpdateScene(std::vector<std::pair<renderer::eCbType, void*>>& uniforms)
+    {
+        const uint32_t frameIndex = getCurrentFrameIndex();
+        for(const auto& uniform : uniforms)
+        {
+            if(uniform.first == eCbType::CbViewProj)
+            {
+                UpdateUniformData(uniform.second, sizeof(CbViewProj), mUbPerFrames[frameIndex]);
+            }
+            else
+            {
+                UpdateUniformData(uniform.second, sizeof(CbWorld) , mUbPerObjects[frameIndex]);
+            }
+        }
+        UpdateDescriptorSet(eShader::Simple);
+    }
+
+    void VkRenderer::RenderScene()
+    {
+        // Scene Update
+        const PerFrame frame = getCurrentFrameResource();
+        const uint32_t frameIndex = getCurrentFrameIndex();
+        VkViewport viewport{};
+        viewport.x = 0;
+        viewport.y = 0;
+        viewport.width = mSwapChainExtent.width;
+        viewport.height = mSwapChainExtent.height;
+        viewport.maxDepth = 1.0f;
+        viewport.minDepth = 0.0f;
+
+        vkCmdSetViewport(frame.Buffer, 0, 1, &viewport);
+
+        VkRect2D scissor{ {0, 0}, mSwapChainExtent };
+        vkCmdSetScissor(frame.Buffer, 0, 1, &scissor);
+
+
+        vkCmdBindPipeline(frame.Buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mSimplePipeline);
+
+        const VkDeviceSize offset = 0;
+        vkCmdBindVertexBuffers(frame.Buffer, 0, 1, &mVertexBuffer.Buffer, &offset);
+
+        const VkIndexType indexType = VK_INDEX_TYPE_UINT32;
+        vkCmdBindIndexBuffer(frame.Buffer, mIndexBuffer.Buffer, 0, indexType);
+
+        const auto& shaderLayoutIt = mShaderLayouts.find(eShader::Simple);
+
+        vkCmdBindDescriptorSets(frame.Buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shaderLayoutIt->second.PipelineLayout, 0, 1, &mShaderDescriptors[static_cast<uint8_t>(eShader::Simple)].Set[frameIndex], 0, nullptr);
+    }
+
+    void VkRenderer::DrawIndexed(uint32_t indexCount, uint32_t vertexOffset, uint32_t indexOffset)
+    {
+        const PerFrame frame = getCurrentFrameResource();
+        vkCmdDrawIndexed(frame.Buffer, indexCount, 1, indexOffset, vertexOffset, 0);
     }
 
     void VkRenderer::WaitForLastFrame() const
@@ -291,6 +433,958 @@ namespace renderer
     {
         ++mFrameCount;
         mFrameCount = (mFrameCount == UINT64_MAX) ? mFrameCount % sOverlappedFrame : mFrameCount;
+    }
+
+    VkPipeline VkRenderer::GetPipeline(HashID hash)
+    {
+        VkPipeline pipeline{};
+        const auto& pipelineIt = mPipelines.find(hash);
+        if(pipelineIt == mPipelines.end())
+        {
+            ASSERT(false, "존재하지 않는 pipeline의 hash이거나 생성되지 않은 hash를 찾으려고 합니다. hash(%u)", hash);
+        }
+        else
+        {
+            pipeline = pipelineIt->second;
+        }
+
+        return pipeline;
+    }
+
+    void VkRenderer::SetSimplePipeline(HashID hash)
+    {
+        const auto& pipelineIt = mPipelines.find(hash);
+        mSimplePipeline = pipelineIt->second;
+    }
+
+    bool VkRenderer::CreateShaderStage(const char* const path, bool bMakeAsPixelShader, HashID& outShaderStageHash)
+    {
+        ASSERT(path, "path는 유효해야합니다. path(%s)", path);
+
+        HashID hash = util::GetDjb2Hash(reinterpret_cast<const int8_t*>(path));
+        if(mShaderInfos.find(hash) != mShaderInfos.end())
+        {
+            outShaderStageHash = hash;
+            return true;
+        }
+        std::ifstream shaderFile(path, std::ios::ate | std::ios::binary);
+
+        if(shaderFile.is_open() == false)
+        {
+            ASSERT(false, "셰이더 파일 로드 실패 ");
+            return false;
+        }
+
+        const uint32_t fileSize = shaderFile.tellg();
+        shaderFile.seekg(0, std::ios::beg);
+
+        std::vector<uint8_t> shaderCode(fileSize);
+
+        shaderFile.read(reinterpret_cast<char*>(shaderCode.data()), fileSize);
+
+        ShaderStage shaderInfo{};
+        // make shaderModule
+        
+        VkShaderModuleCreateInfo shaderModuleCreateInfo{};
+        shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        shaderModuleCreateInfo.codeSize = fileSize;
+        shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(shaderCode.data());
+
+        const VkResult result = vkCreateShaderModule(mDevice, &shaderModuleCreateInfo, nullptr, &shaderInfo.ShaderModule);
+        if(result != VK_SUCCESS)
+        {
+            ASSERT(false, "vkCreateShaderModule 실패 resultCode(%d)", result);
+            return false;
+        }
+        // make shaderStgae
+
+        shaderInfo.PipelineShaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderInfo.PipelineShaderStage.stage = bMakeAsPixelShader ? VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT : VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+        shaderInfo.PipelineShaderStage.module = shaderInfo.ShaderModule;
+        shaderInfo.PipelineShaderStage.pName = "main";
+
+        mShaderInfos.insert({hash, std::move(shaderInfo)});
+        outShaderStageHash = hash;
+        return true;
+    }
+
+    bool VkRenderer::CreateShaderLayout(eShader shader)
+    {
+        const auto& shaderLayoutIt = mShaderLayouts.find(shader);
+        if (shaderLayoutIt == mShaderLayouts.end())
+        {
+            const std::unordered_map<eShader, std::vector<VkDescriptorSetLayoutBinding>> DescriptorLayoutBindingTable =
+            {
+                {
+                    eShader::BasicWithShadow,
+                    {
+                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                    }
+                },
+                {
+                    eShader::Shadow,
+                    {
+                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                    }
+                },
+                {
+                    eShader::Texture,
+                    {
+                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                    }
+                },
+                {
+                    eShader::Color,
+                    {
+                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                    }
+                },
+                {
+                    eShader::DebugColor,
+                    {
+                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                    }
+                },
+                {
+                    eShader::DebugHUD,
+                    {
+                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {5, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                    }
+                },
+                {
+                    eShader::Deferred,
+                    {
+                       {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {8, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {9, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {10, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {11, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {12, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                    }
+                },
+                {
+                    eShader::Outline,
+                    {
+                       {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {6, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                    }
+                },
+                {
+                    eShader::Skybox,
+                    {
+                       {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+                        {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                        {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+                    }
+                },
+                {
+                    eShader::Simple,
+                    {
+                       {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT , nullptr},
+                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT , nullptr},
+                    }
+                }
+            };
+
+            ASSERT(DescriptorLayoutBindingTable.find(shader) != DescriptorLayoutBindingTable.end(), "유효하지 않은 shader이거나, shader에 대한 DescriptorTable에 추가되지 않았습니다. shader(%u)", static_cast<uint8_t>(shader));
+
+            const auto& descriptorLayoutIt = DescriptorLayoutBindingTable.find(shader);
+            ASSERT(descriptorLayoutIt != DescriptorLayoutBindingTable.end(), "shader 타입이 올바르지 않거나, Table에 추가되지 않았습니다");
+
+            VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
+            descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            descriptorSetLayoutCreateInfo.pBindings = descriptorLayoutIt->second.data();
+            descriptorSetLayoutCreateInfo.bindingCount = descriptorLayoutIt->second.size();
+
+            VkDescriptorSetLayout setLayout;
+            VkResult result = vkCreateDescriptorSetLayout(mDevice, &descriptorSetLayoutCreateInfo, nullptr, &setLayout);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "DescriptorSetLayout 생성 실패.  result(%u)", result);
+            }
+
+            VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+            pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutCreateInfo.pSetLayouts = &setLayout;
+            pipelineLayoutCreateInfo.setLayoutCount = 1;
+            pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+
+            VkPipelineLayout pipelineLayout;
+            result = vkCreatePipelineLayout(mDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "PipelineLayout 생성 실패.  result(%u)", result);
+            }
+
+            ShaderLayout shaderLayout{ setLayout, pipelineLayout, {} };
+            shaderLayout.DescriptorInfos.reserve(descriptorLayoutIt->second.size());
+            for(const auto& bindingInfo : descriptorLayoutIt->second)
+            {
+                shaderLayout.DescriptorInfos.push_back({bindingInfo.descriptorType, bindingInfo.descriptorCount});
+            }
+
+            mShaderLayouts.insert({ shader, std::move(shaderLayout) });
+        }
+        return true;
+    }
+
+    bool VkRenderer::CreateDescriptorSet()
+    {
+        for (uint8_t shader = 0; shader < static_cast<uint8_t>(eShader::ShaderCount); ++shader)
+        {
+            const auto& shaderLayoutIt = mShaderLayouts.find(static_cast<eShader>(shader));
+
+            std::vector<VkDescriptorPoolSize> poolSizes;
+            poolSizes.reserve(shaderLayoutIt->second.DescriptorInfos.size());
+            for(const auto& descriptorInfo : shaderLayoutIt->second.DescriptorInfos)
+            {
+                poolSizes.push_back({descriptorInfo.Type, descriptorInfo.Count * sOverlappedFrame });
+            }
+
+            VkDescriptorPoolCreateInfo poolCreateInfo{};
+            poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+            poolCreateInfo.maxSets = sOverlappedFrame;
+            poolCreateInfo.pPoolSizes = poolSizes.data();
+            poolCreateInfo.poolSizeCount = poolSizes.size();
+            poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+            
+            VkResult result = vkCreateDescriptorPool(mDevice, &poolCreateInfo, nullptr, &mShaderDescriptors[shader].Pool);
+            if(result != VK_SUCCESS)
+            {
+                ASSERT(false, "DescriptorPool 생성 실패.  result(%u)", result);
+                return false;
+            }
+            std::vector<VkDescriptorSetLayout> descriptorSetLayouts(sOverlappedFrame, shaderLayoutIt->second.SetLayout);
+            VkDescriptorSetAllocateInfo setAllocateInfo{};
+            setAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            setAllocateInfo.descriptorPool = mShaderDescriptors[shader].Pool;
+            setAllocateInfo.descriptorSetCount = descriptorSetLayouts.size();
+            setAllocateInfo.pSetLayouts = descriptorSetLayouts.data();
+            result = vkAllocateDescriptorSets(mDevice, &setAllocateInfo, mShaderDescriptors[shader].Set);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "DescriptorSet 생성 실패.  result(%u)", result);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool VkRenderer::UpdateDescriptorSet(eShader shader)
+    {
+        const uint32_t frameIndex = mFrameCount % sOverlappedFrame;
+
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = mUbPerFrames[frameIndex].Buffer;
+        bufferInfo.offset = 0;
+        bufferInfo.range = 0;
+
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = {};
+        imageInfo.imageView = 0;
+        imageInfo.sampler = {};
+        switch(shader)
+        {
+        case eShader::Outline:
+        {
+            VkDescriptorBufferInfo bufferInfoPerFrame{};
+            bufferInfoPerFrame.buffer = mUbPerFrames[frameIndex].Buffer;
+            bufferInfoPerFrame.offset = frameIndex * sizeof(CbViewProj);
+            bufferInfoPerFrame.range = sizeof(CbViewProj);
+
+            VkDescriptorBufferInfo bufferInfoPerObject{};
+            bufferInfoPerObject.buffer = mUbPerObjects[frameIndex].Buffer;
+            bufferInfoPerObject.offset = frameIndex * sizeof(CbWorld);
+            bufferInfoPerObject.range = sizeof(CbWorld);
+
+            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+            {
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerObject, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 6, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
+            };
+
+            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+
+            break;
+        }
+        case eShader::Skybox:
+        {
+            //VkDescriptorBufferInfo bufferInfo{};
+            //bufferInfo.buffer = mUbPerFrames[frameIndex].Buffer;
+            //bufferInfo.offset = 0;
+            //bufferInfo.range = 0;
+
+            //VkDescriptorImageInfo imageInfo{};
+            //imageInfo.imageLayout = {};
+            //imageInfo.imageView = 0;
+            //imageInfo.sampler = {};
+
+            //VkWriteDescriptorSet writeDescriptorSet{};
+            //writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            //writeDescriptorSet.dstArrayElement = 0; // 배열 업데이트 시작 인덱스;
+            //writeDescriptorSet.descriptorCount = 1; // 업데이트 요소 수;
+            //writeDescriptorSet.dstSet = mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0];
+            //writeDescriptorSet.dstBinding = // 업데이트 할 binding slot;
+            //    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            //writeDescriptorSet.pBufferInfo = &bufferInfo;
+
+            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+            {
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
+            };
+
+            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+            break;
+        }
+        case eShader::Shadow:
+        {
+            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+            {
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+            };
+
+            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+            break;
+        }
+        case eShader::BasicWithShadow:
+        {
+            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+            {
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 3, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 4, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
+
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
+            };
+
+            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+            break;
+        }
+        case eShader::Texture:
+        {
+            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+            {
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
+            };
+
+            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+            break;
+        }
+        case eShader::Color:
+        {
+            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+            {
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
+            };
+
+            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+            break;
+        }
+        case eShader::DebugHUD:
+        {
+            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+            {
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 5, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
+            };
+
+            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+            break;
+        }
+        case eShader::Deferred:
+        {
+            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+            {
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 3, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 4, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 8, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 9, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 10, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 11, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 12, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
+            };
+
+            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+            break;
+        }
+        case eShader::DebugColor:
+        {
+            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+            {
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
+            };
+
+            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+            break;
+        }
+        case eShader::Simple:
+        {
+            VkDescriptorBufferInfo bufferInfoPerFrame{};
+            bufferInfoPerFrame.buffer = mUbPerFrames[frameIndex].Buffer;
+            bufferInfoPerFrame.offset = 0;
+            bufferInfoPerFrame.range = sizeof(CbViewProj);
+
+            VkDescriptorBufferInfo bufferInfoPerObject{};
+            bufferInfoPerObject.buffer = mUbPerObjects[frameIndex].Buffer;
+            bufferInfoPerObject.offset = 0;
+            bufferInfoPerObject.range = sizeof(CbWorld);
+
+            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+            {
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[frameIndex], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerObject, {}},
+                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[frameIndex], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
+            };
+
+            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+            break;
+        }
+        default:
+            ASSERT(false, "올바르지 않은 타입이 전달되었습니다. type(%u)", static_cast<uint8_t>(shader));
+            break;
+        }
+        return true;
+    }
+
+    void VkRenderer::UpdateUniformData(void* const pData, uint32_t sizeInBytes, BufferInfo uniformBuffer)
+    {
+        uploadBuffer(pData, sizeInBytes, 0, uniformBuffer.Memory);
+    }
+
+    bool VkRenderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, HashID VsStageHash, HashID PsStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
+    {
+        // TODO: hash 조합하기
+        const HashID hash = MakePipelineHash(shader, vertexFormat, topology, rasterType, blendState, depthStencilState, renderPass);
+        bool result = true;
+        const auto& pipelineIt = mPipelines.find(hash);
+        if(pipelineIt == mPipelines.end())
+        {
+            VkPipeline newPipeline{};
+            result = createGraphicsPipeline(shader, VsStageHash, PsStageHash, vertexFormat, topology, rasterType, blendState, depthStencilState, renderPass, newPipeline);
+            if(result)
+            {
+                mPipelines.insert({ hash, newPipeline });
+                outPipelineHash = hash;
+            }
+        }
+        else
+        {
+            outPipelineHash = pipelineIt->first;
+        }
+
+        return result;
+    }
+    template<typename  T>
+    constexpr uint64_t GetBitCount(T type)
+    {
+        int32_t bit = 1;
+        uint64_t count = 0;
+        while (bit <= static_cast<uint32_t>(type))
+        {
+            bit <<= 1;
+            ++count;
+        }
+        return count;
+    }
+    HashID VkRenderer::MakePipelineHash(eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
+    {
+        struct PipelineStateBitField
+        {
+            HashID Value;
+            HashID BitWidth;
+        };
+
+        const PipelineStateBitField PipelineBitLayout[] =
+        {
+            {static_cast<HashID>(shader), GetBitCount(eShader::ShaderCount)},
+            {static_cast<HashID>(vertexFormat), GetBitCount(eVertexFormat::FormatCount)},
+            {static_cast<HashID>(topology), GetBitCount(ePrimitiveTopology::TopologyCount)},
+            {static_cast<HashID>(rasterType), GetBitCount(eRasterType::RasterCount)},
+            {static_cast<HashID>(blendState), GetBitCount(eBlendState::StateCount)},
+            {static_cast<HashID>(depthStencilState), GetBitCount(eDepthStencilState::StateCount)},
+            {static_cast<HashID>(renderPass), GetBitCount(eRenderPass::PassCount)},
+        };
+
+
+#ifdef _DEBUG
+        // MEMO: 사용된 Bit들을 전부 합했을 때 자료형을 넘는지 검사
+        uint32_t validBitCount = 0;
+        for (auto& element : PipelineBitLayout)
+        {
+            validBitCount += element.BitWidth;
+        }
+        ASSERT(validBitCount <= 32, "hash가 표현할 수 있는 비트 수를 넘었습니다. 계산된 비트 사용량(%llu)", validBitCount);
+#endif
+
+        HashID bitShiftCursor = 32;
+        HashID pipelineHash = 0;
+        for (auto& element : PipelineBitLayout)
+        {
+            bitShiftCursor -= element.BitWidth;
+            pipelineHash |= element.Value << bitShiftCursor;
+        }
+        return pipelineHash;
+    }
+
+    bool VkRenderer::CreateBuffer(uint32_t requestSizeInBytes, uint32_t usage, uint32_t flag, uint32_t queueFamilyIndex, bool bUseStaging, BufferInfo& outBufferInfo)
+    {
+        VkBufferCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        createInfo.size = requestSizeInBytes;
+        createInfo.pQueueFamilyIndices = &queueFamilyIndex;
+        createInfo.queueFamilyIndexCount = 1;
+        createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.usage = usage;
+
+        vkCreateBuffer(mDevice, &createInfo, nullptr, &outBufferInfo.Buffer);
+
+        VkBufferMemoryRequirementsInfo2 bufferMemoryRequirements{};
+        bufferMemoryRequirements.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2;
+        bufferMemoryRequirements.buffer = outBufferInfo.Buffer;
+
+        VkMemoryRequirements2 memoryRequirements2{};
+        memoryRequirements2.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+        vkGetBufferMemoryRequirements2(mDevice, &bufferMemoryRequirements, &memoryRequirements2);
+
+        uint32_t memoryType = 0;
+        uint32_t propertiesFlags = flag;
+        if(bUseStaging)
+        {
+            propertiesFlags = (flag & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) ? (flag ^ VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) : flag;
+            propertiesFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+            if (mbStagingEnabled == false && (flag & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+            {
+                ASSERT(false, "staging 이 필요하지 않은 GPU일 수 있습니다.");
+            }
+        }
+
+        getMemoryType(memoryRequirements2.memoryRequirements, propertiesFlags, memoryType);
+
+        outBufferInfo.Alignment = memoryRequirements2.memoryRequirements.alignment;
+        outBufferInfo.AllocationSize = memoryRequirements2.memoryRequirements.size;
+
+        allocateMemory(outBufferInfo.AllocationSize, memoryType, outBufferInfo.Memory);
+
+        VkBindBufferMemoryInfo bindBufferMemoryInfo{};
+        bindBufferMemoryInfo.sType = VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO;
+        bindBufferMemoryInfo.buffer = outBufferInfo.Buffer;
+        bindBufferMemoryInfo.memory = outBufferInfo.Memory;
+        bindBufferMemoryInfo.memoryOffset = 0;
+        vkBindBufferMemory2(mDevice, 1, &bindBufferMemoryInfo);
+
+        return true;
+    }
+
+
+    void VkRenderer::AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
+    {
+        if (mVertexBuffer.SubResources.find(hash) == mVertexBuffer.SubResources.end())
+        {
+            const uint32_t vertexSizeInBytes = count * attribSize;
+            mVertexBuffer.Cursor = ALIGNED_SIZE(mVertexBuffer.Cursor, attribSize);
+            const SubDataRange range{ mVertexBuffer.Cursor, vertexSizeInBytes };
+
+            uploadBuffer(pData, vertexSizeInBytes, mVertexBuffer.Cursor, mVertexBuffer.Memory);
+
+            outRange = BufferRange{ static_cast<int32_t>(mVertexBuffer.Cursor / attribSize) , static_cast<int32_t>(count) };
+            mVertexBuffer.Cursor += vertexSizeInBytes;
+            mVertexBuffer.SubResources.insert({ hash, std::move(range) });
+        }
+    }
+
+    void VkRenderer::AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
+    {
+        if (mIndexBuffer.SubResources.find(hash) == mIndexBuffer.SubResources.end())
+        {
+            const uint32_t indexSizeInBytes = count * attribSize;
+            mIndexBuffer.Cursor = ALIGNED_SIZE(mIndexBuffer.Cursor, attribSize);
+            const SubDataRange range{ mIndexBuffer.Cursor, indexSizeInBytes };
+
+            uploadBuffer(pData, indexSizeInBytes, mIndexBuffer.Cursor, mIndexBuffer.Memory);
+            outRange = BufferRange{ static_cast<int32_t>(mIndexBuffer.Cursor / attribSize) , static_cast<int32_t>(count) };
+
+            mIndexBuffer.Cursor += indexSizeInBytes;
+            mIndexBuffer.SubResources.insert({ hash, std::move(range) });
+        }
+    }
+
+    void VkRenderer::copyBufferStaging(VkBuffer srcBuf, VkBuffer dstBuf, uint32_t copySize)
+    {
+        VkCommandPool commandPool;
+
+        VkCommandPoolCreateInfo commandPoolCreateInfo{};
+        commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        commandPoolCreateInfo.queueFamilyIndex = mGraphicsQueueIndex;
+        commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+
+        vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &commandPool);
+
+        VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+        commandBufferAllocateInfo.commandPool = commandPool;
+        commandBufferAllocateInfo.commandBufferCount = 1;
+        commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+        VkCommandBuffer commandBuffer;
+        vkAllocateCommandBuffers(mDevice, &commandBufferAllocateInfo, &commandBuffer);
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo{};
+        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+
+        VkBufferCopy2 bufferCopy2{};
+        bufferCopy2.sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2;
+        bufferCopy2.size = copySize;
+        bufferCopy2.dstOffset = 0;
+        bufferCopy2.srcOffset = 0;
+        VkCopyBufferInfo2 copyBufferInfo2{};
+        copyBufferInfo2.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;
+        copyBufferInfo2.srcBuffer = srcBuf;
+        copyBufferInfo2.dstBuffer = dstBuf;
+        copyBufferInfo2.pRegions = &bufferCopy2;
+        copyBufferInfo2.regionCount = 1;
+
+        vkCmdCopyBuffer2(commandBuffer, &copyBufferInfo2);
+
+        vkEndCommandBuffer(commandBuffer);
+
+        VkCommandBufferSubmitInfo commandBufferSubmitInfo{};
+        commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+        commandBufferSubmitInfo.commandBuffer = commandBuffer;
+        commandBufferSubmitInfo.deviceMask = 1;
+
+        VkSubmitInfo2 submitInfo2{};
+        submitInfo2.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+        submitInfo2.commandBufferInfoCount = 1;
+        submitInfo2.pCommandBufferInfos = &commandBufferSubmitInfo;
+        vkQueueSubmit2(mQueue, 1, &submitInfo2, nullptr);
+
+        vkQueueWaitIdle(mQueue);
+
+        vkDestroyCommandPool(mDevice, commandPool, nullptr);
+    }
+
+    void VkRenderer::copyBufferToImageStaging(VkBuffer srcBuf, VkImage dstImage, VkBufferImageCopy2& region)
+    {
+        VkCommandPool commandPool;
+        createCommandPool(mGraphicsQueueIndex, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, commandPool);
+
+        VkCommandBuffer commandBuffer;
+        createCommandBuffers(commandPool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, commandBuffer);
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo{};
+        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+
+        transitionImageLayoutNew(commandBuffer, dstImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {}, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT);
+        VkCopyBufferToImageInfo2 copyBufferToImageInfo2{};
+        copyBufferToImageInfo2.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;
+        copyBufferToImageInfo2.srcBuffer = srcBuf;
+        copyBufferToImageInfo2.dstImage = dstImage;
+        copyBufferToImageInfo2.pRegions = &region;
+        copyBufferToImageInfo2.regionCount = 1;
+
+        vkCmdCopyBufferToImage2(commandBuffer, &copyBufferToImageInfo2);
+
+        transitionImageLayoutNew(commandBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT);
+
+        vkEndCommandBuffer(commandBuffer);
+
+        VkCommandBufferSubmitInfo commandBufferSubmitInfo{};
+        commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+        commandBufferSubmitInfo.commandBuffer = commandBuffer;
+        commandBufferSubmitInfo.deviceMask = 1;
+
+        VkSubmitInfo2 submitInfo2{};
+        submitInfo2.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+        submitInfo2.commandBufferInfoCount = 1;
+        submitInfo2.pCommandBufferInfos = &commandBufferSubmitInfo;
+        vkQueueSubmit2(mQueue, 1, &submitInfo2, nullptr);
+
+        vkQueueWaitIdle(mQueue);
+
+        vkDestroyCommandPool(mDevice, commandPool, nullptr);
+    }
+
+    void VkRenderer::uploadBuffer(const void* const pData, uint32_t sizeInBytes, uint32_t offset, VkDeviceMemory memory)
+    {
+        VkMemoryMapInfo memoryMapInfo{};
+        memoryMapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_MAP_INFO;
+        memoryMapInfo.memory = memory;
+        memoryMapInfo.size = sizeInBytes;
+        memoryMapInfo.offset = offset;
+        memoryMapInfo.flags = 0;
+
+        void* pBufferCursor = nullptr;
+        vkMapMemory2(mDevice, &memoryMapInfo, &pBufferCursor);
+
+        (void)memcpy(pBufferCursor, pData, sizeInBytes);
+
+        VkMemoryUnmapInfo memoryUnmapInfo{};
+        memoryUnmapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO;
+        memoryUnmapInfo.memory = memory;
+        vkUnmapMemory2(mDevice, &memoryUnmapInfo);
+    }
+
+    void VkRenderer::uploadBufferStaging(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t sizeInBytes, uint32_t srcOffset, uint32_t dstOffset)
+    {
+        VkCommandPool commandPool;
+        createCommandPool(mGraphicsQueueIndex, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, commandPool);
+        VkCommandBuffer commandBuffer;
+        createCommandBuffers(commandPool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, commandBuffer);
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo{};
+        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+
+        VkBufferCopy2 bufferCopy2{};
+        bufferCopy2.sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2;
+        bufferCopy2.dstOffset = dstOffset;
+        bufferCopy2.size = sizeInBytes;
+        bufferCopy2.srcOffset = srcOffset;
+        VkCopyBufferInfo2 copyBufferInfo2{};
+        copyBufferInfo2.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;
+        copyBufferInfo2.srcBuffer = srcBuffer;
+        copyBufferInfo2.dstBuffer = dstBuffer;
+        copyBufferInfo2.pRegions = &bufferCopy2;
+        copyBufferInfo2.regionCount = 1;
+        vkCmdCopyBuffer2(commandBuffer, &copyBufferInfo2);
+
+        vkEndCommandBuffer(commandBuffer);
+
+        VkCommandBufferSubmitInfo commandBufferSubmitInfo{};
+        commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+        commandBufferSubmitInfo.commandBuffer = commandBuffer;
+        commandBufferSubmitInfo.deviceMask = 1;
+
+        VkSubmitInfo2 submitInfo2{};
+        submitInfo2.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+        submitInfo2.commandBufferInfoCount = 1;
+        submitInfo2.pCommandBufferInfos = &commandBufferSubmitInfo;
+        vkQueueSubmit2(mQueue, 1, &submitInfo2, nullptr);
+
+        vkQueueWaitIdle(mQueue);
+
+        vkDestroyCommandPool(mDevice, commandPool, nullptr);
+    }
+
+    bool VkRenderer::allocateMemory(uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory)
+    {
+        VkMemoryAllocateInfo memoryAllocateInfo{};
+        memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memoryAllocateInfo.allocationSize = allocSize;
+        memoryAllocateInfo.memoryTypeIndex = memoryType;
+
+        const VkResult result = vkAllocateMemory(mDevice, &memoryAllocateInfo, nullptr, &outMemory);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "AllocateMemory 실패 resultCode(%d)", result);
+            return false;
+        }
+        return true;
+    }
+
+    bool VkRenderer::CreateTexture(const int8_t* const filePath, HashID& outHash, bool bIsDDS)
+    {
+        ASSERT(filePath != nullptr, "invalid path. (filePath is nullptr) ");
+        ASSERT(*filePath != ' ', "invalid path. (filePath may empty string) ");
+        ASSERT(*filePath != '\0', "invalid path. (filePath may empty(null) string) ");
+
+        const HashID texHash = util::GetDjb2Hash(filePath);
+        const auto& texIt = mTextures.find(texHash);
+        if (texIt == mTextures.end())
+        {
+            wchar_t texFilePath[util::MAX_PATH_LENGTH];
+            const uint32_t filePathLength = strlen(reinterpret_cast<char const*>(filePath));
+            size_t  numConverted = 0;
+            (void)mbstowcs_s(&numConverted, texFilePath, util::MAX_PATH_LENGTH, reinterpret_cast<char const*>(filePath), filePathLength);
+            ASSERT(numConverted == (filePathLength + 1), "conversion result is incorrect. converted(%u) pathLength(%u)", numConverted, filePathLength);
+
+            ScratchImage rawImage;
+            if (FAILED(LoadFromWICFile(texFilePath, WIC_FLAGS_NONE, nullptr, rawImage)))
+            {
+                return false;
+            }
+
+            BufferInfo bufferInfo{};
+            if(CreateBuffer(rawImage.GetImageCount(), VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,mGraphicsQueueIndex, false, bufferInfo) == false)
+            {
+                return false;
+            }
+
+            TextureInfo newTexture{};
+            // MEMO: staging buffer에 이미지 데이터 복사
+            VkMemoryMapInfo memoryMapInfo{};
+            memoryMapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_MAP_INFO;
+            memoryMapInfo.memory = bufferInfo.Memory;
+            memoryMapInfo.size = bufferInfo.AllocationSize;
+            memoryMapInfo.offset = 0;
+
+            void* pCursor = nullptr;
+            vkMapMemory2(mDevice, &memoryMapInfo, &pCursor);
+
+            (void)memcpy(pCursor, static_cast<void*>(rawImage.GetPixels()), rawImage.GetPixelsSize());
+
+            VkMemoryUnmapInfo memoryUnmapInfo{};
+            memoryUnmapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO;
+            memoryUnmapInfo.memory = bufferInfo.Memory;
+
+            vkUnmapMemory2(mDevice, &memoryUnmapInfo);
+            //
+            // MEMO: 이미지 및 메모리 생성
+            createImage(VK_IMAGE_LAYOUT_UNDEFINED, mGraphicsQueueIndex, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { static_cast<uint32_t>(rawImage.GetMetadata().width), static_cast<uint32_t>(rawImage.GetMetadata().height), 1 }, bIsDDS ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_SRGB, true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, newTexture.ImageMemory, newTexture.Image);
+
+            // MEMO: staging buffer에서 이미지 메모리로 복사
+            VkBufferImageCopy2 copyImageInfo2{};
+            copyImageInfo2.sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2;
+            copyImageInfo2.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+            copyImageInfo2.imageOffset = {0, 0, 0};
+            copyImageInfo2.imageExtent = { static_cast<uint32_t>(rawImage.GetMetadata().width), static_cast<uint32_t>(rawImage.GetMetadata().height) };
+            copyImageInfo2.bufferImageHeight = 0;
+            copyImageInfo2.bufferRowLength = 0;
+            copyBufferToImageStaging(bufferInfo.Buffer, newTexture.Image, copyImageInfo2);
+
+
+            VkImageViewCreateInfo imageViewCreateInfo{};
+            imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            imageViewCreateInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+            imageViewCreateInfo.image = newTexture.Image;
+            imageViewCreateInfo.viewType = {};
+            vkCreateImageView(mDevice, &imageViewCreateInfo, nullptr, &newTexture.ImageView);
+
+            outHash = texHash;
+        }
+        else
+        {
+            outHash = texIt->first;
+        }
+        return true;
+    }
+
+    bool VkRenderer::createSamplers()
+    {
+        for(uint32_t samplerType = 0; samplerType < static_cast<uint32_t>(eSamplerType::SamplerCount); ++samplerType)
+        {
+            VkSamplerCreateInfo samplerCreateInfo{};
+            samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+            samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+            samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            samplerCreateInfo.mipLodBias= 0;
+            samplerCreateInfo.anisotropyEnable = VK_FALSE;
+            samplerCreateInfo.maxAnisotropy = 0.0f;
+            samplerCreateInfo.compareEnable = VK_FALSE;
+            samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+            VkSampler sampler;
+            const VkResult result = vkCreateSampler(mDevice, &samplerCreateInfo, nullptr, &sampler);
+            if(result != VK_SUCCESS)
+            {
+                ASSERT(false, "Sampler 생성 실패 sampler(%d), resultCode(%d)", sampler, result);
+                return false;
+            }
+
+            mSamplers.insert({ static_cast<eSamplerType>(samplerType), sampler});
+        }
+        return true;
+    }
+
+    void VkRenderer::createImage(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, VkImageType type, VkFormat format, bool bUseStaging, VkMemoryPropertyFlagBits memoryProperty, VkDeviceMemory& outImageMemory, VkImage& outImage)
+    {
+        VkImageCreateInfo imageCreateInfo{};
+        imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageCreateInfo.extent = imageExtent;
+        imageCreateInfo.format = format;
+        imageCreateInfo.mipLevels = 1;
+        imageCreateInfo.arrayLayers = 1;
+        imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageCreateInfo.imageType = type;
+        imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+        imageCreateInfo.usage = usage;
+        imageCreateInfo.queueFamilyIndexCount = 1;
+        imageCreateInfo.pQueueFamilyIndices = &queueFamilyIndex;
+        imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        imageCreateInfo.initialLayout = layout;
+        vkCreateImage(mDevice, &imageCreateInfo, nullptr, &outImage);
+
+        VkImageMemoryRequirementsInfo2 imageMemoryRequirements{};
+        imageMemoryRequirements.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2;
+        imageMemoryRequirements.image = outImage;
+
+        VkMemoryRequirements2 memoryRequirements2{};
+        vkGetImageMemoryRequirements2(mDevice, &imageMemoryRequirements, &memoryRequirements2);
+
+        VkMemoryAllocateInfo memoryAllocateInfo{};
+        memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memoryAllocateInfo.allocationSize = memoryRequirements2.memoryRequirements.size;
+        getMemoryType(memoryRequirements2.memoryRequirements, memoryProperty, memoryAllocateInfo.memoryTypeIndex);
+        vkAllocateMemory(mDevice, &memoryAllocateInfo, nullptr, &outImageMemory);
+
+        VkBindImageMemoryInfo bindImageMemoryInfo{};
+        bindImageMemoryInfo.sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
+        bindImageMemoryInfo.memory = outImageMemory;
+        bindImageMemoryInfo.memoryOffset = 0;
+        bindImageMemoryInfo.image = outImage;
+        vkBindImageMemory2(mDevice, 1, &bindImageMemoryInfo);
     }
 
     bool VkRenderer::createInstance(const char* const appName)
@@ -413,7 +1507,7 @@ namespace renderer
             score = DeviceTypeScoreTable[deviceProperties2.properties.deviceType];
             score += deviceProperties2.properties.apiVersion > VK_API_VERSION_1_3 ? 1000 : 0;
             score += deviceProperties2.properties.apiVersion > VK_API_VERSION_1_4 ? 1000 : 0;
-
+            
             // MEMO: 다 얻어오기보다, 필수 요구사항을 검사할 대상들만 얻어와 처리하도록 한다
             VkPhysicalDeviceVulkan11Features deviceFeatures11{};
             deviceFeatures11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
@@ -498,6 +1592,8 @@ namespace renderer
             return false;
         }
 
+        // MEMO: 일단은 간단하게 처리
+        mbStagingEnabled = mPhysicalDeviceProperties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
         return true;
     }
 
@@ -759,15 +1855,6 @@ namespace renderer
     bool VkRenderer::createFrame()
     {
         ASSERT(mGraphicsQueueIndex != UINT_MAX, "mGraphicsQueueIndex가 유효하지 않습니다.");
-        VkCommandPoolCreateInfo poolCreateInfo{};
-        poolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolCreateInfo.flags = VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolCreateInfo.queueFamilyIndex = mGraphicsQueueIndex;
-
-        VkCommandBufferAllocateInfo bufferAllocateInfo{};
-        bufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        bufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        bufferAllocateInfo.commandBufferCount = 1;
 
         VkSemaphoreCreateInfo semaphoreCreateInfo{};
         semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -778,22 +1865,19 @@ namespace renderer
 
         for (auto& frame : mFrames)
         {
-            VkResult result = vkCreateCommandPool(mDevice, &poolCreateInfo, nullptr, &frame.Pool);
-            if (result != VK_SUCCESS)
+            if (createCommandPool(mGraphicsQueueIndex, VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, frame.Pool) == false)
             {
-                ASSERT(false, "CommandPool 생성 실패 resultCode(%d)", result);
+                ASSERT(false, "CommandPool 생성 실패");
                 return false;
             }
 
-            bufferAllocateInfo.commandPool = frame.Pool;
-            result = vkAllocateCommandBuffers(mDevice, &bufferAllocateInfo, &frame.Buffer);
-            if (result != VK_SUCCESS)
+            if (createCommandBuffers(frame.Pool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, frame.Buffer) == false)
             {
-                ASSERT(false, "CommandBuffer 생성 실패 resultCode(%d)", result);
+                ASSERT(false, "CommandBuffer 생성 실패");
                 return false;
             }
 
-            result = vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &frame.ImageReadySemaphore);
+            VkResult result = vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &frame.ImageReadySemaphore);
             if (result != VK_SUCCESS)
             {
                 ASSERT(false, "Semaphore(ImageReady) 생성 실패 resultCode(%d)", result);
@@ -825,6 +1909,193 @@ namespace renderer
                 ASSERT(false, "Semaphore(RenderFinished) 생성 실패 resultCode(%d)", result);
                 return false;
             }
+        }
+        return true;
+    }
+
+    bool VkRenderer::createGraphicsPipeline(eShader shader, HashID vsStageHash, HashID psStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass, VkPipeline& outPipeline)
+    {
+        VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
+        dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        VkDynamicState dynamicStates[] = { VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT, VkDynamicState::VK_DYNAMIC_STATE_SCISSOR };
+        dynamicStateCreateInfo.dynamicStateCount = std::size(dynamicStates);
+        dynamicStateCreateInfo.pDynamicStates = dynamicStates;
+
+
+        VkVertexInputBindingDescription inputBindingDescription{};
+        inputBindingDescription.stride = GetVertexStrideSize(vertexFormat);
+        inputBindingDescription.binding = 0;
+        inputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        constexpr VkVertexInputAttributeDescription VertexInputAttribTable[] =
+        {
+            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},   // P
+            {1, 0, VK_FORMAT_R32G32_SFLOAT, 12},        // T
+            {2, 0, VK_FORMAT_R32G32B32_SFLOAT, 20}   // N
+        };
+        constexpr uint8_t VertexInputAttribCountTable[] =
+        {
+            3,
+            2,
+            1
+        };
+
+        VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{};
+        vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertexInputStateCreateInfo.pVertexAttributeDescriptions = VertexInputAttribTable;
+        vertexInputStateCreateInfo.vertexAttributeDescriptionCount = VertexInputAttribCountTable[static_cast<uint8_t>(vertexFormat)];
+        vertexInputStateCreateInfo.pVertexBindingDescriptions = &inputBindingDescription;
+        vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+
+        const auto& vsStageInfoIt = mShaderInfos.find(vsStageHash);
+        const auto& psStageInfoIt = mShaderInfos.find(psStageHash);
+        const VkPipelineShaderStageCreateInfo ShaderStageInfos[] =
+        {
+            vsStageInfoIt->second.PipelineShaderStage,
+            psStageInfoIt->second.PipelineShaderStage
+        };
+
+        constexpr VkPrimitiveTopology TopologyMap[] =
+        {
+            VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+            VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST
+        };
+        static_assert(std::size(TopologyMap) == static_cast<uint8_t>(ePrimitiveTopology::TopologyCount), "TopologyMap와 ePrimitiveTopology의 요소 수가 일치해야 합니다.");
+        VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo{};
+        inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        inputAssemblyStateCreateInfo.topology = TopologyMap[static_cast<uint8_t>(topology)];
+
+        VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
+        viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewportStateCreateInfo.viewportCount = 1;
+        const VkViewport viewport = VkViewport{ 0.0f, 0.0f, static_cast<float>(mSwapChainExtent.width), static_cast<float>(mSwapChainExtent.height), 0.0f, 1.0f };
+        viewportStateCreateInfo.pViewports = &viewport;
+        const VkRect2D scissorRange{ {0,0}, mSwapChainExtent };
+        viewportStateCreateInfo.scissorCount = 1;
+        viewportStateCreateInfo.pScissors = &scissorRange;
+
+        constexpr VkCullModeFlagBits RasterTypeTable[] =
+        {
+             VkCullModeFlagBits::VK_CULL_MODE_NONE,
+             VkCullModeFlagBits::VK_CULL_MODE_FRONT_BIT,
+             VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT,
+             VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT,
+        };
+        static_assert(std::size(RasterTypeTable) == static_cast<uint8_t>(eRasterType::RasterCount), "RasterTypeTable와 eRasterType의 요소 수가 일치해야 합니다.");
+        VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{};
+        rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterizationStateCreateInfo.cullMode = RasterTypeTable[static_cast<uint8_t>(rasterType)];
+        rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+        rasterizationStateCreateInfo.lineWidth = 1.0f;
+        rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+
+        constexpr VkColorComponentFlags COLOR_COMPONENT_ALL = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        constexpr VkPipelineColorBlendAttachmentState BlendStateTable[] =
+        {
+            {
+	            VK_FALSE,
+            	VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD,
+            	VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD,
+            	COLOR_COMPONENT_ALL
+            },
+        {
+        	VK_TRUE,
+        	VK_BLEND_FACTOR_SRC_ALPHA,VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        	VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE,
+        	VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD,
+        	COLOR_COMPONENT_ALL
+        },
+        };
+        static_assert(std::size(BlendStateTable) == static_cast<uint8_t>(eBlendState::StateCount), "BlendStateTable와 eBlendState의 요소 수가 일치해야 합니다.");
+
+        VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{};
+        colorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        colorBlendStateCreateInfo.pAttachments = &BlendStateTable[static_cast<uint8_t>(blendState)];
+        colorBlendStateCreateInfo.attachmentCount = 1;
+
+
+        constexpr VkPipelineDepthStencilStateCreateInfo DepthStencilStateTable[] =
+        {
+            {{}, nullptr,{}, VK_FALSE, VK_FALSE, {}, VK_FALSE, VK_FALSE, {}, {}, {}, {}},
+            {{}, nullptr,{}, VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, VK_FALSE, VK_FALSE, {}, {}, {}, {}},
+        };
+        static_assert(std::size(DepthStencilStateTable) == static_cast<uint8_t>(eDepthStencilState::StateCount), "DepthStencilStateTable와 eDepthStencilState의 요소 수가 일치해야 합니다.");
+
+        VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
+        depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencilStateCreateInfo.stencilTestEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].stencilTestEnable;
+        depthStencilStateCreateInfo.depthTestEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthTestEnable;
+        depthStencilStateCreateInfo.depthWriteEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthWriteEnable;
+        depthStencilStateCreateInfo.depthCompareOp = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthCompareOp;
+        depthStencilStateCreateInfo.depthBoundsTestEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthBoundsTestEnable;
+
+
+        VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
+        multisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisampleStateCreateInfo.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+        multisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+
+        const auto& pipelineLayoutIt = mShaderLayouts.find(shader);
+
+        VkPipelineRenderingCreateInfo renderingCreateInfo{};
+        renderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+        renderingCreateInfo.colorAttachmentCount = 1;
+        renderingCreateInfo.pColorAttachmentFormats = &mSurfaceFormat.format;
+
+        VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
+        pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineCreateInfo.pNext = &renderingCreateInfo;
+        pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
+        pipelineCreateInfo.pDynamicState= &dynamicStateCreateInfo;
+        pipelineCreateInfo.pStages = ShaderStageInfos;
+        pipelineCreateInfo.stageCount = std::size(ShaderStageInfos);
+        pipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
+        pipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
+        pipelineCreateInfo.pRasterizationState = &rasterizationStateCreateInfo;
+        pipelineCreateInfo.pColorBlendState = &colorBlendStateCreateInfo;
+        pipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+        pipelineCreateInfo.pMultisampleState = &multisampleStateCreateInfo;
+        pipelineCreateInfo.layout = pipelineLayoutIt->second.PipelineLayout;
+
+        const VkResult result = vkCreateGraphicsPipelines(mDevice, nullptr, 1, &pipelineCreateInfo, nullptr, &outPipeline);
+        if(result != VK_SUCCESS)
+        {
+            ASSERT(false, "pipeline 생성 실패 resultCode(%d)", result);
+            return false;
+        }
+	    return true;
+    }
+
+    bool VkRenderer::createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const
+    {
+        VkCommandPoolCreateInfo commandPoolCreateInfo{};
+        commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndex;
+        commandPoolCreateInfo.flags = flag;
+
+        const VkResult result = vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &outCommandPool);
+        if(result != VK_SUCCESS)
+        {
+            ASSERT(false, "CommandPool 생성 실패 resultCode(%d)", result);
+            return false;
+        }
+        return true;
+    }
+
+    bool VkRenderer::createCommandBuffers(VkCommandPool commandPool, uint32_t bufferCount, VkCommandBufferLevel level, VkCommandBuffer& outBuffers) const
+    {
+        VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+        commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        commandBufferAllocateInfo.commandPool = commandPool;
+        commandBufferAllocateInfo.commandBufferCount = bufferCount;
+        commandBufferAllocateInfo.level = level;
+
+        const VkResult result = vkAllocateCommandBuffers(mDevice, &commandBufferAllocateInfo, &outBuffers);
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "CommandBuffer 생성 실패 resultCode(%d)", result);
+            return false;
         }
         return true;
     }
@@ -875,10 +2146,59 @@ namespace renderer
         vkCmdPipelineBarrier2(commandBuffer, &dependencyInfo);
     }
 
+    void VkRenderer::transitionImageLayoutNew(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask)
+    {
+        VkImageMemoryBarrier2 imageBarrier{};
+        imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+        imageBarrier.image = image;
+
+        imageBarrier.srcAccessMask = srcAccessMask;
+        imageBarrier.dstAccessMask = dstAccessMask;
+
+        imageBarrier.srcStageMask = srcStageMask;
+        imageBarrier.dstStageMask = dstStageMask;
+
+        imageBarrier.oldLayout = oldLayout;
+        imageBarrier.newLayout = newLayout;
+
+        VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageBarrier.subresourceRange = VkImageSubresourceRange{ aspectMask, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
+
+
+        VkDependencyInfo dependencyInfo{};
+        dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+        dependencyInfo.dependencyFlags = {};
+        dependencyInfo.imageMemoryBarrierCount = 1;
+        dependencyInfo.pImageMemoryBarriers = &imageBarrier;
+        vkCmdPipelineBarrier2(commandBuffer, &dependencyInfo);
+    }
+
     VkRenderer::PerFrame VkRenderer::getCurrentFrameResource() const
     {
         const uint32_t curFrameIndex = mFrameCount % sOverlappedFrame;
         return mFrames[curFrameIndex];
+    }
+
+    uint32_t VkRenderer::getCurrentFrameIndex() const
+    {
+        return mFrameCount % sOverlappedFrame;
+    }
+
+    void VkRenderer::getMemoryType(VkMemoryRequirements memoryRequirements, uint32_t flag, uint32_t& outMemoryType)
+    {
+        VkPhysicalDeviceMemoryProperties2 physicalDeviceMemoryProperties2{};
+        physicalDeviceMemoryProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2;
+
+        vkGetPhysicalDeviceMemoryProperties2(mPhysicalDevice, &physicalDeviceMemoryProperties2);
+
+        for (uint32_t bit = 0; bit < physicalDeviceMemoryProperties2.memoryProperties.memoryTypeCount; ++bit)
+        {
+            if (memoryRequirements.memoryTypeBits & (1 << bit) &&
+                physicalDeviceMemoryProperties2.memoryProperties.memoryTypes[bit].propertyFlags == flag)
+            {
+                outMemoryType = bit;
+            }
+        }
     }
 
     Renderer::Renderer()

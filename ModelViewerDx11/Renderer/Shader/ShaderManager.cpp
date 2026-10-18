@@ -14,6 +14,11 @@ namespace renderer
         , mInputLayoutList{}
     {}
 
+    ShaderManager::ShaderManager()
+    {
+	    
+    }
+
     ShaderManager::~ShaderManager()
     {
         for (uint32_t i = 0; i < static_cast<uint32_t>(eCbType::ConstantBufferCount); ++i)
@@ -37,6 +42,101 @@ namespace renderer
         }
         mDevice = nullptr;
         mDeviceContext = nullptr;
+    }
+
+    bool ShaderManager::SetupShadersVk(VkRenderer& renderer)
+    {
+        struct VertexShaderSourceInfo
+        {
+            eVertexShader Type;
+            const char* SourcePath;
+        };
+
+        constexpr VertexShaderSourceInfo VertexShaderSourceList[] =
+        {
+            {eVertexShader::VsOutline, "Renderer/Shader/Precompiled/VsOutline.spv"},
+            {eVertexShader::VsBasicWithShadow, "Renderer/Shader/Precompiled/VsBasicWithShadow.spv"},
+            {eVertexShader::VsSimple, "Renderer/Shader/Precompiled/VsSimple.spv"},
+            {eVertexShader::VsSkybox, "Renderer/Shader/Precompiled/VsSkybox.spv"},
+            {eVertexShader::VsTexture, "Renderer/Shader/Precompiled/VsTexture.spv"},
+            {eVertexShader::VsScreen, "Renderer/Shader/Precompiled/VsScreen.spv"},
+            {eVertexShader::VsShadow, "Renderer/Shader/Precompiled/VsShadow.spv"},
+            {eVertexShader::VsDeferred, "Renderer/Shader/Precompiled/VsDeferred.spv"},
+            {eVertexShader::VsDebugColor, "Renderer/Shader/Precompiled/VsDebugColor.spv"},
+        };
+        static_assert(std::size(VertexShaderSourceList) == static_cast<uint8_t>(eVertexShader::VertexShaderCount), "열거형값과 List의 요소가 서로 일치해야 합니다.");
+
+
+        struct PixelShaderSourceInfo
+        {
+            ePixelShader Type;
+            const char* SourcePath;
+        };
+
+        constexpr PixelShaderSourceInfo PixelShaderSourceList[] =
+        {
+            {ePixelShader::PsOutline, "Renderer/Shader/Precompiled/PsOutline.spv"},
+            {ePixelShader::PsBasicWithShadow, "Renderer/Shader/Precompiled/PsBasicWithShadow.spv"},
+            {ePixelShader::PsShadow, "Renderer/Shader/Precompiled/PsShadow.spv"},
+            {ePixelShader::PsTexture, "Renderer/Shader/Precompiled/PsTexture.spv"},
+            {ePixelShader::PsSkybox, "Renderer/Shader/Precompiled/PsSkybox.spv"},
+            {ePixelShader::PsColor, "Renderer/Shader/Precompiled/PsColor.spv"},
+            {ePixelShader::PsDeferred, "Renderer/Shader/Precompiled/PsDeferred.spv"},
+            {ePixelShader::PsTextureMRT, "Renderer/Shader/Precompiled/PsTextureMRT.spv"},
+            {ePixelShader::PsSimple, "Renderer/Shader/Precompiled/PsSimple.spv"},
+        };
+        static_assert(std::size(PixelShaderSourceList) == static_cast<uint8_t>(ePixelShader::PixelShaderCount), "열거형값과 List의 요소가 서로 일치해야 합니다.");
+
+        HashID vsHashes[static_cast<uint8_t>(eVertexShader::VertexShaderCount)];
+
+        for (const VertexShaderSourceInfo shaderInfo : VertexShaderSourceList)
+        {
+            if(renderer.CreateShaderStage(shaderInfo.SourcePath, false, vsHashes[static_cast<uint8_t>(shaderInfo.Type)]) == false)
+            {
+                return false;
+            }
+        }
+
+        HashID psHashes[static_cast<uint8_t>(ePixelShader::PixelShaderCount)];
+        for (const PixelShaderSourceInfo shaderInfo : PixelShaderSourceList)
+        {
+            if(renderer.CreateShaderStage(shaderInfo.SourcePath, true, psHashes[static_cast<uint8_t>(shaderInfo.Type)]) == false)
+            {
+                return false;
+            }
+        }
+
+        // construct shader mapping table
+        const ShaderStageHash ShaderMapTable[] =
+        {
+            {eShader::Outline, vsHashes[static_cast<uint8_t>(eVertexShader::VsOutline)], psHashes[static_cast<uint8_t>(ePixelShader::PsOutline)]},
+            {eShader::Skybox, vsHashes[static_cast<uint8_t>(eVertexShader::VsSkybox)], psHashes[static_cast<uint8_t>(ePixelShader::PsSkybox)]},
+            { eShader::Shadow, vsHashes[static_cast<uint8_t>(eVertexShader::VsShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsShadow)]},
+            {eShader::BasicWithShadow,  vsHashes[static_cast<uint8_t>(eVertexShader::VsBasicWithShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsBasicWithShadow)]},
+            {eShader::Texture,  vsHashes[static_cast<uint8_t>(eVertexShader::VsTexture)], psHashes[static_cast<uint8_t>(ePixelShader::PsTextureMRT)]},
+            {eShader::Color,  vsHashes[static_cast<uint8_t>(eVertexShader::VsSimple)], psHashes[static_cast<uint8_t>(ePixelShader::PsColor)]},
+            {eShader::DebugHUD,  vsHashes[static_cast<uint8_t>(eVertexShader::VsScreen)], psHashes[static_cast<uint8_t>(ePixelShader::PsTexture)]},
+            {eShader::Deferred,  vsHashes[static_cast<uint8_t>(eVertexShader::VsDeferred)], psHashes[static_cast<uint8_t>(ePixelShader::PsDeferred)]},
+            {eShader::DebugColor,  vsHashes[static_cast<uint8_t>(eVertexShader::VsDebugColor)], psHashes[static_cast<uint8_t>(ePixelShader::PsColor)]},
+            {eShader::Simple,  vsHashes[static_cast<uint8_t>(eVertexShader::VsSimple)], psHashes[static_cast<uint8_t>(ePixelShader::PsSimple)]},
+        };
+        static_assert(std::size(ShaderMapTable) == static_cast<uint8_t>(eShader::ShaderCount), "열거형값과 ShaderMapTable의 요소가 서로 일치해야 합니다.");
+        static_assert(sizeof(mShaderHashes) == sizeof(ShaderMapTable), "mShaderHashes and ShaderMapTable MUST be same size.");
+        memcpy(mShaderHashes, ShaderMapTable, sizeof(mShaderHashes));
+
+        for(const auto& shader : ShaderMapTable)
+        {
+            renderer.CreateShaderLayout(shader.Type);
+        }
+        renderer.CreateDescriptorSet();
+
+        return true;
+    }
+
+    void ShaderManager::GetStageInfoByType(eShader shader, HashID& outVsHash, HashID& outPsHash)
+    {
+        outVsHash = mShaderHashes[static_cast<uint8_t>(shader)].VertexShaderHash;
+        outPsHash = mShaderHashes[static_cast<uint8_t>(shader)].PixelShaderHash;
     }
 
     bool ShaderManager::SetupShaders()
@@ -144,6 +244,7 @@ namespace renderer
             {eShader::DebugHUD,  eVertexShader::VsScreen, ePixelShader::PsTexture},
             {eShader::Deferred,  eVertexShader::VsDeferred, ePixelShader::PsDeferred},
             {eShader::DebugHUD,  eVertexShader::VsDebugColor, ePixelShader::PsColor},
+            {eShader::Simple,  eVertexShader::VsSimple, ePixelShader::PsSimple},
         };
 
         static_assert(sizeof(mShaderMapTable) == sizeof(ShaderMapTable), "mShaderMapTable and ShaderMapTable MUST be same size.");
@@ -282,6 +383,7 @@ namespace renderer
             { eCbType::CbMaterialFactors,   true,   0 }, // Color
             { eCbType::ConstantBufferCount, false, -1 }, // DebugHUD
             { eCbType::ConstantBufferCount, false, -1 }, // Deferred
+            { eCbType::CbMaterialFactors, true, 0 },     // DebugColor
             { eCbType::CbMaterialFactors, true, 0 },     // DebugColor
         };
         static_assert(sizeof(MaterialCbTableEachShader) / sizeof(MaterialCbBinding) == static_cast<uint8_t>(eShader::ShaderCount), "셰이더 수와 Table 수가 맞지 않음.");

@@ -5,6 +5,7 @@
 #include "Core/Input.h"
 #include "Core/Timer.h"
 #include "Renderer/Renderer.h"
+#include "Renderer/Importer/ImportedModelData.h"
 #include "Renderer/Importer/ModelImporter.h"
 #include "Renderer/Primitive/MeshGenerator.h"
 #include "Renderer/Resources/BufferManager.h"
@@ -277,11 +278,13 @@ void Application::RunWithVulkan()
 
         lastFrameTime = startTime;
 
-        processInputVulkan(deltaTime);
-        updateSceneVulkan();
 
         mVkRenderer->WaitForLastFrame();
         mVkRenderer->BeginRender();
+
+        processInputVulkan(deltaTime);
+        updateSceneVulkan();
+
 
         renderSceneVulkan();
 
@@ -448,11 +451,68 @@ bool Application::initializeSceneVulkan()
         mWindowWidth,
         mWindowHeight);
 
+    mCharacter = new renderer::Model(mCamera, mBufferManager);
+
+    HashID modelHash = 0;
+    renderer::ImportedModelContainer modelContainer;
+    const int8_t* const modelFilePath = reinterpret_cast<int8_t*>("/AssetData/models/unagi.fbx");
+    mImporter->LoadFbxModel(modelFilePath, modelHash, modelContainer);
+
+    renderer::Mesh newMesh = {};
+    newMesh.SubMeshes.reserve(modelContainer.SubMeshes.size());
+    newMesh.VertexFormat = renderer::eVertexFormat::PTN;
+    const int16_t strideVertex = GetVertexStrideSize(newMesh.VertexFormat);
+    const int16_t strideIndex = sizeof(uint32_t);
+    const int16_t filePathLength = static_cast<int16_t>(strlen(reinterpret_cast<char const*>(modelFilePath)));
+    ASSERT(filePathLength + 1 <= util::MAX_NAME_LENGTH, "str이 버퍼 사이즈보다 큼. 입력 문자열을 검점하거나, util의 Length 상수 조정 필요. str(%d)", filePathLength + 1);
+    (void)memcpy(newMesh.MeshName, modelFilePath, filePathLength + 1);
+    newMesh.MeshHash = modelHash;
+
+    int32_t totalVertexCount = 0;
+    int32_t totalIndexCount = 0;
+    for (auto& subMesh : modelContainer.SubMeshes)
+    {
+        renderer::SubMesh newSubMesh = {};
+
+        newSubMesh.SubMeshHash = util::GetDjb2Hash(subMesh.MeshName, modelHash);
+        mVkRenderer->AddVertexData(subMesh.VertexBuffer.get(), sizeof(renderer::VertexPTN), subMesh.VertexCount, newSubMesh.SubMeshHash, newSubMesh.VertexRange);
+        mVkRenderer->AddIndexData(subMesh.IndexBuffer.get(), sizeof(uint32_t), subMesh.IndexCount, newSubMesh.SubMeshHash, newSubMesh.IndexRange);
+
+        totalVertexCount += newSubMesh.VertexRange.Count;
+        totalIndexCount += newSubMesh.IndexRange.Count;
+        (void)memcpy(newSubMesh.SubMeshName, subMesh.MeshName, util::MAX_NAME_LENGTH);
+
+        newSubMesh.MinBound = std::move(subMesh.MinBound);
+        newSubMesh.MaxBound = std::move(subMesh.MaxBound);
+
+        newSubMesh.Material.Factors = std::move(subMesh.MaterialParam);
+        newSubMesh.Material.Factors.IsLitOn = static_cast<float>(true);
+
+        newMesh.SubMeshes.push_back(std::move(newSubMesh));
+    }
+
+    newMesh.VertexRange.StartIndex = newMesh.SubMeshes.front().VertexRange.StartIndex;
+    newMesh.VertexRange.Count = totalVertexCount;
+
+    newMesh.IndexRange.StartIndex = newMesh.SubMeshes.front().IndexRange.StartIndex;
+    newMesh.IndexRange.Count = totalIndexCount;
+
+    mCharacter->SetMesh(newMesh);
+
+    HashID simplePipelineHash;
+    HashID vsStageHash;
+    HashID psStageHash;
+    mShaderManager->GetStageInfoByType(renderer::eShader::Simple, vsStageHash, psStageHash);
+    mVkRenderer->TryCreateGraphicsPipeline(simplePipelineHash, renderer::eShader::Simple, vsStageHash, psStageHash, renderer::eVertexFormat::PTN, renderer::ePrimitiveTopology::Triangles, renderer::eRasterType::Basic, renderer::Opaque, renderer::eDepthStencilState::DepthOffStencilOff, renderer::eRenderPass::Main);
+    mVkRenderer->SetSimplePipeline(simplePipelineHash);
     return true;
 }
 
 bool Application::initializeManagersVulkan()
 {
+    mShaderManager = new renderer::ShaderManager();
+    mShaderManager->SetupShadersVk(*mVkRenderer);
+    mVkRenderer->PrepareObjects();
     return true;
 }
 
@@ -899,10 +959,25 @@ void Application::processInputVulkan(double deltaTime)
 
 void Application::updateSceneVulkan()
 {
+    // MEMO: 이후 작업들이 카메라 정보에 의존하므로 카메라를 먼저 업데이트
+    mCamera->Update();
 
+    // MEMO: Renderer가 예약한 CB들 업로드
+    renderer::CbViewProj cbViewProj;
+    cbViewProj.Matrix = XMMatrixTranspose(mCamera->GetViewProjectionMatrix());
+
+    mCharacter->Update();
+    renderer::CbWorld cbWorld{ mCharacter->GetMatrix() };
+    std::vector<std::pair<renderer::eCbType, void*>> uniforms =
+    {
+        {renderer::eCbType::CbViewProj, static_cast<void*>(&cbViewProj)},
+        {renderer::eCbType::CbWorld, static_cast<void*>(&cbWorld)},
+    };
+    mVkRenderer->UpdateScene(uniforms);
 }
 
 void Application::renderSceneVulkan()
 {
-
+    mVkRenderer->RenderScene();
+    mCharacter->DrawVk(*mVkRenderer);
 }

@@ -18,4 +18,5 @@ namespace util
         __debugbreak();                                                                 \
     }                                                                                   \
 
+    #define ALIGNED_SIZE(value, alignment) ((((value) + (alignment) - 1) / (alignment)) * (alignment))
 }

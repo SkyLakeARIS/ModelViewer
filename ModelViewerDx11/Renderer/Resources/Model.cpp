@@ -1,5 +1,6 @@
 #include "Model.h"
 #include "BufferManager.h"
+#include "../Renderer.h"
 #include "../../Util/Macro.h"
 #include "../Resources/RenderPacket.h"
 
@@ -122,6 +123,14 @@ namespace renderer
         }
     }
 
+    void Model::DrawVk(VkRenderer& renderer)
+    {
+        for (const auto& subMesh : mMesh.SubMeshes)
+        {
+            renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);
+        }
+    }
+
     void Model::Update()
     {
         // MEMO: 전치 안 해도 되지만, 나중에 필요해질 테니 까먹지 않도록 미리 구성해둠.
@@ -153,5 +162,10 @@ namespace renderer
         XMFLOAT3 centerPosition;
         XMStoreFloat3(&centerPosition, mid);
         return centerPosition;
+    }
+
+    XMMATRIX Model::GetMatrix() const
+    {
+        return mMatWorld;
     }
 }

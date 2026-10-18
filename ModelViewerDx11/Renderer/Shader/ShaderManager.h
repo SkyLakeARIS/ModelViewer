@@ -5,7 +5,8 @@
 
 namespace renderer
 {
-    struct SemiMaterial;
+	class VkRenderer;
+	struct SemiMaterial;
     class Renderer;
 
     class ShaderManager
@@ -36,6 +37,7 @@ namespace renderer
             PsColor,
             PsDeferred,
             PsTextureMRT,
+            PsSimple,
             PixelShaderCount
         };
 
@@ -60,11 +62,20 @@ namespace renderer
             D3D11_USAGE Usage;
         };
 
+        struct ShaderStageHash
+        {
+            eShader Type;
+            HashID VertexShaderHash;
+            HashID PixelShaderHash;
+        };
+
     public:
 
         ShaderManager(ID3D11Device& device, ID3D11DeviceContext& deviceContext);
+        ShaderManager();
         ~ShaderManager();
-
+        bool SetupShadersVk(VkRenderer& renderer);
+        void GetStageInfoByType(eShader shader, HashID& outVsHash, HashID& outPsHash);
         bool SetupShaders();
         bool CreatePresetConstantBuffers();
 
@@ -105,6 +116,9 @@ namespace renderer
         ID3D11VertexShader* mVertexShadersList[static_cast<uint32_t>(eVertexShader::VertexShaderCount)];
         ID3D11PixelShader* mPixelShaderList[static_cast<uint32_t>(ePixelShader::PixelShaderCount)];
         ID3D11InputLayout* mInputLayoutList[static_cast<uint32_t>(eVertexFormat::FormatCount)];
+
+        //
+        ShaderStageHash mShaderHashes[static_cast<uint8_t>(eShader::ShaderCount)];
     };
 }
 

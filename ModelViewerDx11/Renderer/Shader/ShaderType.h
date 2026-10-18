@@ -28,6 +28,7 @@ namespace renderer
         DebugHUD,
         Deferred,
         DebugColor,
+        Simple,
         ShaderCount
     };
 

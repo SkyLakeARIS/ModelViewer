@@ -1,6 +1,11 @@
 #pragma once
 #include "../Resources/Mesh.h"
 
+namespace renderer
+{
+    class VkRenderer;
+}
+
 namespace scene
 {
     class Camera;
@@ -19,7 +24,7 @@ namespace renderer
         ~Model();
 
         void SubmitCommand(std::vector<renderer::RenderPacket>& commandList);
-
+        void DrawVk(VkRenderer& renderer);
         void Update();
 
         void SetMesh(const Mesh& mesh);
@@ -27,7 +32,7 @@ namespace renderer
 
         int32_t  GetSubMeshCount() const;
         XMFLOAT3 GetCenterPoint(int32_t subMeshIndex) const;
-
+        XMMATRIX GetMatrix() const;
     private:
         BufferManager* mBufferManager;
 
