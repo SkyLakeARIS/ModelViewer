@@ -3,6 +3,7 @@
 
 namespace renderer
 {
+    class Buffer;
     class ShaderManager;
     struct RenderPacket;
 }
@@ -115,7 +116,7 @@ namespace renderer
         bool TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, HashID VsStageHash, HashID PsStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
         HashID MakePipelineHash(eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
         // Buffer
-        bool CreateBuffer(uint32_t requestSizeInBytes, uint32_t usage, uint32_t flag, uint32_t queueFamilyIndex, bool bUseStaging, BufferInfo& outBufferInfo);
+        //bool CreateBuffer(uint32_t requestSizeInBytes, uint32_t usage, uint32_t flag, uint32_t queueFamilyIndex, bool bUseStaging, BufferInfo& outBufferInfo); // 완
         void AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
         void AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
         // Buffer - common
@@ -179,8 +180,8 @@ namespace renderer
         std::unordered_map<HashID, ShaderStage> mShaderInfos;
         std::unordered_map<eShader, ShaderLayout> mShaderLayouts;
         // buffer
-        BufferInfo mVertexBuffer;
-        BufferInfo mIndexBuffer;
+        Buffer* mVertexBuffer;
+        Buffer* mIndexBuffer;
         BufferInfo mUbPerFrames[sOverlappedFrame];
         BufferInfo mUbPerObjects[sOverlappedFrame];
         // MEMO: 현재는 싱글스레드이므로 1:N 으로 set을 생성(cmdPool처럼해도 되고 이렇게 해도 됨)

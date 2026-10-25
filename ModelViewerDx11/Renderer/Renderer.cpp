@@ -6,6 +6,7 @@
 #include "VkHelper.h"
 #include "../Util/Macro.h"
 #include "../Util/Util.h"
+#include "Resources/Buffer.h"
 #include "Resources/BufferManager.h"
 #include "Resources/TextureManager.h"
 #include "Shader/ShaderManager.h"
@@ -167,14 +168,11 @@ namespace renderer
             vkFreeMemory(mDevice, uniformBuffer.Memory, nullptr);
             vkDestroyBuffer(mDevice, uniformBuffer.Buffer, nullptr);
         }
-        vkFreeMemory(mDevice, mVertexBuffer.Memory, nullptr);
-        vkDestroyBuffer(mDevice, mVertexBuffer.Buffer, nullptr);
-        mVertexBuffer.SubResources.clear();
+        delete mVertexBuffer;
+        delete mIndexBuffer;
+
         vkDestroyCommandPool(mDevice, mCommandPoolTransfer, nullptr);
 
-        vkFreeMemory(mDevice, mIndexBuffer.Memory, nullptr);
-        vkDestroyBuffer(mDevice, mIndexBuffer.Buffer, nullptr);
-        mIndexBuffer.SubResources.clear();
 
         for(const auto& frame : mFrames)
         {
@@ -276,8 +274,12 @@ namespace renderer
 
     void VkRenderer::PrepareObjects()
     {
-        CreateBuffer(771336 * 2, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mVertexBuffer);
-        CreateBuffer(189792 * 2, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mIndexBuffer);
+        mVertexBuffer = new Buffer(mDevice);
+        mVertexBuffer->Create(771336 * 2, Buffer::eBufferType::Vertex, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex);
+        mIndexBuffer = new Buffer(mDevice);
+        mIndexBuffer->Create(189792 * 2, Buffer::eBufferType::Index, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex);
+        //CreateBuffer(771336 * 2, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mVertexBuffer);
+        //CreateBuffer(189792 * 2, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mIndexBuffer);
         for (auto& mUniformBuffer : mUbPerFrames)
         {
             CreateBuffer(1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mUniformBuffer);
@@ -330,10 +332,11 @@ namespace renderer
         vkCmdBindPipeline(frame.Buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mSimplePipeline);
 
         const VkDeviceSize offset = 0;
-        vkCmdBindVertexBuffers(frame.Buffer, 0, 1, &mVertexBuffer.Buffer, &offset);
+        const VkBuffer vertexBuffer = mVertexBuffer->GetBuffer();
+        vkCmdBindVertexBuffers(frame.Buffer, 0, 1, &vertexBuffer, &offset);
 
         const VkIndexType indexType = VK_INDEX_TYPE_UINT32;
-        vkCmdBindIndexBuffer(frame.Buffer, mIndexBuffer.Buffer, 0, indexType);
+        vkCmdBindIndexBuffer(frame.Buffer, mIndexBuffer->GetBuffer(), 0, indexType);
 
         const auto& shaderLayoutIt = mShaderLayouts.find(eShader::Simple);
 
@@ -479,6 +482,16 @@ namespace renderer
     {
         const auto& pipelineIt = mPipelines.find(hash);
         mSimplePipeline = pipelineIt->second;
+    }
+
+    void VkRenderer::AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
+    {
+        mVertexBuffer->AddData(pData, count, attribSize, hash, outRange);
+    }
+
+    void VkRenderer::AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
+    {
+        mIndexBuffer->AddData(pData, count, attribSize, hash, outRange);
     }
 
     bool VkRenderer::CreateShaderStage(const char* const path, bool bMakeAsPixelShader, HashID& outShaderStageHash)
@@ -1006,88 +1019,88 @@ namespace renderer
         return pipelineHash;
     }
 
-    bool VkRenderer::CreateBuffer(uint32_t requestSizeInBytes, uint32_t usage, uint32_t flag, uint32_t queueFamilyIndex, bool bUseStaging, BufferInfo& outBufferInfo)
-    {
-        VkBufferCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        createInfo.size = requestSizeInBytes;
-        createInfo.pQueueFamilyIndices = &queueFamilyIndex;
-        createInfo.queueFamilyIndexCount = 1;
-        createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.usage = usage;
+    //bool VkRenderer::CreateBuffer(uint32_t requestSizeInBytes, uint32_t usage, uint32_t flag, uint32_t queueFamilyIndex, bool bUseStaging, BufferInfo& outBufferInfo)
+    //{
+    //    VkBufferCreateInfo createInfo{};
+    //    createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    //    createInfo.size = requestSizeInBytes;
+    //    createInfo.pQueueFamilyIndices = &queueFamilyIndex;
+    //    createInfo.queueFamilyIndexCount = 1;
+    //    createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    //    createInfo.usage = usage;
 
-        vkCreateBuffer(mDevice, &createInfo, nullptr, &outBufferInfo.Buffer);
+    //    vkCreateBuffer(mDevice, &createInfo, nullptr, &outBufferInfo.Buffer);
 
-        VkBufferMemoryRequirementsInfo2 bufferMemoryRequirements{};
-        bufferMemoryRequirements.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2;
-        bufferMemoryRequirements.buffer = outBufferInfo.Buffer;
+    //    VkBufferMemoryRequirementsInfo2 bufferMemoryRequirements{};
+    //    bufferMemoryRequirements.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2;
+    //    bufferMemoryRequirements.buffer = outBufferInfo.Buffer;
 
-        VkMemoryRequirements2 memoryRequirements2{};
-        memoryRequirements2.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
-        vkGetBufferMemoryRequirements2(mDevice, &bufferMemoryRequirements, &memoryRequirements2);
+    //    VkMemoryRequirements2 memoryRequirements2{};
+    //    memoryRequirements2.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+    //    vkGetBufferMemoryRequirements2(mDevice, &bufferMemoryRequirements, &memoryRequirements2);
 
-        uint32_t memoryType = 0;
-        uint32_t propertiesFlags = flag;
-        if(bUseStaging)
-        {
-            propertiesFlags = (flag & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) ? (flag ^ VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) : flag;
-            propertiesFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    //    uint32_t memoryType = 0;
+    //    uint32_t propertiesFlags = flag;
+    //    if(bUseStaging)
+    //    {
+    //        propertiesFlags = (flag & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) ? (flag ^ VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) : flag;
+    //        propertiesFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-            if (mbStagingEnabled == false && (flag & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
-            {
-                ASSERT(false, "staging 이 필요하지 않은 GPU일 수 있습니다.");
-            }
-        }
+    //        if (mbStagingEnabled == false && (flag & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+    //        {
+    //            ASSERT(false, "staging 이 필요하지 않은 GPU일 수 있습니다.");
+    //        }
+    //    }
 
-        getMemoryType(memoryRequirements2.memoryRequirements, propertiesFlags, memoryType);
+    //    getMemoryType(memoryRequirements2.memoryRequirements, propertiesFlags, memoryType);
 
-        outBufferInfo.Alignment = memoryRequirements2.memoryRequirements.alignment;
-        outBufferInfo.AllocationSize = memoryRequirements2.memoryRequirements.size;
+    //    outBufferInfo.Alignment = memoryRequirements2.memoryRequirements.alignment;
+    //    outBufferInfo.AllocationSize = memoryRequirements2.memoryRequirements.size;
 
-        allocateMemory(outBufferInfo.AllocationSize, memoryType, outBufferInfo.Memory);
+    //    allocateMemory(outBufferInfo.AllocationSize, memoryType, outBufferInfo.Memory);
 
-        VkBindBufferMemoryInfo bindBufferMemoryInfo{};
-        bindBufferMemoryInfo.sType = VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO;
-        bindBufferMemoryInfo.buffer = outBufferInfo.Buffer;
-        bindBufferMemoryInfo.memory = outBufferInfo.Memory;
-        bindBufferMemoryInfo.memoryOffset = 0;
-        vkBindBufferMemory2(mDevice, 1, &bindBufferMemoryInfo);
+    //    VkBindBufferMemoryInfo bindBufferMemoryInfo{};
+    //    bindBufferMemoryInfo.sType = VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO;
+    //    bindBufferMemoryInfo.buffer = outBufferInfo.Buffer;
+    //    bindBufferMemoryInfo.memory = outBufferInfo.Memory;
+    //    bindBufferMemoryInfo.memoryOffset = 0;
+    //    vkBindBufferMemory2(mDevice, 1, &bindBufferMemoryInfo);
 
-        return true;
-    }
+    //    return true;
+    //}
 
 
-    void VkRenderer::AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
-    {
-        if (mVertexBuffer.SubResources.find(hash) == mVertexBuffer.SubResources.end())
-        {
-            const uint32_t vertexSizeInBytes = count * attribSize;
-            mVertexBuffer.Cursor = ALIGNED_SIZE(mVertexBuffer.Cursor, attribSize);
-            const SubDataRange range{ mVertexBuffer.Cursor, vertexSizeInBytes };
+    //void VkRenderer::AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
+    //{
+    //    if (mVertexBuffer.SubResources.find(hash) == mVertexBuffer.SubResources.end())
+    //    {
+    //        const uint32_t vertexSizeInBytes = count * attribSize;
+    //        mVertexBuffer.Cursor = ALIGNED_SIZE(mVertexBuffer.Cursor, attribSize);
+    //        const SubDataRange range{ mVertexBuffer.Cursor, vertexSizeInBytes };
 
-            uploadBuffer(pData, vertexSizeInBytes, mVertexBuffer.Cursor, mVertexBuffer.Memory);
+    //        uploadBuffer(pData, vertexSizeInBytes, mVertexBuffer.Cursor, mVertexBuffer.Memory);
 
-            outRange = BufferRange{ static_cast<int32_t>(mVertexBuffer.Cursor / attribSize) , static_cast<int32_t>(count) };
-            mVertexBuffer.Cursor += vertexSizeInBytes;
-            mVertexBuffer.SubResources.insert({ hash, std::move(range) });
-        }
-    }
+    //        outRange = BufferRange{ static_cast<int32_t>(mVertexBuffer.Cursor / attribSize) , static_cast<int32_t>(count) };
+    //        mVertexBuffer.Cursor += vertexSizeInBytes;
+    //        mVertexBuffer.SubResources.insert({ hash, std::move(range) });
+    //    }
+    //}
 
-    void VkRenderer::AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
-    {
-        if (mIndexBuffer.SubResources.find(hash) == mIndexBuffer.SubResources.end())
-        {
-            const uint32_t indexSizeInBytes = count * attribSize;
-            mIndexBuffer.Cursor = ALIGNED_SIZE(mIndexBuffer.Cursor, attribSize);
-            const SubDataRange range{ mIndexBuffer.Cursor, indexSizeInBytes };
+    //void VkRenderer::AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
+    //{
+    //    if (mIndexBuffer.SubResources.find(hash) == mIndexBuffer.SubResources.end())
+    //    {
+    //        const uint32_t indexSizeInBytes = count * attribSize;
+    //        mIndexBuffer.Cursor = ALIGNED_SIZE(mIndexBuffer.Cursor, attribSize);
+    //        const SubDataRange range{ mIndexBuffer.Cursor, indexSizeInBytes };
 
-            uploadBuffer(pData, indexSizeInBytes, mIndexBuffer.Cursor, mIndexBuffer.Memory);
-            outRange = BufferRange{ static_cast<int32_t>(mIndexBuffer.Cursor / attribSize) , static_cast<int32_t>(count) };
+    //        uploadBuffer(pData, indexSizeInBytes, mIndexBuffer.Cursor, mIndexBuffer.Memory);
+    //        outRange = BufferRange{ static_cast<int32_t>(mIndexBuffer.Cursor / attribSize) , static_cast<int32_t>(count) };
 
-            mIndexBuffer.Cursor += indexSizeInBytes;
-            mIndexBuffer.SubResources.insert({ hash, std::move(range) });
-        }
-    }
+    //        mIndexBuffer.Cursor += indexSizeInBytes;
+    //        mIndexBuffer.SubResources.insert({ hash, std::move(range) });
+    //    }
+    //}
 
     //void VkRenderer::copyBufferStaging(VkBuffer srcBuf, VkBuffer dstBuf, uint32_t copySize)
     //{

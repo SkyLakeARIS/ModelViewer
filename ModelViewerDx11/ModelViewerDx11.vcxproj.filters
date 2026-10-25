@@ -135,6 +135,9 @@
     <ClInclude Include="Core\MathPrerequisites.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Renderer\Resources\Buffer.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="Renderer\VkHelper.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -198,6 +201,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\Shader\ShaderManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Resources\Buffer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\VkHelper.cpp">

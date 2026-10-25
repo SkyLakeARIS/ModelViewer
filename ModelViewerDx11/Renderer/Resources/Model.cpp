@@ -21,14 +21,14 @@ namespace renderer
 
     Model::~Model()
     {
-        const int16_t stride = GetVertexStrideSize(mMesh.VertexFormat);
-        for(auto& subMesh : mMesh.SubMeshes)
-        {
-            const int16_t strideIndex = mBufferManager->GetIndexStrideSize();
-            mBufferManager->RemoveVertexData(stride, subMesh.SubMeshHash);
-            mBufferManager->RemoveIndexData(strideIndex, subMesh.SubMeshHash);
-        }
-        mBufferManager = nullptr;
+        //const int16_t stride = GetVertexStrideSize(mMesh.VertexFormat);
+        //for(auto& subMesh : mMesh.SubMeshes)
+        //{
+        //    const int16_t strideIndex = mBufferManager->GetIndexStrideSize();
+        //    mBufferManager->RemoveVertexData(stride, subMesh.SubMeshHash);
+        //    mBufferManager->RemoveIndexData(strideIndex, subMesh.SubMeshHash);
+        //}
+        //mBufferManager = nullptr;
     }
 
     void Model::SubmitCommand(std::vector<renderer::RenderPacket>& commandList)
