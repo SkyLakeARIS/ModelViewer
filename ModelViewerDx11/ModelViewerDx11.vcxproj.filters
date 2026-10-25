@@ -147,6 +147,9 @@
     <ClInclude Include="Renderer\Resources\Sampler.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Renderer\Shader\Shader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="Renderer\Shader\ShaderModule.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -219,6 +222,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\Resources\Sampler.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Shader\Shader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\Shader\ShaderModule.cpp">
