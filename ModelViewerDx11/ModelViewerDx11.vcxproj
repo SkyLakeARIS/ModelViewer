@@ -190,6 +190,7 @@ call "compileShaders.bat"</Command>
     <ClInclude Include="Renderer\GfxPrerequisites.h" />
     <ClInclude Include="Renderer\Importer\FbxPrerequisites.h" />
     <ClInclude Include="Renderer\Resources\Buffer.h" />
+    <ClInclude Include="Renderer\Resources\Image.h" />
     <ClInclude Include="Renderer\Resources\PipelineBuilder.h" />
     <ClInclude Include="Renderer\Resources\Sampler.h" />
     <ClInclude Include="Renderer\Resources\VertexType.h" />
@@ -234,6 +235,7 @@ call "compileShaders.bat"</Command>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Renderer\DescriptorSet.cpp" />
     <ClCompile Include="Renderer\Resources\Buffer.cpp" />
+    <ClCompile Include="Renderer\Resources\Image.cpp" />
     <ClCompile Include="Renderer\Resources\PipelineBuilder.cpp" />
     <ClCompile Include="Renderer\Resources\Sampler.cpp" />
     <ClCompile Include="Renderer\Shader\Shader.cpp" />
