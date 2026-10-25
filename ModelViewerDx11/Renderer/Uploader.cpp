@@ -13,8 +13,8 @@ namespace renderer
     {
         sDevice = device;
         // TODO: Buffer/Pool은 여기에서 만들도록. Queue도 Transfer Queue로 지원할 경우 만들기.
-        //sCommandBuffer = buffer;
-        //sCommandPool = pool;
+        sCommandBuffer = buffer;
+        sCommandPool = pool;
         sGraphicsQueue = queue;
         sGraphicsQueueFamilyIndex = queueFamilyIndex;
 
