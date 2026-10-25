@@ -39,25 +39,14 @@ namespace renderer
 
     void ModelImporter::Release()
     {
-        if (mFbxScene)
-        {
-            mFbxScene->Destroy();
-        }
-
-        if (mImporter)
-        {
-            mImporter->Destroy();
-        }
-
-        if (mSetting)
-        {
-            mSetting->Destroy();
-        }
-
         if (mFbxManager)
         {
             mFbxManager->Destroy();
         }
+        mFbxScene = nullptr;
+        mImporter = nullptr;
+        mSetting = nullptr;
+        mFbxManager = nullptr;
     }
 
     void ModelImporter::LoadFbxModel(const int8_t* const fileName, HashID& outModelHash, ImportedModelContainer& outModelContainer)
