@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <fstream>
 
+#include "Uploader.h"
 #include "VkHelper.h"
 #include "../Util/Macro.h"
 #include "../Util/Util.h"
@@ -115,6 +116,8 @@ namespace renderer
 
     VkRenderer::~VkRenderer()
     {
+        Uploader::Release();
+
         const VkResult result = vkDeviceWaitIdle(mDevice);
         ASSERT(result == VK_SUCCESS, "vkDeviceWaitIdle 실패. result(%u)", result);
 
@@ -167,6 +170,7 @@ namespace renderer
         vkFreeMemory(mDevice, mVertexBuffer.Memory, nullptr);
         vkDestroyBuffer(mDevice, mVertexBuffer.Buffer, nullptr);
         mVertexBuffer.SubResources.clear();
+        vkDestroyCommandPool(mDevice, mCommandPoolTransfer, nullptr);
 
         vkFreeMemory(mDevice, mIndexBuffer.Memory, nullptr);
         vkDestroyBuffer(mDevice, mIndexBuffer.Buffer, nullptr);
@@ -247,6 +251,17 @@ namespace renderer
         }
 
         if(createSyncObjects() == false)
+        if(createCommandPool(mGraphicsQueueIndex, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, mCommandPoolTransfer) == false)
+        {
+            return false;
+        }
+        
+        if(createCommandBuffers(mCommandPoolTransfer, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, mCommandBufferTransfer) == false)
+        {
+            return false;
+        }
+
+        Uploader::Initialize(mDevice, mCommandBufferTransfer, mCommandPoolTransfer, mQueue, mGraphicsQueueIndex);
         {
             return false;
         }
@@ -1074,167 +1089,167 @@ namespace renderer
         }
     }
 
-    void VkRenderer::copyBufferStaging(VkBuffer srcBuf, VkBuffer dstBuf, uint32_t copySize)
-    {
-        VkCommandPool commandPool;
+    //void VkRenderer::copyBufferStaging(VkBuffer srcBuf, VkBuffer dstBuf, uint32_t copySize)
+    //{
+    //    VkCommandPool commandPool;
 
-        VkCommandPoolCreateInfo commandPoolCreateInfo{};
-        commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        commandPoolCreateInfo.queueFamilyIndex = mGraphicsQueueIndex;
-        commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    //    VkCommandPoolCreateInfo commandPoolCreateInfo{};
+    //    commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    //    commandPoolCreateInfo.queueFamilyIndex = mGraphicsQueueIndex;
+    //    commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
-        vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &commandPool);
+    //    vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &commandPool);
 
-        VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-        commandBufferAllocateInfo.commandPool = commandPool;
-        commandBufferAllocateInfo.commandBufferCount = 1;
-        commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    //    VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+    //    commandBufferAllocateInfo.commandPool = commandPool;
+    //    commandBufferAllocateInfo.commandBufferCount = 1;
+    //    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(mDevice, &commandBufferAllocateInfo, &commandBuffer);
+    //    VkCommandBuffer commandBuffer;
+    //    vkAllocateCommandBuffers(mDevice, &commandBufferAllocateInfo, &commandBuffer);
 
-        VkCommandBufferBeginInfo commandBufferBeginInfo{};
-        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+    //    VkCommandBufferBeginInfo commandBufferBeginInfo{};
+    //    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    //    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    //    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
 
-        VkBufferCopy2 bufferCopy2{};
-        bufferCopy2.sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2;
-        bufferCopy2.size = copySize;
-        bufferCopy2.dstOffset = 0;
-        bufferCopy2.srcOffset = 0;
-        VkCopyBufferInfo2 copyBufferInfo2{};
-        copyBufferInfo2.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;
-        copyBufferInfo2.srcBuffer = srcBuf;
-        copyBufferInfo2.dstBuffer = dstBuf;
-        copyBufferInfo2.pRegions = &bufferCopy2;
-        copyBufferInfo2.regionCount = 1;
+    //    VkBufferCopy2 bufferCopy2{};
+    //    bufferCopy2.sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2;
+    //    bufferCopy2.size = copySize;
+    //    bufferCopy2.dstOffset = 0;
+    //    bufferCopy2.srcOffset = 0;
+    //    VkCopyBufferInfo2 copyBufferInfo2{};
+    //    copyBufferInfo2.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;
+    //    copyBufferInfo2.srcBuffer = srcBuf;
+    //    copyBufferInfo2.dstBuffer = dstBuf;
+    //    copyBufferInfo2.pRegions = &bufferCopy2;
+    //    copyBufferInfo2.regionCount = 1;
 
-        vkCmdCopyBuffer2(commandBuffer, &copyBufferInfo2);
+    //    vkCmdCopyBuffer2(commandBuffer, &copyBufferInfo2);
 
-        vkEndCommandBuffer(commandBuffer);
+    //    vkEndCommandBuffer(commandBuffer);
 
-        VkCommandBufferSubmitInfo commandBufferSubmitInfo{};
-        commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-        commandBufferSubmitInfo.commandBuffer = commandBuffer;
-        commandBufferSubmitInfo.deviceMask = 1;
+    //    VkCommandBufferSubmitInfo commandBufferSubmitInfo{};
+    //    commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+    //    commandBufferSubmitInfo.commandBuffer = commandBuffer;
+    //    commandBufferSubmitInfo.deviceMask = 1;
 
-        VkSubmitInfo2 submitInfo2{};
-        submitInfo2.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-        submitInfo2.commandBufferInfoCount = 1;
-        submitInfo2.pCommandBufferInfos = &commandBufferSubmitInfo;
-        vkQueueSubmit2(mQueue, 1, &submitInfo2, nullptr);
+    //    VkSubmitInfo2 submitInfo2{};
+    //    submitInfo2.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+    //    submitInfo2.commandBufferInfoCount = 1;
+    //    submitInfo2.pCommandBufferInfos = &commandBufferSubmitInfo;
+    //    vkQueueSubmit2(mQueue, 1, &submitInfo2, nullptr);
 
-        vkQueueWaitIdle(mQueue);
+    //    vkQueueWaitIdle(mQueue);
 
-        vkDestroyCommandPool(mDevice, commandPool, nullptr);
-    }
+    //    vkDestroyCommandPool(mDevice, commandPool, nullptr);
+    //}
 
-    void VkRenderer::copyBufferToImageStaging(VkBuffer srcBuf, VkImage dstImage, VkBufferImageCopy2& region)
-    {
-        VkCommandPool commandPool;
-        createCommandPool(mGraphicsQueueIndex, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, commandPool);
+    //void VkRenderer::copyBufferToImageStaging(VkBuffer srcBuf, VkImage dstImage, VkBufferImageCopy2& region)
+    //{
+    //    VkCommandPool commandPool;
+    //    createCommandPool(mGraphicsQueueIndex, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, commandPool);
 
-        VkCommandBuffer commandBuffer;
-        createCommandBuffers(commandPool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, commandBuffer);
+    //    VkCommandBuffer commandBuffer;
+    //    createCommandBuffers(commandPool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, commandBuffer);
 
-        VkCommandBufferBeginInfo commandBufferBeginInfo{};
-        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+    //    VkCommandBufferBeginInfo commandBufferBeginInfo{};
+    //    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    //    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    //    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
 
-        transitionImageLayoutNew(commandBuffer, dstImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {}, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT);
-        VkCopyBufferToImageInfo2 copyBufferToImageInfo2{};
-        copyBufferToImageInfo2.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;
-        copyBufferToImageInfo2.srcBuffer = srcBuf;
-        copyBufferToImageInfo2.dstImage = dstImage;
-        copyBufferToImageInfo2.pRegions = &region;
-        copyBufferToImageInfo2.regionCount = 1;
+    //    transitionImageLayoutNew(commandBuffer, dstImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {}, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT);
+    //    VkCopyBufferToImageInfo2 copyBufferToImageInfo2{};
+    //    copyBufferToImageInfo2.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;
+    //    copyBufferToImageInfo2.srcBuffer = srcBuf;
+    //    copyBufferToImageInfo2.dstImage = dstImage;
+    //    copyBufferToImageInfo2.pRegions = &region;
+    //    copyBufferToImageInfo2.regionCount = 1;
 
-        vkCmdCopyBufferToImage2(commandBuffer, &copyBufferToImageInfo2);
+    //    vkCmdCopyBufferToImage2(commandBuffer, &copyBufferToImageInfo2);
 
-        transitionImageLayoutNew(commandBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT);
+    //    transitionImageLayoutNew(commandBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_ACCESS_2_SHADER_READ_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT);
 
-        vkEndCommandBuffer(commandBuffer);
+    //    vkEndCommandBuffer(commandBuffer);
 
-        VkCommandBufferSubmitInfo commandBufferSubmitInfo{};
-        commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-        commandBufferSubmitInfo.commandBuffer = commandBuffer;
-        commandBufferSubmitInfo.deviceMask = 1;
+    //    VkCommandBufferSubmitInfo commandBufferSubmitInfo{};
+    //    commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+    //    commandBufferSubmitInfo.commandBuffer = commandBuffer;
+    //    commandBufferSubmitInfo.deviceMask = 1;
 
-        VkSubmitInfo2 submitInfo2{};
-        submitInfo2.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-        submitInfo2.commandBufferInfoCount = 1;
-        submitInfo2.pCommandBufferInfos = &commandBufferSubmitInfo;
-        vkQueueSubmit2(mQueue, 1, &submitInfo2, nullptr);
+    //    VkSubmitInfo2 submitInfo2{};
+    //    submitInfo2.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+    //    submitInfo2.commandBufferInfoCount = 1;
+    //    submitInfo2.pCommandBufferInfos = &commandBufferSubmitInfo;
+    //    vkQueueSubmit2(mQueue, 1, &submitInfo2, nullptr);
 
-        vkQueueWaitIdle(mQueue);
+    //    vkQueueWaitIdle(mQueue);
 
-        vkDestroyCommandPool(mDevice, commandPool, nullptr);
-    }
+    //    vkDestroyCommandPool(mDevice, commandPool, nullptr);
+    //}
 
-    void VkRenderer::uploadBuffer(const void* const pData, uint32_t sizeInBytes, uint32_t offset, VkDeviceMemory memory)
-    {
-        VkMemoryMapInfo memoryMapInfo{};
-        memoryMapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_MAP_INFO;
-        memoryMapInfo.memory = memory;
-        memoryMapInfo.size = sizeInBytes;
-        memoryMapInfo.offset = offset;
-        memoryMapInfo.flags = 0;
+    //void VkRenderer::uploadBuffer(const void* const pData, uint32_t sizeInBytes, uint32_t offset, VkDeviceMemory memory)
+    //{
+    //    VkMemoryMapInfo memoryMapInfo{};
+    //    memoryMapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_MAP_INFO;
+    //    memoryMapInfo.memory = memory;
+    //    memoryMapInfo.size = sizeInBytes;
+    //    memoryMapInfo.offset = offset;
+    //    memoryMapInfo.flags = 0;
 
-        void* pBufferCursor = nullptr;
-        vkMapMemory2(mDevice, &memoryMapInfo, &pBufferCursor);
+    //    void* pBufferCursor = nullptr;
+    //    vkMapMemory2(mDevice, &memoryMapInfo, &pBufferCursor);
 
-        (void)memcpy(pBufferCursor, pData, sizeInBytes);
+    //    (void)memcpy(pBufferCursor, pData, sizeInBytes);
 
-        VkMemoryUnmapInfo memoryUnmapInfo{};
-        memoryUnmapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO;
-        memoryUnmapInfo.memory = memory;
-        vkUnmapMemory2(mDevice, &memoryUnmapInfo);
-    }
+    //    VkMemoryUnmapInfo memoryUnmapInfo{};
+    //    memoryUnmapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO;
+    //    memoryUnmapInfo.memory = memory;
+    //    vkUnmapMemory2(mDevice, &memoryUnmapInfo);
+    //}
 
-    void VkRenderer::uploadBufferStaging(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t sizeInBytes, uint32_t srcOffset, uint32_t dstOffset)
-    {
-        VkCommandPool commandPool;
-        createCommandPool(mGraphicsQueueIndex, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, commandPool);
-        VkCommandBuffer commandBuffer;
-        createCommandBuffers(commandPool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, commandBuffer);
+    //void VkRenderer::uploadBufferStaging(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t sizeInBytes, uint32_t srcOffset, uint32_t dstOffset)
+    //{
+    //    VkCommandPool commandPool;
+    //    createCommandPool(mGraphicsQueueIndex, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, commandPool);
+    //    VkCommandBuffer commandBuffer;
+    //    createCommandBuffers(commandPool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, commandBuffer);
 
-        VkCommandBufferBeginInfo commandBufferBeginInfo{};
-        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+    //    VkCommandBufferBeginInfo commandBufferBeginInfo{};
+    //    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    //    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    //    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
 
-        VkBufferCopy2 bufferCopy2{};
-        bufferCopy2.sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2;
-        bufferCopy2.dstOffset = dstOffset;
-        bufferCopy2.size = sizeInBytes;
-        bufferCopy2.srcOffset = srcOffset;
-        VkCopyBufferInfo2 copyBufferInfo2{};
-        copyBufferInfo2.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;
-        copyBufferInfo2.srcBuffer = srcBuffer;
-        copyBufferInfo2.dstBuffer = dstBuffer;
-        copyBufferInfo2.pRegions = &bufferCopy2;
-        copyBufferInfo2.regionCount = 1;
-        vkCmdCopyBuffer2(commandBuffer, &copyBufferInfo2);
+    //    VkBufferCopy2 bufferCopy2{};
+    //    bufferCopy2.sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2;
+    //    bufferCopy2.dstOffset = dstOffset;
+    //    bufferCopy2.size = sizeInBytes;
+    //    bufferCopy2.srcOffset = srcOffset;
+    //    VkCopyBufferInfo2 copyBufferInfo2{};
+    //    copyBufferInfo2.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;
+    //    copyBufferInfo2.srcBuffer = srcBuffer;
+    //    copyBufferInfo2.dstBuffer = dstBuffer;
+    //    copyBufferInfo2.pRegions = &bufferCopy2;
+    //    copyBufferInfo2.regionCount = 1;
+    //    vkCmdCopyBuffer2(commandBuffer, &copyBufferInfo2);
 
-        vkEndCommandBuffer(commandBuffer);
+    //    vkEndCommandBuffer(commandBuffer);
 
-        VkCommandBufferSubmitInfo commandBufferSubmitInfo{};
-        commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-        commandBufferSubmitInfo.commandBuffer = commandBuffer;
-        commandBufferSubmitInfo.deviceMask = 1;
+    //    VkCommandBufferSubmitInfo commandBufferSubmitInfo{};
+    //    commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+    //    commandBufferSubmitInfo.commandBuffer = commandBuffer;
+    //    commandBufferSubmitInfo.deviceMask = 1;
 
-        VkSubmitInfo2 submitInfo2{};
-        submitInfo2.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-        submitInfo2.commandBufferInfoCount = 1;
-        submitInfo2.pCommandBufferInfos = &commandBufferSubmitInfo;
-        vkQueueSubmit2(mQueue, 1, &submitInfo2, nullptr);
+    //    VkSubmitInfo2 submitInfo2{};
+    //    submitInfo2.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+    //    submitInfo2.commandBufferInfoCount = 1;
+    //    submitInfo2.pCommandBufferInfos = &commandBufferSubmitInfo;
+    //    vkQueueSubmit2(mQueue, 1, &submitInfo2, nullptr);
 
-        vkQueueWaitIdle(mQueue);
+    //    vkQueueWaitIdle(mQueue);
 
-        vkDestroyCommandPool(mDevice, commandPool, nullptr);
-    }
+    //    vkDestroyCommandPool(mDevice, commandPool, nullptr);
+    //}
 
     //bool VkRenderer::allocateMemory(uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory)
     //{

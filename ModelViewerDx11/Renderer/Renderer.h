@@ -119,10 +119,10 @@ namespace renderer
         void AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
         void AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
         // Buffer - common
-        void copyBufferStaging(VkBuffer srcBuf, VkBuffer dstBuf, uint32_t copySize);
-        void copyBufferToImageStaging(VkBuffer srcBuf, VkImage dstImage, VkBufferImageCopy2& region);
-        void uploadBuffer(const void* const pData, uint32_t sizeInBytes, uint32_t offset, VkDeviceMemory memory);
-        void uploadBufferStaging(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t sizeInBytes, uint32_t srcOffset, uint32_t dstOffset);
+        //void copyBufferStaging(VkBuffer srcBuf, VkBuffer dstBuf, uint32_t copySize); // 완
+        //void copyBufferToImageStaging(VkBuffer srcBuf, VkImage dstImage, VkBufferImageCopy2& region); // 완
+        //void uploadBuffer(const void* const pData, uint32_t sizeInBytes, uint32_t offset, VkDeviceMemory memory); // 완
+        //void uploadBufferStaging(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t sizeInBytes, uint32_t srcOffset, uint32_t dstOffset); // 완
         //bool allocateMemory(uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory); // 완료
         // Texture
         bool CreateTexture(const int8_t* const filePath, HashID& outHash, bool bIsDDS);
@@ -188,6 +188,9 @@ namespace renderer
         // Texture
         std::unordered_map<HashID, TextureInfo> mTextures;
         std::unordered_map<eSamplerType, VkSampler> mSamplers;
+        //
+        VkCommandBuffer mCommandBufferTransfer;
+        VkCommandPool mCommandPoolTransfer;
 
     };
 

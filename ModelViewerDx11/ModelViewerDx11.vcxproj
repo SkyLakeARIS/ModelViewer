@@ -193,6 +193,7 @@ call "compileShaders.bat"</Command>
     <ClInclude Include="Renderer\Resources\RenderPacket.h" />
     <ClInclude Include="Renderer\Shader\ShaderManager.h" />
     <ClInclude Include="Renderer\Shader\ShaderType.h" />
+    <ClInclude Include="Renderer\Uploader.h" />
     <ClInclude Include="Renderer\VkHelper.h" />
     <ClInclude Include="Scene\Billboard.h" />
     <ClInclude Include="UI\DebugPanel.h" />
@@ -226,6 +227,7 @@ call "compileShaders.bat"</Command>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Renderer\Shader\ShaderManager.cpp" />
+    <ClCompile Include="Renderer\Uploader.cpp" />
     <ClCompile Include="Renderer\VkHelper.cpp" />
     <ClCompile Include="Scene\Billboard.cpp" />
     <ClCompile Include="UI\DebugPanel.cpp" />
