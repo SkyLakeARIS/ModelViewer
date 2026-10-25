@@ -25,7 +25,7 @@ namespace scene
 
 namespace renderer
 {
-    class VkRenderer;
+    class Renderer;
     class Model;
     class ModelImporter;
 }
@@ -37,17 +37,17 @@ public:
     Application();
     ~Application();
 
-    bool InitializeWithWindowsVk(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int32_t nCmdShow);
-    void RunWithVulkan();
+    bool InitializeWithWindows(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int32_t nCmdShow);
+    void Run();
 
 private:
-    bool initializeSceneVulkan();
-    bool initializeManagersVulkan();
+    bool initializeScene();
+    bool initializeManagers();
 
-    void processInputVulkan(double deltaTime);
-    void updateSceneVulkan();
+    void processInput(double deltaTime);
+    void updateScene();
 
-    void renderSceneVulkan();
+    void renderScene();
 
 private:
 
@@ -59,7 +59,7 @@ private:
     renderer::Mesh mNdcMeshDeferred;
 
     int32_t mCurSubMeshIndexFocusModel;
-    renderer::VkRenderer* mVkRenderer;
+    renderer::Renderer* mVkRenderer;
     renderer::ModelImporter* mImporter;
     renderer::Model* mCharacter;
     scene::Camera* mCamera;

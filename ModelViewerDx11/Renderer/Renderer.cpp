@@ -13,7 +13,7 @@
 
 namespace renderer
 {
-    VkRenderer::VkRenderer()
+    Renderer::Renderer()
         : mWindowHeight(0)
         , mWindowWidth(0)
         , mVkInstance(nullptr)
@@ -35,7 +35,7 @@ namespace renderer
     {
     }
 
-    VkRenderer::~VkRenderer()
+    Renderer::~Renderer()
     {
         Uploader::Release();
 
@@ -104,7 +104,7 @@ namespace renderer
         vkDestroyInstance(mVkInstance, nullptr);
     }
 
-    bool VkRenderer::initializeWithVulkan(HWND handleWindow, HINSTANCE handleInstance, int16_t width, int16_t height, const char* const appName)
+    bool Renderer::initializeWithVulkan(HWND handleWindow, HINSTANCE handleInstance, int16_t width, int16_t height, const char* const appName)
     {
         mWindowWidth = width;
         mWindowHeight = height;
@@ -187,7 +187,7 @@ namespace renderer
         return true;
     }
 
-    void VkRenderer::PrepareObjects()
+    void Renderer::PrepareObjects()
     {
         mVertexBuffer = new Buffer(mDevice);
         mVertexBuffer->Create(771336 * 2, Buffer::eBufferType::Vertex, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex);
@@ -195,7 +195,7 @@ namespace renderer
         mIndexBuffer->Create(189792 * 2, Buffer::eBufferType::Index, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex);
     }
 
-    void VkRenderer::UpdateScene(std::vector<std::pair<renderer::eCbType, void*>>& uniforms)
+    void Renderer::UpdateScene(std::vector<std::pair<renderer::eCbType, void*>>& uniforms)
     {
         const uint32_t frameIndex = getCurrentFrameIndex();
         for(const auto& uniform : uniforms)
@@ -205,7 +205,7 @@ namespace renderer
         mDescriptorSets[static_cast<EnumInt>(eShader::Simple)]->UpdateDescriptorSet(eShader::Simple, frameIndex);
     }
 
-    void VkRenderer::RenderScene()
+    void Renderer::RenderScene()
     {
         // Scene Update
         const PerFrame frame = getCurrentFrameResource();
@@ -237,13 +237,13 @@ namespace renderer
         vkCmdBindDescriptorSets(frame.Buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mShaders[static_cast<EnumInt>(eShader::Simple)]->GetPipelineLayout(), 0, 1, &descriptorSet, 0, nullptr);
     }
 
-    void VkRenderer::DrawIndexed(uint32_t indexCount, uint32_t vertexOffset, uint32_t indexOffset)
+    void Renderer::DrawIndexed(uint32_t indexCount, uint32_t vertexOffset, uint32_t indexOffset)
     {
         const PerFrame frame = getCurrentFrameResource();
         vkCmdDrawIndexed(frame.Buffer, indexCount, 1, indexOffset, vertexOffset, 0);
     }
 
-    void VkRenderer::WaitForLastFrame() const
+    void Renderer::WaitForLastFrame() const
     {
         const PerFrame curFrame = getCurrentFrameResource();
         // wait 1sec = 1'000'000'000
@@ -255,7 +255,7 @@ namespace renderer
         (void)vkResetFences(mDevice, 1, &curFrame.DrawFinishedFence);
     }
 
-    void VkRenderer::BeginRender()
+    void Renderer::BeginRender()
     {
         const PerFrame curFrame = getCurrentFrameResource();
 
@@ -293,7 +293,7 @@ namespace renderer
         vkCmdBeginRendering(curFrame.Buffer, &renderingInfo);
     }
 
-    void VkRenderer::EndRender()
+    void Renderer::EndRender()
     {
         const PerFrame curFrame = getCurrentFrameResource();
 
@@ -303,7 +303,7 @@ namespace renderer
         vkEndCommandBuffer(curFrame.Buffer);
     }
 
-    void VkRenderer::SubmitCommands() const
+    void Renderer::SubmitCommands() const
     {
         const PerFrame curFrame = getCurrentFrameResource();
 
@@ -334,7 +334,7 @@ namespace renderer
         vkQueueSubmit2(mQueue, 1, & submitInfo, curFrame.DrawFinishedFence);
     }
 
-    void VkRenderer::Present() const
+    void Renderer::Present() const
     {
         const PerFrame curFrame = getCurrentFrameResource();
 
@@ -350,13 +350,13 @@ namespace renderer
         vkQueuePresentKHR(mQueue, &presentInfo);
     }
 
-    void VkRenderer::CountFrame()
+    void Renderer::CountFrame()
     {
         ++mFrameCount;
         mFrameCount = (mFrameCount == UINT64_MAX) ? mFrameCount % sOverlappedFrame : mFrameCount;
     }
 
-    bool VkRenderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
+    bool Renderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
     {
         PipelineBuilder pipelinevBuilder(mDevice);
         pipelinevBuilder.SetColorBlendState(blendState);
@@ -377,17 +377,17 @@ namespace renderer
         return pipelinevBuilder.Create(mSimplePipeline, outPipelineHash);
     }
 
-    void VkRenderer::AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
+    void Renderer::AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
     {
         mVertexBuffer->AddData(pData, count, attribSize, hash, outRange);
     }
 
-    void VkRenderer::AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
+    void Renderer::AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
     {
         mIndexBuffer->AddData(pData, count, attribSize, hash, outRange);
     }
 
-    bool VkRenderer::createInstance(const char* const appName)
+    bool Renderer::createInstance(const char* const appName)
     {
         VkResult result = VK_SUCCESS;
         constexpr const char* const RequiredLayers[] =
@@ -453,7 +453,7 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createSurface(HWND handleWindow, HINSTANCE handleInstance)
+    bool Renderer::createSurface(HWND handleWindow, HINSTANCE handleInstance)
     {
         VkWin32SurfaceCreateInfoKHR win32SurfaceCreateInfo{};
         win32SurfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -470,7 +470,7 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::choosePhysicalDevice()
+    bool Renderer::choosePhysicalDevice()
     {
         uint32_t physicalDeviceCount = 0;
         VkResult result = vkEnumeratePhysicalDevices(mVkInstance, &physicalDeviceCount, nullptr);
@@ -596,7 +596,7 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createLogicalDevice()
+    bool Renderer::createLogicalDevice()
     {
         uint32_t graphicsQueueIndex = UINT32_MAX;
         uint32_t queueFamilyCount = 0;
@@ -697,7 +697,7 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createSwapChain(uint16_t width, uint16_t height)
+    bool Renderer::createSwapChain(uint16_t width, uint16_t height)
     {
         VkSurfaceCapabilities2KHR surfaceCapabilities{};
         surfaceCapabilities.sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
@@ -823,7 +823,7 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createImageViews()
+    bool Renderer::createImageViews()
     {
         ASSERT(mImageViews.empty(), "image views가 비어있지 않습니다. (리소스를 재생성하고 있는 경우 처리가 필요)");
         mImageViews.reserve(mImages.size());
@@ -851,7 +851,7 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createFrame()
+    bool Renderer::createFrame()
     {
         ASSERT(mGraphicsQueueIndex != UINT_MAX, "mGraphicsQueueIndex가 유효하지 않습니다.");
 
@@ -894,7 +894,7 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createSyncObjects()
+    bool Renderer::createSyncObjects()
     {
         VkSemaphoreCreateInfo semaphoreCreateInfo{};
         semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -912,7 +912,7 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const
+    bool Renderer::createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const
     {
         VkCommandPoolCreateInfo commandPoolCreateInfo{};
         commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -928,7 +928,7 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createCommandBuffers(VkCommandPool commandPool, uint32_t bufferCount, VkCommandBufferLevel level, VkCommandBuffer& outBuffers) const
+    bool Renderer::createCommandBuffers(VkCommandPool commandPool, uint32_t bufferCount, VkCommandBufferLevel level, VkCommandBuffer& outBuffers) const
     {
         VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
         commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -945,7 +945,7 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createSamplers()
+    bool Renderer::createSamplers()
     {
         for(uint32_t samplerType = 0; samplerType < static_cast<uint32_t>(eSamplerType::SamplerCount); ++samplerType)
         {
@@ -960,7 +960,7 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createShaders()
+    bool Renderer::createShaders()
     {
         struct ShaderStageHash
         {
@@ -1069,7 +1069,7 @@ namespace renderer
         return true;
     }
 
-    uint32_t VkRenderer::acquireSwapChainImage(const PerFrame& frame)
+    uint32_t Renderer::acquireSwapChainImage(const PerFrame& frame)
     {
         uint32_t nextImageIndex = UINT32_MAX;
         VkAcquireNextImageInfoKHR acqNextImageInfo{};
@@ -1088,7 +1088,7 @@ namespace renderer
         return nextImageIndex;
     }
 
-    void VkRenderer::transitionImageLayout(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask)
+    void Renderer::transitionImageLayout(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask)
     {
         VkImageMemoryBarrier2 imageBarrier{};
         imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
@@ -1115,7 +1115,7 @@ namespace renderer
         vkCmdPipelineBarrier2(commandBuffer, &dependencyInfo);
     }
 
-    void VkRenderer::transitionImageLayoutNew(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask)
+    void Renderer::transitionImageLayoutNew(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask)
     {
         VkImageMemoryBarrier2 imageBarrier{};
         imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
@@ -1142,13 +1142,13 @@ namespace renderer
         vkCmdPipelineBarrier2(commandBuffer, &dependencyInfo);
     }
 
-    VkRenderer::PerFrame VkRenderer::getCurrentFrameResource() const
+    Renderer::PerFrame Renderer::getCurrentFrameResource() const
     {
         const uint32_t curFrameIndex = mFrameCount % sOverlappedFrame;
         return mFrames[curFrameIndex];
     }
 
-    uint32_t VkRenderer::getCurrentFrameIndex() const
+    uint32_t Renderer::getCurrentFrameIndex() const
     {
         return mFrameCount % sOverlappedFrame;
     }

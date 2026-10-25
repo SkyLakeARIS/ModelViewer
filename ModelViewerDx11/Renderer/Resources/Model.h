@@ -3,7 +3,7 @@
 
 namespace renderer
 {
-    class VkRenderer;
+    class Renderer;
 }
 
 namespace scene
@@ -20,7 +20,7 @@ namespace renderer
         ~Model();
 
         void SubmitCommand();
-        void DrawVk(VkRenderer& renderer);
+        void Draw(Renderer& renderer);
         void Update();
 
         void SetMesh(const Mesh& mesh);

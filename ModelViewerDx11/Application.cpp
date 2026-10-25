@@ -54,7 +54,7 @@ Application::~Application()
     delete mVkRenderer;
 }
 
-bool Application::InitializeWithWindowsVk(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine,
+bool Application::InitializeWithWindows(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine,
                                           int32_t nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
@@ -73,7 +73,7 @@ bool Application::InitializeWithWindowsVk(HINSTANCE hInstance, HINSTANCE hPrevIn
     mWindow->DisplayWindow(nCmdShow);
     mWindow->RefreshWindow();
 
-    mVkRenderer = new renderer::VkRenderer();
+    mVkRenderer = new renderer::Renderer();
     if (!(mVkRenderer->initializeWithVulkan(handleWindow, hInstance, mWindowWidth, mWindowHeight, mWindow->GetAppNameA())))
     {
         ASSERT(false, "Fail to initialize shaders");
@@ -91,15 +91,15 @@ bool Application::InitializeWithWindowsVk(HINSTANCE hInstance, HINSTANCE hPrevIn
     return true;
 }
 
-void Application::RunWithVulkan()
+void Application::Run()
 {
 
-    if(!initializeManagersVulkan())
+    if(!initializeManagers())
     {
         return;
     }
 
-    if(!initializeSceneVulkan())
+    if(!initializeScene())
     {
         return;
     }
@@ -140,11 +140,11 @@ void Application::RunWithVulkan()
         mVkRenderer->WaitForLastFrame();
         mVkRenderer->BeginRender();
 
-        processInputVulkan(deltaTime);
-        updateSceneVulkan();
+        processInput(deltaTime);
+        updateScene();
 
 
-        renderSceneVulkan();
+        renderScene();
 
         mVkRenderer->EndRender();
 
@@ -165,7 +165,7 @@ void Application::RunWithVulkan()
 }
 
 
-bool Application::initializeSceneVulkan()
+bool Application::initializeScene()
 {
     core::Timer::Initialize();
 
@@ -230,13 +230,13 @@ bool Application::initializeSceneVulkan()
     return true;
 }
 
-bool Application::initializeManagersVulkan()
+bool Application::initializeManagers()
 {
     mVkRenderer->PrepareObjects();
     return true;
 }
 
-void Application::processInputVulkan(double deltaTime)
+void Application::processInput(double deltaTime)
 {
 
     mDirectInput->UpdateInput();
@@ -318,7 +318,7 @@ void Application::processInputVulkan(double deltaTime)
     }
 }
 
-void Application::updateSceneVulkan()
+void Application::updateScene()
 {
     // MEMO: 이후 작업들이 카메라 정보에 의존하므로 카메라를 먼저 업데이트
     mCamera->Update();
@@ -337,8 +337,8 @@ void Application::updateSceneVulkan()
     mVkRenderer->UpdateScene(uniforms);
 }
 
-void Application::renderSceneVulkan()
+void Application::renderScene()
 {
     mVkRenderer->RenderScene();
-    mCharacter->DrawVk(*mVkRenderer);
+    mCharacter->Draw(*mVkRenderer);
 }

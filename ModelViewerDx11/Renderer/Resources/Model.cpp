@@ -24,7 +24,7 @@ namespace renderer
     {
     }
 
-    void Model::DrawVk(VkRenderer& renderer)
+    void Model::Draw(Renderer& renderer)
     {
         for (const auto& subMesh : mMesh.SubMeshes)
         {

@@ -13,7 +13,7 @@ namespace renderer
 
 namespace renderer
 {
-    class VkRenderer final
+    class Renderer final
     {
     private:
         struct PerFrame
@@ -79,8 +79,8 @@ namespace renderer
             uint32_t Access;
         };
     public:
-        VkRenderer();
-        ~VkRenderer();
+        Renderer();
+        ~Renderer();
 
         bool initializeWithVulkan(HWND handleWindow, HINSTANCE handleInstance, int16_t width, int16_t height, const char* const appName);
         // TODO: 모델 띄운 후, 구조 개선 작업에서 전부 분리할 것들.
