@@ -9,6 +9,7 @@
 #include "../Util/Util.h"
 #include "Resources/Buffer.h"
 #include "Resources/BufferManager.h"
+#include "Resources/PipelineBuilder.h"
 #include "Resources/Sampler.h"
 #include "Resources/TextureManager.h"
 #include "Shader/Shader.h"
@@ -179,6 +180,7 @@ namespace renderer
         delete mIndexBuffer;
 
         vkDestroyCommandPool(mDevice, mCommandPoolTransfer, nullptr);
+        vkDestroyPipeline(mDevice, mSimplePipeline, nullptr);
 
 
         for(const auto& frame : mFrames)
@@ -494,6 +496,27 @@ namespace renderer
     {
         const auto& pipelineIt = mPipelines.find(hash);
         mSimplePipeline = pipelineIt->second;
+    }
+
+    bool VkRenderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, HashID VsStageHash, HashID PsStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
+    {
+        PipelineBuilder pipelinevBuilder(mDevice);
+        pipelinevBuilder.SetColorBlendState(blendState);
+        pipelinevBuilder.SetDynamicState(true, true);
+        pipelinevBuilder.SetDepthStencilState(depthStencilState);
+        pipelinevBuilder.SetInputAssemblyState(topology);
+        pipelinevBuilder.SetMultiSamplerState(false);
+        pipelinevBuilder.SetRasterizationState(rasterType);
+        pipelinevBuilder.SetRenderPass(renderPass);
+        pipelinevBuilder.SetVertexInputState(vertexFormat);
+        pipelinevBuilder.SetShaderStage(*mShaders[static_cast<EnumInt>(shader)]);
+        pipelinevBuilder.SetViewportState(mSwapChainExtent.width, mSwapChainExtent.height);
+        pipelinevBuilder.SetPipelineLayout(mShaders[static_cast<EnumInt>(shader)]->GetPipelineLayout());
+
+        std::vector<VkFormat> formats(1, mSurfaceFormat.format);
+        pipelinevBuilder.SetColorAttachInfo(formats);
+
+        return pipelinevBuilder.Create(mSimplePipeline, outPipelineHash);
     }
 
     void VkRenderer::AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
@@ -956,80 +979,80 @@ namespace renderer
     //    uploadBuffer(pData, sizeInBytes, 0, uniformBuffer.Memory);
     //}
 
-    bool VkRenderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, HashID VsStageHash, HashID PsStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
-    {
-        // TODO: hash 조합하기
-        const HashID hash = MakePipelineHash(shader, vertexFormat, topology, rasterType, blendState, depthStencilState, renderPass);
-        bool result = true;
-        const auto& pipelineIt = mPipelines.find(hash);
-        if(pipelineIt == mPipelines.end())
-        {
-            VkPipeline newPipeline{};
-            result = createGraphicsPipeline(shader, VsStageHash, PsStageHash, vertexFormat, topology, rasterType, blendState, depthStencilState, renderPass, newPipeline);
-            if(result)
-            {
-                mPipelines.insert({ hash, newPipeline });
-                outPipelineHash = hash;
-            }
-        }
-        else
-        {
-            outPipelineHash = pipelineIt->first;
-        }
+    //bool VkRenderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, HashID VsStageHash, HashID PsStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
+    //{
+    //    // TODO: hash 조합하기
+    //    const HashID hash = MakePipelineHash(shader, vertexFormat, topology, rasterType, blendState, depthStencilState, renderPass);
+    //    bool result = true;
+    //    const auto& pipelineIt = mPipelines.find(hash);
+    //    if(pipelineIt == mPipelines.end())
+    //    {
+    //        VkPipeline newPipeline{};
+    //        result = createGraphicsPipeline(shader, VsStageHash, PsStageHash, vertexFormat, topology, rasterType, blendState, depthStencilState, renderPass, newPipeline);
+    //        if(result)
+    //        {
+    //            mPipelines.insert({ hash, newPipeline });
+    //            outPipelineHash = hash;
+    //        }
+    //    }
+    //    else
+    //    {
+    //        outPipelineHash = pipelineIt->first;
+    //    }
 
-        return result;
-    }
-    template<typename  T>
-    constexpr uint64_t GetBitCount(T type)
-    {
-        int32_t bit = 1;
-        uint64_t count = 0;
-        while (bit <= static_cast<uint32_t>(type))
-        {
-            bit <<= 1;
-            ++count;
-        }
-        return count;
-    }
-    HashID VkRenderer::MakePipelineHash(eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
-    {
-        struct PipelineStateBitField
-        {
-            HashID Value;
-            HashID BitWidth;
-        };
-
-        const PipelineStateBitField PipelineBitLayout[] =
-        {
-            {static_cast<HashID>(shader), GetBitCount(eShader::ShaderCount)},
-            {static_cast<HashID>(vertexFormat), GetBitCount(eVertexFormat::FormatCount)},
-            {static_cast<HashID>(topology), GetBitCount(ePrimitiveTopology::TopologyCount)},
-            {static_cast<HashID>(rasterType), GetBitCount(eRasterType::RasterCount)},
-            {static_cast<HashID>(blendState), GetBitCount(eBlendState::StateCount)},
-            {static_cast<HashID>(depthStencilState), GetBitCount(eDepthStencilState::StateCount)},
-            {static_cast<HashID>(renderPass), GetBitCount(eRenderPass::PassCount)},
-        };
-
-
-#ifdef _DEBUG
-        // MEMO: 사용된 Bit들을 전부 합했을 때 자료형을 넘는지 검사
-        uint32_t validBitCount = 0;
-        for (auto& element : PipelineBitLayout)
-        {
-            validBitCount += element.BitWidth;
-        }
-        ASSERT(validBitCount <= 32, "hash가 표현할 수 있는 비트 수를 넘었습니다. 계산된 비트 사용량(%llu)", validBitCount);
-#endif
-
-        HashID bitShiftCursor = 32;
-        HashID pipelineHash = 0;
-        for (auto& element : PipelineBitLayout)
-        {
-            bitShiftCursor -= element.BitWidth;
-            pipelineHash |= element.Value << bitShiftCursor;
-        }
-        return pipelineHash;
-    }
+    //    return result;
+    //}
+    //template<typename  T>
+    //constexpr uint64_t GetBitCount(T type)
+    //{
+    //    int32_t bit = 1;
+    //    uint64_t count = 0;
+    //    while (bit <= static_cast<uint32_t>(type))
+    //    {
+    //        bit <<= 1;
+    //        ++count;
+    //    }
+    //    return count;
+    //}
+//    HashID VkRenderer::MakePipelineHash(eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
+//    {
+//        struct PipelineStateBitField
+//        {
+//            HashID Value;
+//            HashID BitWidth;
+//        };
+//
+//        const PipelineStateBitField PipelineBitLayout[] =
+//        {
+//            {static_cast<HashID>(shader), GetBitCount(eShader::ShaderCount)},
+//            {static_cast<HashID>(vertexFormat), GetBitCount(eVertexFormat::FormatCount)},
+//            {static_cast<HashID>(topology), GetBitCount(ePrimitiveTopology::TopologyCount)},
+//            {static_cast<HashID>(rasterType), GetBitCount(eRasterType::RasterCount)},
+//            {static_cast<HashID>(blendState), GetBitCount(eBlendState::StateCount)},
+//            {static_cast<HashID>(depthStencilState), GetBitCount(eDepthStencilState::StateCount)},
+//            {static_cast<HashID>(renderPass), GetBitCount(eRenderPass::PassCount)},
+//        };
+//
+//
+//#ifdef _DEBUG
+//        // MEMO: 사용된 Bit들을 전부 합했을 때 자료형을 넘는지 검사
+//        uint32_t validBitCount = 0;
+//        for (auto& element : PipelineBitLayout)
+//        {
+//            validBitCount += element.BitWidth;
+//        }
+//        ASSERT(validBitCount <= 32, "hash가 표현할 수 있는 비트 수를 넘었습니다. 계산된 비트 사용량(%llu)", validBitCount);
+//#endif
+//
+//        HashID bitShiftCursor = 32;
+//        HashID pipelineHash = 0;
+//        for (auto& element : PipelineBitLayout)
+//        {
+//            bitShiftCursor -= element.BitWidth;
+//            pipelineHash |= element.Value << bitShiftCursor;
+//        }
+//        return pipelineHash;
+//    }
 
     //bool VkRenderer::CreateBuffer(uint32_t requestSizeInBytes, uint32_t usage, uint32_t flag, uint32_t queueFamilyIndex, bool bUseStaging, BufferInfo& outBufferInfo)
     //{
@@ -1961,159 +1984,159 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createGraphicsPipeline(eShader shader, HashID vsStageHash, HashID psStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass, VkPipeline& outPipeline)
-    {
-        VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
-        dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        VkDynamicState dynamicStates[] = { VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT, VkDynamicState::VK_DYNAMIC_STATE_SCISSOR };
-        dynamicStateCreateInfo.dynamicStateCount = std::size(dynamicStates);
-        dynamicStateCreateInfo.pDynamicStates = dynamicStates;
+    //bool VkRenderer::createGraphicsPipeline(eShader shader, HashID vsStageHash, HashID psStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass, VkPipeline& outPipeline)
+    //{
+    //    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
+    //    dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    //    VkDynamicState dynamicStates[] = { VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT, VkDynamicState::VK_DYNAMIC_STATE_SCISSOR };
+    //    dynamicStateCreateInfo.dynamicStateCount = std::size(dynamicStates);
+    //    dynamicStateCreateInfo.pDynamicStates = dynamicStates;
 
 
-        VkVertexInputBindingDescription inputBindingDescription{};
-        inputBindingDescription.stride = GetVertexStrideSize(vertexFormat);
-        inputBindingDescription.binding = 0;
-        inputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    //    VkVertexInputBindingDescription inputBindingDescription{};
+    //    inputBindingDescription.stride = GetVertexStrideSize(vertexFormat);
+    //    inputBindingDescription.binding = 0;
+    //    inputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-        constexpr VkVertexInputAttributeDescription VertexInputAttribTable[] =
-        {
-            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},   // P
-            {1, 0, VK_FORMAT_R32G32_SFLOAT, 12},        // T
-            {2, 0, VK_FORMAT_R32G32B32_SFLOAT, 20}   // N
-        };
-        constexpr uint8_t VertexInputAttribCountTable[] =
-        {
-            3,
-            2,
-            1
-        };
+    //    constexpr VkVertexInputAttributeDescription VertexInputAttribTable[] =
+    //    {
+    //        {0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},   // P
+    //        {1, 0, VK_FORMAT_R32G32_SFLOAT, 12},        // T
+    //        {2, 0, VK_FORMAT_R32G32B32_SFLOAT, 20}   // N
+    //    };
+    //    constexpr uint8_t VertexInputAttribCountTable[] =
+    //    {
+    //        3,
+    //        2,
+    //        1
+    //    };
 
-        VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{};
-        vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputStateCreateInfo.pVertexAttributeDescriptions = VertexInputAttribTable;
-        vertexInputStateCreateInfo.vertexAttributeDescriptionCount = VertexInputAttribCountTable[static_cast<uint8_t>(vertexFormat)];
-        vertexInputStateCreateInfo.pVertexBindingDescriptions = &inputBindingDescription;
-        vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+    //    VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{};
+    //    vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    //    vertexInputStateCreateInfo.pVertexAttributeDescriptions = VertexInputAttribTable;
+    //    vertexInputStateCreateInfo.vertexAttributeDescriptionCount = VertexInputAttribCountTable[static_cast<uint8_t>(vertexFormat)];
+    //    vertexInputStateCreateInfo.pVertexBindingDescriptions = &inputBindingDescription;
+    //    vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
 
-        const auto& vsStageInfoIt = mShaderInfos.find(vsStageHash);
-        const auto& psStageInfoIt = mShaderInfos.find(psStageHash);
-        const VkPipelineShaderStageCreateInfo ShaderStageInfos[] =
-        {
-            vsStageInfoIt->second.PipelineShaderStage,
-            psStageInfoIt->second.PipelineShaderStage
-        };
+    //    const auto& vsStageInfoIt = mShaderInfos.find(vsStageHash);
+    //    const auto& psStageInfoIt = mShaderInfos.find(psStageHash);
+    //    const VkPipelineShaderStageCreateInfo ShaderStageInfos[] =
+    //    {
+    //        vsStageInfoIt->second.PipelineShaderStage,
+    //        psStageInfoIt->second.PipelineShaderStage
+    //    };
 
-        constexpr VkPrimitiveTopology TopologyMap[] =
-        {
-            VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-            VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-            VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST
-        };
-        static_assert(std::size(TopologyMap) == static_cast<uint8_t>(ePrimitiveTopology::TopologyCount), "TopologyMap와 ePrimitiveTopology의 요소 수가 일치해야 합니다.");
-        VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo{};
-        inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssemblyStateCreateInfo.topology = TopologyMap[static_cast<uint8_t>(topology)];
+    //    constexpr VkPrimitiveTopology TopologyMap[] =
+    //    {
+    //        VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    //        VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+    //        VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST
+    //    };
+    //    static_assert(std::size(TopologyMap) == static_cast<uint8_t>(ePrimitiveTopology::TopologyCount), "TopologyMap와 ePrimitiveTopology의 요소 수가 일치해야 합니다.");
+    //    VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo{};
+    //    inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    //    inputAssemblyStateCreateInfo.topology = TopologyMap[static_cast<uint8_t>(topology)];
 
-        VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
-        viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportStateCreateInfo.viewportCount = 1;
-        const VkViewport viewport = VkViewport{ 0.0f, 0.0f, static_cast<float>(mSwapChainExtent.width), static_cast<float>(mSwapChainExtent.height), 0.0f, 1.0f };
-        viewportStateCreateInfo.pViewports = &viewport;
-        const VkRect2D scissorRange{ {0,0}, mSwapChainExtent };
-        viewportStateCreateInfo.scissorCount = 1;
-        viewportStateCreateInfo.pScissors = &scissorRange;
+    //    VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
+    //    viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    //    viewportStateCreateInfo.viewportCount = 1;
+    //    const VkViewport viewport = VkViewport{ 0.0f, 0.0f, static_cast<float>(mSwapChainExtent.width), static_cast<float>(mSwapChainExtent.height), 0.0f, 1.0f };
+    //    viewportStateCreateInfo.pViewports = &viewport;
+    //    const VkRect2D scissorRange{ {0,0}, mSwapChainExtent };
+    //    viewportStateCreateInfo.scissorCount = 1;
+    //    viewportStateCreateInfo.pScissors = &scissorRange;
 
-        constexpr VkCullModeFlagBits RasterTypeTable[] =
-        {
-             VkCullModeFlagBits::VK_CULL_MODE_NONE,
-             VkCullModeFlagBits::VK_CULL_MODE_FRONT_BIT,
-             VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT,
-             VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT,
-        };
-        static_assert(std::size(RasterTypeTable) == static_cast<uint8_t>(eRasterType::RasterCount), "RasterTypeTable와 eRasterType의 요소 수가 일치해야 합니다.");
-        VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{};
-        rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizationStateCreateInfo.cullMode = RasterTypeTable[static_cast<uint8_t>(rasterType)];
-        rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-        rasterizationStateCreateInfo.lineWidth = 1.0f;
-        rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    //    constexpr VkCullModeFlagBits RasterTypeTable[] =
+    //    {
+    //         VkCullModeFlagBits::VK_CULL_MODE_NONE,
+    //         VkCullModeFlagBits::VK_CULL_MODE_FRONT_BIT,
+    //         VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT,
+    //         VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT,
+    //    };
+    //    static_assert(std::size(RasterTypeTable) == static_cast<uint8_t>(eRasterType::RasterCount), "RasterTypeTable와 eRasterType의 요소 수가 일치해야 합니다.");
+    //    VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{};
+    //    rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    //    rasterizationStateCreateInfo.cullMode = RasterTypeTable[static_cast<uint8_t>(rasterType)];
+    //    rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    //    rasterizationStateCreateInfo.lineWidth = 1.0f;
+    //    rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
 
-        constexpr VkColorComponentFlags COLOR_COMPONENT_ALL = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        constexpr VkPipelineColorBlendAttachmentState BlendStateTable[] =
-        {
-            {
-	            VK_FALSE,
-            	VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD,
-            	VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD,
-            	COLOR_COMPONENT_ALL
-            },
-        {
-        	VK_TRUE,
-        	VK_BLEND_FACTOR_SRC_ALPHA,VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-        	VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE,
-        	VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD,
-        	COLOR_COMPONENT_ALL
-        },
-        };
-        static_assert(std::size(BlendStateTable) == static_cast<uint8_t>(eBlendState::StateCount), "BlendStateTable와 eBlendState의 요소 수가 일치해야 합니다.");
+    //    constexpr VkColorComponentFlags COLOR_COMPONENT_ALL = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    //    constexpr VkPipelineColorBlendAttachmentState BlendStateTable[] =
+    //    {
+    //        {
+	   //         VK_FALSE,
+    //        	VK_BLEND_FACTOR_ONE,VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD,
+    //        	VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD,
+    //        	COLOR_COMPONENT_ALL
+    //        },
+    //    {
+    //    	VK_TRUE,
+    //    	VK_BLEND_FACTOR_SRC_ALPHA,VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+    //    	VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE,
+    //    	VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD,
+    //    	COLOR_COMPONENT_ALL
+    //    },
+    //    };
+    //    static_assert(std::size(BlendStateTable) == static_cast<uint8_t>(eBlendState::StateCount), "BlendStateTable와 eBlendState의 요소 수가 일치해야 합니다.");
 
-        VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{};
-        colorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlendStateCreateInfo.pAttachments = &BlendStateTable[static_cast<uint8_t>(blendState)];
-        colorBlendStateCreateInfo.attachmentCount = 1;
-
-
-        constexpr VkPipelineDepthStencilStateCreateInfo DepthStencilStateTable[] =
-        {
-            {{}, nullptr,{}, VK_FALSE, VK_FALSE, {}, VK_FALSE, VK_FALSE, {}, {}, {}, {}},
-            {{}, nullptr,{}, VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, VK_FALSE, VK_FALSE, {}, {}, {}, {}},
-        };
-        static_assert(std::size(DepthStencilStateTable) == static_cast<uint8_t>(eDepthStencilState::StateCount), "DepthStencilStateTable와 eDepthStencilState의 요소 수가 일치해야 합니다.");
-
-        VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
-        depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencilStateCreateInfo.stencilTestEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].stencilTestEnable;
-        depthStencilStateCreateInfo.depthTestEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthTestEnable;
-        depthStencilStateCreateInfo.depthWriteEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthWriteEnable;
-        depthStencilStateCreateInfo.depthCompareOp = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthCompareOp;
-        depthStencilStateCreateInfo.depthBoundsTestEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthBoundsTestEnable;
+    //    VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{};
+    //    colorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    //    colorBlendStateCreateInfo.pAttachments = &BlendStateTable[static_cast<uint8_t>(blendState)];
+    //    colorBlendStateCreateInfo.attachmentCount = 1;
 
 
-        VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
-        multisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampleStateCreateInfo.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-        multisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+    //    constexpr VkPipelineDepthStencilStateCreateInfo DepthStencilStateTable[] =
+    //    {
+    //        {{}, nullptr,{}, VK_FALSE, VK_FALSE, {}, VK_FALSE, VK_FALSE, {}, {}, {}, {}},
+    //        {{}, nullptr,{}, VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, VK_FALSE, VK_FALSE, {}, {}, {}, {}},
+    //    };
+    //    static_assert(std::size(DepthStencilStateTable) == static_cast<uint8_t>(eDepthStencilState::StateCount), "DepthStencilStateTable와 eDepthStencilState의 요소 수가 일치해야 합니다.");
 
-        const auto& pipelineLayoutIt = mShaderLayouts.find(shader);
+    //    VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
+    //    depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    //    depthStencilStateCreateInfo.stencilTestEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].stencilTestEnable;
+    //    depthStencilStateCreateInfo.depthTestEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthTestEnable;
+    //    depthStencilStateCreateInfo.depthWriteEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthWriteEnable;
+    //    depthStencilStateCreateInfo.depthCompareOp = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthCompareOp;
+    //    depthStencilStateCreateInfo.depthBoundsTestEnable = DepthStencilStateTable[static_cast<uint8_t>(depthStencilState)].depthBoundsTestEnable;
 
-        VkPipelineRenderingCreateInfo renderingCreateInfo{};
-        renderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-        renderingCreateInfo.colorAttachmentCount = 1;
-        renderingCreateInfo.pColorAttachmentFormats = &mSurfaceFormat.format;
 
-        VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
-        pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineCreateInfo.pNext = &renderingCreateInfo;
-        pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
-        pipelineCreateInfo.pDynamicState= &dynamicStateCreateInfo;
-        pipelineCreateInfo.pStages = ShaderStageInfos;
-        pipelineCreateInfo.stageCount = std::size(ShaderStageInfos);
-        pipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
-        pipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
-        pipelineCreateInfo.pRasterizationState = &rasterizationStateCreateInfo;
-        pipelineCreateInfo.pColorBlendState = &colorBlendStateCreateInfo;
-        pipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
-        pipelineCreateInfo.pMultisampleState = &multisampleStateCreateInfo;
-        pipelineCreateInfo.layout = pipelineLayoutIt->second.PipelineLayout;
+    //    VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
+    //    multisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    //    multisampleStateCreateInfo.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+    //    multisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
 
-        const VkResult result = vkCreateGraphicsPipelines(mDevice, nullptr, 1, &pipelineCreateInfo, nullptr, &outPipeline);
-        if(result != VK_SUCCESS)
-        {
-            ASSERT(false, "pipeline 생성 실패 resultCode(%d)", result);
-            return false;
-        }
-	    return true;
-    }
+    //    const auto& pipelineLayoutIt = mShaderLayouts.find(shader);
+
+    //    VkPipelineRenderingCreateInfo renderingCreateInfo{};
+    //    renderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+    //    renderingCreateInfo.colorAttachmentCount = 1;
+    //    renderingCreateInfo.pColorAttachmentFormats = &mSurfaceFormat.format;
+
+    //    VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
+    //    pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    //    pipelineCreateInfo.pNext = &renderingCreateInfo;
+    //    pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
+    //    pipelineCreateInfo.pDynamicState= &dynamicStateCreateInfo;
+    //    pipelineCreateInfo.pStages = ShaderStageInfos;
+    //    pipelineCreateInfo.stageCount = std::size(ShaderStageInfos);
+    //    pipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
+    //    pipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
+    //    pipelineCreateInfo.pRasterizationState = &rasterizationStateCreateInfo;
+    //    pipelineCreateInfo.pColorBlendState = &colorBlendStateCreateInfo;
+    //    pipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+    //    pipelineCreateInfo.pMultisampleState = &multisampleStateCreateInfo;
+    //    pipelineCreateInfo.layout = pipelineLayoutIt->second.PipelineLayout;
+
+    //    const VkResult result = vkCreateGraphicsPipelines(mDevice, nullptr, 1, &pipelineCreateInfo, nullptr, &outPipeline);
+    //    if(result != VK_SUCCESS)
+    //    {
+    //        ASSERT(false, "pipeline 생성 실패 resultCode(%d)", result);
+    //        return false;
+    //    }
+	   // return true;
+    //}
 
     bool VkRenderer::createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const
     {

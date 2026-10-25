@@ -504,7 +504,7 @@ bool Application::initializeSceneVulkan()
     HashID psStageHash;
     mShaderManager->GetStageInfoByType(renderer::eShader::Simple, vsStageHash, psStageHash);
     mVkRenderer->TryCreateGraphicsPipeline(simplePipelineHash, renderer::eShader::Simple, vsStageHash, psStageHash, renderer::eVertexFormat::PTN, renderer::ePrimitiveTopology::Triangles, renderer::eRasterType::Basic, renderer::Opaque, renderer::eDepthStencilState::DepthOffStencilOff, renderer::eRenderPass::Main);
-    mVkRenderer->SetSimplePipeline(simplePipelineHash);
+    //mVkRenderer->SetSimplePipeline(simplePipelineHash);
     return true;
 }
 
