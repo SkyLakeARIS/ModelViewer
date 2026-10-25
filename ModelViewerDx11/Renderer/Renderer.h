@@ -4,6 +4,7 @@
 namespace renderer
 {
     class Buffer;
+    class Sampler;
     class ShaderManager;
     struct RenderPacket;
 }
@@ -78,11 +79,11 @@ namespace renderer
             uint32_t Layout;
             uint32_t Access;
         };
-        enum class eSamplerType
-        {
-            Linear,
-            SamplerCount,
-        };
+        //enum class eSamplerType
+        //{
+        //    Linear,
+        //    SamplerCount,
+        //};
     public:
         VkRenderer();
         ~VkRenderer();
@@ -127,7 +128,6 @@ namespace renderer
         //bool allocateMemory(uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory); // 완료
         // Texture
         bool CreateTexture(const int8_t* const filePath, HashID& outHash, bool bIsDDS);
-        bool createSamplers();
         // Texture - common
         void createImage(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, VkImageType type, VkFormat format, bool bUseStaging, VkMemoryPropertyFlagBits memoryProperty, VkDeviceMemory& outImageMemory, VkImage& outImage);
         //void getMemoryType(VkMemoryRequirements memoryRequirements, uint32_t flag, uint32_t& outMemoryType); // 완
@@ -144,6 +144,7 @@ namespace renderer
         bool createGraphicsPipeline(eShader shader, HashID vsStageHash, HashID psStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass, VkPipeline& outPipeline);
         bool createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const;
         bool createCommandBuffers(VkCommandPool commandPool, uint32_t bufferCount, VkCommandBufferLevel level, VkCommandBuffer& outBuffers) const;
+        bool createSamplers();
         uint32_t acquireSwapChainImage(const PerFrame& frame);
         void transitionImageLayout(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask);
         void transitionImageLayoutNew(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask);
@@ -188,7 +189,7 @@ namespace renderer
         ShaderDescriptor mShaderDescriptors[static_cast<uint8_t>(eShader::ShaderCount)];
         // Texture
         std::unordered_map<HashID, TextureInfo> mTextures;
-        std::unordered_map<eSamplerType, VkSampler> mSamplers;
+        std::unordered_map<eSamplerType, Sampler*> mSamplers;
         //
         VkCommandBuffer mCommandBufferTransfer;
         VkCommandPool mCommandPoolTransfer;

@@ -8,6 +8,7 @@
 #include "../Util/Util.h"
 #include "Resources/Buffer.h"
 #include "Resources/BufferManager.h"
+#include "Resources/Sampler.h"
 #include "Resources/TextureManager.h"
 #include "Shader/ShaderManager.h"
 
@@ -131,7 +132,7 @@ namespace renderer
 
         for(const auto& samplerIt : mSamplers)
         {
-            vkDestroySampler(mDevice, samplerIt.second, nullptr);
+            delete samplerIt.second;
         }
 
         for(const auto& shaderDescriptor : mShaderDescriptors)
@@ -1357,33 +1358,33 @@ namespace renderer
         return true;
     }
 
-    bool VkRenderer::createSamplers()
-    {
-        for(uint32_t samplerType = 0; samplerType < static_cast<uint32_t>(eSamplerType::SamplerCount); ++samplerType)
-        {
-            VkSamplerCreateInfo samplerCreateInfo{};
-            samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-            samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
-            samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
-            samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-            samplerCreateInfo.mipLodBias= 0;
-            samplerCreateInfo.anisotropyEnable = VK_FALSE;
-            samplerCreateInfo.maxAnisotropy = 0.0f;
-            samplerCreateInfo.compareEnable = VK_FALSE;
-            samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    //bool VkRenderer::createSamplers()
+    //{
+    //    for(uint32_t samplerType = 0; samplerType < static_cast<uint32_t>(eSamplerType::SamplerCount); ++samplerType)
+    //    {
+    //        VkSamplerCreateInfo samplerCreateInfo{};
+    //        samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    //        samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+    //        samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+    //        samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    //        samplerCreateInfo.mipLodBias= 0;
+    //        samplerCreateInfo.anisotropyEnable = VK_FALSE;
+    //        samplerCreateInfo.maxAnisotropy = 0.0f;
+    //        samplerCreateInfo.compareEnable = VK_FALSE;
+    //        samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 
-            VkSampler sampler;
-            const VkResult result = vkCreateSampler(mDevice, &samplerCreateInfo, nullptr, &sampler);
-            if(result != VK_SUCCESS)
-            {
-                ASSERT(false, "Sampler 생성 실패 sampler(%d), resultCode(%d)", sampler, result);
-                return false;
-            }
+    //        VkSampler sampler;
+    //        const VkResult result = vkCreateSampler(mDevice, &samplerCreateInfo, nullptr, &sampler);
+    //        if(result != VK_SUCCESS)
+    //        {
+    //            ASSERT(false, "Sampler 생성 실패 sampler(%d), resultCode(%d)", sampler, result);
+    //            return false;
+    //        }
 
-            mSamplers.insert({ static_cast<eSamplerType>(samplerType), sampler});
-        }
-        return true;
-    }
+    //        mSamplers.insert({ static_cast<eSamplerType>(samplerType), sampler});
+    //    }
+    //    return true;
+    //}
 
     void VkRenderer::createImage(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, VkImageType type, VkFormat format, bool bUseStaging, VkMemoryPropertyFlagBits memoryProperty, VkDeviceMemory& outImageMemory, VkImage& outImage)
     {
@@ -2136,6 +2137,21 @@ namespace renderer
         return true;
     }
 
+    bool VkRenderer::createSamplers()
+    {
+        for(uint32_t samplerType = 0; samplerType < static_cast<uint32_t>(eSamplerType::SamplerCount); ++samplerType)
+        {
+            Sampler* sampler = new Sampler(mDevice);
+            if(sampler->Create(static_cast<eSamplerType>(samplerType)) == false)
+            {
+                return false;
+            }
+
+            mSamplers.insert({ static_cast<eSamplerType>(samplerType), sampler});
+        }
+        return true;
+    }
+
     uint32_t VkRenderer::acquireSwapChainImage(const PerFrame& frame)
     {
         uint32_t nextImageIndex = UINT32_MAX;
@@ -2322,19 +2338,19 @@ namespace renderer
 
     HRESULT Renderer::createSamplerState()
     {
-        const D3D11_SAMPLER_DESC SamplerDescTable[static_cast<uint8_t>(eSamplerType::SamplerCount)] =
-        {
-                {D3D11_FILTER_ANISOTROPIC, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, 0, 0, D3D11_COMPARISON_NEVER, {}, 0, D3D11_FLOAT32_MAX}
-        };
+        //const D3D11_SAMPLER_DESC SamplerDescTable[static_cast<uint8_t>(eSamplerType::SamplerCount)] =
+        //{
+        //        {D3D11_FILTER_ANISOTROPIC, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, 0, 0, D3D11_COMPARISON_NEVER, {}, 0, D3D11_FLOAT32_MAX}
+        //};
 
-        for (uint8_t sampler = 0; sampler < static_cast<uint8_t>(eSamplerType::SamplerCount); ++sampler)
-        {
-            if (FAILED(mDevice->CreateSamplerState(&SamplerDescTable[sampler], &mSamplerState[sampler])))
-            {
-                ASSERT(false, "Failed to create SamplerState. check the desc options. failedIndex(%u)", sampler);
-                return E_FAIL;
-            }
-        }
+        //for (uint8_t sampler = 0; sampler < static_cast<uint8_t>(eSamplerType::SamplerCount); ++sampler)
+        //{
+        //    if (FAILED(mDevice->CreateSamplerState(&SamplerDescTable[sampler], &mSamplerState[sampler])))
+        //    {
+        //        ASSERT(false, "Failed to create SamplerState. check the desc options. failedIndex(%u)", sampler);
+        //        return E_FAIL;
+        //    }
+        //}
 
         return S_OK;
     }

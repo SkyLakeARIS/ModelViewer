@@ -41,6 +41,7 @@ namespace renderer
 
     enum class eSamplerType : uint8_t
     {
+        Linear,
         AnisotropicWrap,
         SamplerCount
     };

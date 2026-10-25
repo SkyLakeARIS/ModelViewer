@@ -144,6 +144,9 @@
     <ClInclude Include="Renderer\Uploader.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Renderer\Resources\Sampler.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModelViewerDx11.cpp">
@@ -210,6 +213,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\Uploader.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Resources\Sampler.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
