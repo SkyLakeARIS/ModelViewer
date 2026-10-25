@@ -5,10 +5,7 @@
 namespace renderer
 {
     struct BufferRange;
-}
 
-namespace renderer
-{
     class Buffer
     {
     public:
