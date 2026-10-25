@@ -130,9 +130,9 @@ namespace renderer
         //void uploadBufferStaging(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t sizeInBytes, uint32_t srcOffset, uint32_t dstOffset); // 완
         //bool allocateMemory(uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory); // 완료
         // Texture
-        bool CreateTexture(const int8_t* const filePath, HashID& outHash, bool bIsDDS);
+        //bool CreateTexture(const int8_t* const filePath, HashID& outHash, bool bIsDDS); // 완
         // Texture - common
-        void createImage(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, VkImageType type, VkFormat format, bool bUseStaging, VkMemoryPropertyFlagBits memoryProperty, VkDeviceMemory& outImageMemory, VkImage& outImage);
+        //void createImage(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, VkImageType type, VkFormat format, bool bUseStaging, VkMemoryPropertyFlagBits memoryProperty, VkDeviceMemory& outImageMemory, VkImage& outImage); // 완
         //void getMemoryType(VkMemoryRequirements memoryRequirements, uint32_t flag, uint32_t& outMemoryType); // 완
 
     private:

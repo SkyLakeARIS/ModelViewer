@@ -308,9 +308,10 @@ namespace renderer
         {
             CreateBuffer(1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mUniformBuffer);
         }*/
-        const int8_t* const modelFilePath = reinterpret_cast<int8_t*>("/AssetData/textures/Unagi_Body_D.png");
-        HashID texHash;
-        CreateTexture(modelFilePath, texHash, false);
+        //const int8_t* const modelFilePath = reinterpret_cast<int8_t*>("/AssetData/textures/Unagi_Body_D.png");
+        //HashID texHash;
+
+        //CreateTexture(modelFilePath, texHash, false);
     }
 
     void VkRenderer::UpdateScene(std::vector<std::pair<renderer::eCbType, void*>>& uniforms)
@@ -1315,82 +1316,82 @@ namespace renderer
     //    return true;
     //}
 
-    bool VkRenderer::CreateTexture(const int8_t* const filePath, HashID& outHash, bool bIsDDS)
-    {
-        ASSERT(filePath != nullptr, "invalid path. (filePath is nullptr) ");
-        ASSERT(*filePath != ' ', "invalid path. (filePath may empty string) ");
-        ASSERT(*filePath != '\0', "invalid path. (filePath may empty(null) string) ");
+    //bool VkRenderer::CreateTexture(const int8_t* const filePath, HashID& outHash, bool bIsDDS)
+    //{
+    //    ASSERT(filePath != nullptr, "invalid path. (filePath is nullptr) ");
+    //    ASSERT(*filePath != ' ', "invalid path. (filePath may empty string) ");
+    //    ASSERT(*filePath != '\0', "invalid path. (filePath may empty(null) string) ");
 
-        const HashID texHash = util::GetDjb2Hash(filePath);
-        const auto& texIt = mTextures.find(texHash);
-        if (texIt == mTextures.end())
-        {
-            wchar_t texFilePath[util::MAX_PATH_LENGTH];
-            const uint32_t filePathLength = strlen(reinterpret_cast<char const*>(filePath));
-            size_t  numConverted = 0;
-            (void)mbstowcs_s(&numConverted, texFilePath, util::MAX_PATH_LENGTH, reinterpret_cast<char const*>(filePath), filePathLength);
-            ASSERT(numConverted == (filePathLength + 1), "conversion result is incorrect. converted(%u) pathLength(%u)", numConverted, filePathLength);
+    //    const HashID texHash = util::GetDjb2Hash(filePath);
+    //    const auto& texIt = mTextures.find(texHash);
+    //    if (texIt == mTextures.end())
+    //    {
+    //        wchar_t texFilePath[util::MAX_PATH_LENGTH];
+    //        const uint32_t filePathLength = strlen(reinterpret_cast<char const*>(filePath));
+    //        size_t  numConverted = 0;
+    //        (void)mbstowcs_s(&numConverted, texFilePath, util::MAX_PATH_LENGTH, reinterpret_cast<char const*>(filePath), filePathLength);
+    //        ASSERT(numConverted == (filePathLength + 1), "conversion result is incorrect. converted(%u) pathLength(%u)", numConverted, filePathLength);
 
-            ScratchImage rawImage;
-            if (FAILED(LoadFromWICFile(texFilePath, WIC_FLAGS_NONE, nullptr, rawImage)))
-            {
-                return false;
-            }
+    //        ScratchImage rawImage;
+    //        if (FAILED(LoadFromWICFile(texFilePath, WIC_FLAGS_NONE, nullptr, rawImage)))
+    //        {
+    //            return false;
+    //        }
 
-            BufferInfo bufferInfo{};
-            if(CreateBuffer(rawImage.GetImageCount(), VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,mGraphicsQueueIndex, false, bufferInfo) == false)
-            {
-                return false;
-            }
+    //        BufferInfo bufferInfo{};
+    //        if(CreateBuffer(rawImage.GetImageCount(), VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,mGraphicsQueueIndex, false, bufferInfo) == false)
+    //        {
+    //            return false;
+    //        }
 
-            TextureInfo newTexture{};
-            // MEMO: staging buffer에 이미지 데이터 복사
-            VkMemoryMapInfo memoryMapInfo{};
-            memoryMapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_MAP_INFO;
-            memoryMapInfo.memory = bufferInfo.Memory;
-            memoryMapInfo.size = bufferInfo.AllocationSize;
-            memoryMapInfo.offset = 0;
+    //        TextureInfo newTexture{};
+    //        // MEMO: staging buffer에 이미지 데이터 복사
+    //        VkMemoryMapInfo memoryMapInfo{};
+    //        memoryMapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_MAP_INFO;
+    //        memoryMapInfo.memory = bufferInfo.Memory;
+    //        memoryMapInfo.size = bufferInfo.AllocationSize;
+    //        memoryMapInfo.offset = 0;
 
-            void* pCursor = nullptr;
-            vkMapMemory2(mDevice, &memoryMapInfo, &pCursor);
+    //        void* pCursor = nullptr;
+    //        vkMapMemory2(mDevice, &memoryMapInfo, &pCursor);
 
-            (void)memcpy(pCursor, static_cast<void*>(rawImage.GetPixels()), rawImage.GetPixelsSize());
+    //        (void)memcpy(pCursor, static_cast<void*>(rawImage.GetPixels()), rawImage.GetPixelsSize());
 
-            VkMemoryUnmapInfo memoryUnmapInfo{};
-            memoryUnmapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO;
-            memoryUnmapInfo.memory = bufferInfo.Memory;
+    //        VkMemoryUnmapInfo memoryUnmapInfo{};
+    //        memoryUnmapInfo.sType = VK_STRUCTURE_TYPE_MEMORY_UNMAP_INFO;
+    //        memoryUnmapInfo.memory = bufferInfo.Memory;
 
-            vkUnmapMemory2(mDevice, &memoryUnmapInfo);
-            //
-            // MEMO: 이미지 및 메모리 생성
-            createImage(VK_IMAGE_LAYOUT_UNDEFINED, mGraphicsQueueIndex, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { static_cast<uint32_t>(rawImage.GetMetadata().width), static_cast<uint32_t>(rawImage.GetMetadata().height), 1 }, bIsDDS ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_SRGB, true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, newTexture.ImageMemory, newTexture.Image);
+    //        vkUnmapMemory2(mDevice, &memoryUnmapInfo);
+    //        //
+    //        // MEMO: 이미지 및 메모리 생성
+    //        createImage(VK_IMAGE_LAYOUT_UNDEFINED, mGraphicsQueueIndex, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { static_cast<uint32_t>(rawImage.GetMetadata().width), static_cast<uint32_t>(rawImage.GetMetadata().height), 1 }, bIsDDS ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_SRGB, true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, newTexture.ImageMemory, newTexture.Image);
 
-            // MEMO: staging buffer에서 이미지 메모리로 복사
-            VkBufferImageCopy2 copyImageInfo2{};
-            copyImageInfo2.sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2;
-            copyImageInfo2.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-            copyImageInfo2.imageOffset = {0, 0, 0};
-            copyImageInfo2.imageExtent = { static_cast<uint32_t>(rawImage.GetMetadata().width), static_cast<uint32_t>(rawImage.GetMetadata().height) };
-            copyImageInfo2.bufferImageHeight = 0;
-            copyImageInfo2.bufferRowLength = 0;
-            copyBufferToImageStaging(bufferInfo.Buffer, newTexture.Image, copyImageInfo2);
+    //        // MEMO: staging buffer에서 이미지 메모리로 복사
+    //        VkBufferImageCopy2 copyImageInfo2{};
+    //        copyImageInfo2.sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2;
+    //        copyImageInfo2.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    //        copyImageInfo2.imageOffset = {0, 0, 0};
+    //        copyImageInfo2.imageExtent = { static_cast<uint32_t>(rawImage.GetMetadata().width), static_cast<uint32_t>(rawImage.GetMetadata().height) };
+    //        copyImageInfo2.bufferImageHeight = 0;
+    //        copyImageInfo2.bufferRowLength = 0;
+    //        copyBufferToImageStaging(bufferInfo.Buffer, newTexture.Image, copyImageInfo2);
 
 
-            VkImageViewCreateInfo imageViewCreateInfo{};
-            imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            imageViewCreateInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-            imageViewCreateInfo.image = newTexture.Image;
-            imageViewCreateInfo.viewType = {};
-            vkCreateImageView(mDevice, &imageViewCreateInfo, nullptr, &newTexture.ImageView);
+    //        VkImageViewCreateInfo imageViewCreateInfo{};
+    //        imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    //        imageViewCreateInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+    //        imageViewCreateInfo.image = newTexture.Image;
+    //        imageViewCreateInfo.viewType = {};
+    //        vkCreateImageView(mDevice, &imageViewCreateInfo, nullptr, &newTexture.ImageView);
 
-            outHash = texHash;
-        }
-        else
-        {
-            outHash = texIt->first;
-        }
-        return true;
-    }
+    //        outHash = texHash;
+    //    }
+    //    else
+    //    {
+    //        outHash = texIt->first;
+    //    }
+    //    return true;
+    //}
 
     //bool VkRenderer::createSamplers()
     //{
@@ -1420,44 +1421,44 @@ namespace renderer
     //    return true;
     //}
 
-    void VkRenderer::createImage(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, VkImageType type, VkFormat format, bool bUseStaging, VkMemoryPropertyFlagBits memoryProperty, VkDeviceMemory& outImageMemory, VkImage& outImage)
-    {
-        VkImageCreateInfo imageCreateInfo{};
-        imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageCreateInfo.extent = imageExtent;
-        imageCreateInfo.format = format;
-        imageCreateInfo.mipLevels = 1;
-        imageCreateInfo.arrayLayers = 1;
-        imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageCreateInfo.imageType = type;
-        imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        imageCreateInfo.usage = usage;
-        imageCreateInfo.queueFamilyIndexCount = 1;
-        imageCreateInfo.pQueueFamilyIndices = &queueFamilyIndex;
-        imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imageCreateInfo.initialLayout = layout;
-        vkCreateImage(mDevice, &imageCreateInfo, nullptr, &outImage);
+    //void VkRenderer::createImage(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, VkImageType type, VkFormat format, bool bUseStaging, VkMemoryPropertyFlagBits memoryProperty, VkDeviceMemory& outImageMemory, VkImage& outImage)
+    //{
+    //    VkImageCreateInfo imageCreateInfo{};
+    //    imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    //    imageCreateInfo.extent = imageExtent;
+    //    imageCreateInfo.format = format;
+    //    imageCreateInfo.mipLevels = 1;
+    //    imageCreateInfo.arrayLayers = 1;
+    //    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    //    imageCreateInfo.imageType = type;
+    //    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    //    imageCreateInfo.usage = usage;
+    //    imageCreateInfo.queueFamilyIndexCount = 1;
+    //    imageCreateInfo.pQueueFamilyIndices = &queueFamilyIndex;
+    //    imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    //    imageCreateInfo.initialLayout = layout;
+    //    vkCreateImage(mDevice, &imageCreateInfo, nullptr, &outImage);
 
-        VkImageMemoryRequirementsInfo2 imageMemoryRequirements{};
-        imageMemoryRequirements.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2;
-        imageMemoryRequirements.image = outImage;
+    //    VkImageMemoryRequirementsInfo2 imageMemoryRequirements{};
+    //    imageMemoryRequirements.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2;
+    //    imageMemoryRequirements.image = outImage;
 
-        VkMemoryRequirements2 memoryRequirements2{};
-        vkGetImageMemoryRequirements2(mDevice, &imageMemoryRequirements, &memoryRequirements2);
+    //    VkMemoryRequirements2 memoryRequirements2{};
+    //    vkGetImageMemoryRequirements2(mDevice, &imageMemoryRequirements, &memoryRequirements2);
 
-        VkMemoryAllocateInfo memoryAllocateInfo{};
-        memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        memoryAllocateInfo.allocationSize = memoryRequirements2.memoryRequirements.size;
-        getMemoryType(memoryRequirements2.memoryRequirements, memoryProperty, memoryAllocateInfo.memoryTypeIndex);
-        vkAllocateMemory(mDevice, &memoryAllocateInfo, nullptr, &outImageMemory);
+    //    VkMemoryAllocateInfo memoryAllocateInfo{};
+    //    memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    //    memoryAllocateInfo.allocationSize = memoryRequirements2.memoryRequirements.size;
+    //    getMemoryType(memoryRequirements2.memoryRequirements, memoryProperty, memoryAllocateInfo.memoryTypeIndex);
+    //    vkAllocateMemory(mDevice, &memoryAllocateInfo, nullptr, &outImageMemory);
 
-        VkBindImageMemoryInfo bindImageMemoryInfo{};
-        bindImageMemoryInfo.sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
-        bindImageMemoryInfo.memory = outImageMemory;
-        bindImageMemoryInfo.memoryOffset = 0;
-        bindImageMemoryInfo.image = outImage;
-        vkBindImageMemory2(mDevice, 1, &bindImageMemoryInfo);
-    }
+    //    VkBindImageMemoryInfo bindImageMemoryInfo{};
+    //    bindImageMemoryInfo.sType = VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
+    //    bindImageMemoryInfo.memory = outImageMemory;
+    //    bindImageMemoryInfo.memoryOffset = 0;
+    //    bindImageMemoryInfo.image = outImage;
+    //    vkBindImageMemory2(mDevice, 1, &bindImageMemoryInfo);
+    //}
 
     bool VkRenderer::createInstance(const char* const appName)
     {
