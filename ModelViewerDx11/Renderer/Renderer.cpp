@@ -10,7 +10,9 @@
 #include "Resources/BufferManager.h"
 #include "Resources/Sampler.h"
 #include "Resources/TextureManager.h"
+#include "Shader/Shader.h"
 #include "Shader/ShaderManager.h"
+#include "Shader/ShaderModule.h"
 
 namespace renderer
 {
@@ -146,18 +148,17 @@ namespace renderer
         }
         mPipelines.clear();
 
-        for(const auto& shaderLayoutIt : mShaderLayouts)
+        for(const auto& shaderIt : mShaders)
         {
-            vkDestroyPipelineLayout(mDevice, shaderLayoutIt.second.PipelineLayout, nullptr);
-            vkDestroyDescriptorSetLayout(mDevice, shaderLayoutIt.second.SetLayout, nullptr);
+            delete shaderIt;
         }
-        mShaderLayouts.clear();
+        mShaders.clear();
 
-        for(const auto& shaderInfo : mShaderInfos)
+        for(const auto& shaderModuleIt: mShaderModules)
         {
-            vkDestroyShaderModule(mDevice, shaderInfo.second.ShaderModule, nullptr);
+            delete shaderModuleIt.second;
         }
-        mShaderInfos.clear();
+        mShaderModules.clear();
 
         for (const auto& uniformBuffer : mUbPerFrames)
         {
@@ -261,6 +262,11 @@ namespace renderer
         }
 
         Uploader::Initialize(mDevice, mCommandBufferTransfer, mCommandPoolTransfer, mQueue, mGraphicsQueueIndex);
+        {
+            return false;
+        }
+
+        if(createShaders() == false)
         {
             return false;
         }
@@ -495,203 +501,203 @@ namespace renderer
         mIndexBuffer->AddData(pData, count, attribSize, hash, outRange);
     }
 
-    bool VkRenderer::CreateShaderStage(const char* const path, bool bMakeAsPixelShader, HashID& outShaderStageHash)
-    {
-        ASSERT(path, "path는 유효해야합니다. path(%s)", path);
+    //bool VkRenderer::CreateShaderStage(const char* const path, bool bMakeAsPixelShader, HashID& outShaderStageHash)
+    //{
+    //    ASSERT(path, "path는 유효해야합니다. path(%s)", path);
 
-        HashID hash = util::GetDjb2Hash(reinterpret_cast<const int8_t*>(path));
-        if(mShaderInfos.find(hash) != mShaderInfos.end())
-        {
-            outShaderStageHash = hash;
-            return true;
-        }
-        std::ifstream shaderFile(path, std::ios::ate | std::ios::binary);
+    //    HashID hash = util::GetDjb2Hash(reinterpret_cast<const int8_t*>(path));
+    //    if(mShaderInfos.find(hash) != mShaderInfos.end())
+    //    {
+    //        outShaderStageHash = hash;
+    //        return true;
+    //    }
+    //    std::ifstream shaderFile(path, std::ios::ate | std::ios::binary);
 
-        if(shaderFile.is_open() == false)
-        {
-            ASSERT(false, "셰이더 파일 로드 실패 ");
-            return false;
-        }
+    //    if(shaderFile.is_open() == false)
+    //    {
+    //        ASSERT(false, "셰이더 파일 로드 실패 ");
+    //        return false;
+    //    }
 
-        const uint32_t fileSize = shaderFile.tellg();
-        shaderFile.seekg(0, std::ios::beg);
+    //    const uint32_t fileSize = shaderFile.tellg();
+    //    shaderFile.seekg(0, std::ios::beg);
 
-        std::vector<uint8_t> shaderCode(fileSize);
+    //    std::vector<uint8_t> shaderCode(fileSize);
 
-        shaderFile.read(reinterpret_cast<char*>(shaderCode.data()), fileSize);
+    //    shaderFile.read(reinterpret_cast<char*>(shaderCode.data()), fileSize);
 
-        ShaderStage shaderInfo{};
-        // make shaderModule
-        
-        VkShaderModuleCreateInfo shaderModuleCreateInfo{};
-        shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        shaderModuleCreateInfo.codeSize = fileSize;
-        shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(shaderCode.data());
+    //    ShaderStage shaderInfo{};
+    //    // make shaderModule
+    //    
+    //    VkShaderModuleCreateInfo shaderModuleCreateInfo{};
+    //    shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    //    shaderModuleCreateInfo.codeSize = fileSize;
+    //    shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(shaderCode.data());
 
-        const VkResult result = vkCreateShaderModule(mDevice, &shaderModuleCreateInfo, nullptr, &shaderInfo.ShaderModule);
-        if(result != VK_SUCCESS)
-        {
-            ASSERT(false, "vkCreateShaderModule 실패 resultCode(%d)", result);
-            return false;
-        }
-        // make shaderStgae
+    //    const VkResult result = vkCreateShaderModule(mDevice, &shaderModuleCreateInfo, nullptr, &shaderInfo.ShaderModule);
+    //    if(result != VK_SUCCESS)
+    //    {
+    //        ASSERT(false, "vkCreateShaderModule 실패 resultCode(%d)", result);
+    //        return false;
+    //    }
+    //    // make shaderStgae
 
-        shaderInfo.PipelineShaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderInfo.PipelineShaderStage.stage = bMakeAsPixelShader ? VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT : VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
-        shaderInfo.PipelineShaderStage.module = shaderInfo.ShaderModule;
-        shaderInfo.PipelineShaderStage.pName = "main";
+    //    shaderInfo.PipelineShaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    //    shaderInfo.PipelineShaderStage.stage = bMakeAsPixelShader ? VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT : VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+    //    shaderInfo.PipelineShaderStage.module = shaderInfo.ShaderModule;
+    //    shaderInfo.PipelineShaderStage.pName = "main";
 
-        mShaderInfos.insert({hash, std::move(shaderInfo)});
-        outShaderStageHash = hash;
-        return true;
-    }
+    //    mShaderInfos.insert({hash, std::move(shaderInfo)});
+    //    outShaderStageHash = hash;
+    //    return true;
+    //}
 
-    bool VkRenderer::CreateShaderLayout(eShader shader)
-    {
-        const auto& shaderLayoutIt = mShaderLayouts.find(shader);
-        if (shaderLayoutIt == mShaderLayouts.end())
-        {
-            const std::unordered_map<eShader, std::vector<VkDescriptorSetLayoutBinding>> DescriptorLayoutBindingTable =
-            {
-                {
-                    eShader::BasicWithShadow,
-                    {
-                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                    }
-                },
-                {
-                    eShader::Shadow,
-                    {
-                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                    }
-                },
-                {
-                    eShader::Texture,
-                    {
-                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                    }
-                },
-                {
-                    eShader::Color,
-                    {
-                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                    }
-                },
-                {
-                    eShader::DebugColor,
-                    {
-                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                    }
-                },
-                {
-                    eShader::DebugHUD,
-                    {
-                        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {5, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                    }
-                },
-                {
-                    eShader::Deferred,
-                    {
-                       {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {8, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {9, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {10, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {11, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {12, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                    }
-                },
-                {
-                    eShader::Outline,
-                    {
-                       {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {6, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                    }
-                },
-                {
-                    eShader::Skybox,
-                    {
-                       {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                        {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                        {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                    }
-                },
-                {
-                    eShader::Simple,
-                    {
-                       {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT , nullptr},
-                        {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT , nullptr},
-                    }
-                }
-            };
+    //bool VkRenderer::CreateShaderLayout(eShader shader)
+    //{
+        //const auto& shaderLayoutIt = mShaderLayouts.find(shader);
+        //if (shaderLayoutIt == mShaderLayouts.end())
+        //{
+        //    const std::unordered_map<eShader, std::vector<VkDescriptorSetLayoutBinding>> DescriptorLayoutBindingTable =
+        //    {
+        //        {
+        //            eShader::BasicWithShadow,
+        //            {
+        //                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //            }
+        //        },
+        //        {
+        //            eShader::Shadow,
+        //            {
+        //                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //            }
+        //        },
+        //        {
+        //            eShader::Texture,
+        //            {
+        //                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //            }
+        //        },
+        //        {
+        //            eShader::Color,
+        //            {
+        //                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //            }
+        //        },
+        //        {
+        //            eShader::DebugColor,
+        //            {
+        //                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //            }
+        //        },
+        //        {
+        //            eShader::DebugHUD,
+        //            {
+        //                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {5, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //            }
+        //        },
+        //        {
+        //            eShader::Deferred,
+        //            {
+        //               {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {8, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {9, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {10, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {11, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {12, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //            }
+        //        },
+        //        {
+        //            eShader::Outline,
+        //            {
+        //               {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {6, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //            }
+        //        },
+        //        {
+        //            eShader::Skybox,
+        //            {
+        //               {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        //                {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //                {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+        //            }
+        //        },
+        //        {
+        //            eShader::Simple,
+        //            {
+        //               {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT , nullptr},
+        //                {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT , nullptr},
+        //            }
+        //        }
+        //    };
 
-            ASSERT(DescriptorLayoutBindingTable.find(shader) != DescriptorLayoutBindingTable.end(), "유효하지 않은 shader이거나, shader에 대한 DescriptorTable에 추가되지 않았습니다. shader(%u)", static_cast<uint8_t>(shader));
+        //    ASSERT(DescriptorLayoutBindingTable.find(shader) != DescriptorLayoutBindingTable.end(), "유효하지 않은 shader이거나, shader에 대한 DescriptorTable에 추가되지 않았습니다. shader(%u)", static_cast<uint8_t>(shader));
 
-            const auto& descriptorLayoutIt = DescriptorLayoutBindingTable.find(shader);
-            ASSERT(descriptorLayoutIt != DescriptorLayoutBindingTable.end(), "shader 타입이 올바르지 않거나, Table에 추가되지 않았습니다");
+        //    const auto& descriptorLayoutIt = DescriptorLayoutBindingTable.find(shader);
+        //    ASSERT(descriptorLayoutIt != DescriptorLayoutBindingTable.end(), "shader 타입이 올바르지 않거나, Table에 추가되지 않았습니다");
 
-            VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
-            descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            descriptorSetLayoutCreateInfo.pBindings = descriptorLayoutIt->second.data();
-            descriptorSetLayoutCreateInfo.bindingCount = descriptorLayoutIt->second.size();
+        //    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
+        //    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        //    descriptorSetLayoutCreateInfo.pBindings = descriptorLayoutIt->second.data();
+        //    descriptorSetLayoutCreateInfo.bindingCount = descriptorLayoutIt->second.size();
 
-            VkDescriptorSetLayout setLayout;
-            VkResult result = vkCreateDescriptorSetLayout(mDevice, &descriptorSetLayoutCreateInfo, nullptr, &setLayout);
-            if (result != VK_SUCCESS)
-            {
-                ASSERT(false, "DescriptorSetLayout 생성 실패.  result(%u)", result);
-            }
+        //    VkDescriptorSetLayout setLayout;
+        //    VkResult result = vkCreateDescriptorSetLayout(mDevice, &descriptorSetLayoutCreateInfo, nullptr, &setLayout);
+        //    if (result != VK_SUCCESS)
+        //    {
+        //        ASSERT(false, "DescriptorSetLayout 생성 실패.  result(%u)", result);
+        //    }
 
-            VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-            pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-            pipelineLayoutCreateInfo.pSetLayouts = &setLayout;
-            pipelineLayoutCreateInfo.setLayoutCount = 1;
-            pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+        //    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+        //    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        //    pipelineLayoutCreateInfo.pSetLayouts = &setLayout;
+        //    pipelineLayoutCreateInfo.setLayoutCount = 1;
+        //    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 
-            VkPipelineLayout pipelineLayout;
-            result = vkCreatePipelineLayout(mDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
-            if (result != VK_SUCCESS)
-            {
-                ASSERT(false, "PipelineLayout 생성 실패.  result(%u)", result);
-            }
+        //    VkPipelineLayout pipelineLayout;
+        //    result = vkCreatePipelineLayout(mDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+        //    if (result != VK_SUCCESS)
+        //    {
+        //        ASSERT(false, "PipelineLayout 생성 실패.  result(%u)", result);
+        //    }
 
-            ShaderLayout shaderLayout{ setLayout, pipelineLayout, {} };
-            shaderLayout.DescriptorInfos.reserve(descriptorLayoutIt->second.size());
-            for(const auto& bindingInfo : descriptorLayoutIt->second)
-            {
-                shaderLayout.DescriptorInfos.push_back({bindingInfo.descriptorType, bindingInfo.descriptorCount});
-            }
+        //    ShaderLayout shaderLayout{ setLayout, pipelineLayout, {} };
+        //    shaderLayout.DescriptorInfos.reserve(descriptorLayoutIt->second.size());
+        //    for(const auto& bindingInfo : descriptorLayoutIt->second)
+        //    {
+        //        shaderLayout.DescriptorInfos.push_back({bindingInfo.descriptorType, bindingInfo.descriptorCount});
+        //    }
 
-            mShaderLayouts.insert({ shader, std::move(shaderLayout) });
-        }
-        return true;
-    }
+        //    mShaderLayouts.insert({ shader, std::move(shaderLayout) });
+        //}
+        //return true;
+    //}
 
     bool VkRenderer::CreateDescriptorSet()
     {
@@ -2149,6 +2155,115 @@ namespace renderer
 
             mSamplers.insert({ static_cast<eSamplerType>(samplerType), sampler});
         }
+        return true;
+    }
+
+    bool VkRenderer::createShaders()
+    {
+        struct ShaderStageHash
+        {
+            eShader Type;
+            HashID VertexShaderHash;
+            HashID PixelShaderHash;
+        };
+
+        struct VertexShaderSourceInfo
+        {
+            eVertexShader Type;
+            const char* SourcePath;
+        };
+
+        constexpr VertexShaderSourceInfo VertexShaderSourceList[] =
+        {
+            {eVertexShader::VsOutline, "Renderer/Shader/Precompiled/VsOutline.spv"},
+            {eVertexShader::VsBasicWithShadow, "Renderer/Shader/Precompiled/VsBasicWithShadow.spv"},
+            {eVertexShader::VsSimple, "Renderer/Shader/Precompiled/VsSimple.spv"},
+            {eVertexShader::VsSkybox, "Renderer/Shader/Precompiled/VsSkybox.spv"},
+            {eVertexShader::VsTexture, "Renderer/Shader/Precompiled/VsTexture.spv"},
+            {eVertexShader::VsScreen, "Renderer/Shader/Precompiled/VsScreen.spv"},
+            {eVertexShader::VsShadow, "Renderer/Shader/Precompiled/VsShadow.spv"},
+            {eVertexShader::VsDeferred, "Renderer/Shader/Precompiled/VsDeferred.spv"},
+            {eVertexShader::VsDebugColor, "Renderer/Shader/Precompiled/VsDebugColor.spv"},
+        };
+        static_assert(std::size(VertexShaderSourceList) == static_cast<uint8_t>(eVertexShader::VertexShaderCount), "열거형값과 List의 요소가 서로 일치해야 합니다.");
+
+
+        struct PixelShaderSourceInfo
+        {
+            ePixelShader Type;
+            const char* SourcePath;
+        };
+
+        constexpr PixelShaderSourceInfo PixelShaderSourceList[] =
+        {
+            {ePixelShader::PsOutline, "Renderer/Shader/Precompiled/PsOutline.spv"},
+            {ePixelShader::PsBasicWithShadow, "Renderer/Shader/Precompiled/PsBasicWithShadow.spv"},
+            {ePixelShader::PsShadow, "Renderer/Shader/Precompiled/PsShadow.spv"},
+            {ePixelShader::PsTexture, "Renderer/Shader/Precompiled/PsTexture.spv"},
+            {ePixelShader::PsSkybox, "Renderer/Shader/Precompiled/PsSkybox.spv"},
+            {ePixelShader::PsColor, "Renderer/Shader/Precompiled/PsColor.spv"},
+            {ePixelShader::PsDeferred, "Renderer/Shader/Precompiled/PsDeferred.spv"},
+            {ePixelShader::PsTextureMRT, "Renderer/Shader/Precompiled/PsTextureMRT.spv"},
+            {ePixelShader::PsSimple, "Renderer/Shader/Precompiled/PsSimple.spv"},
+        };
+        static_assert(std::size(PixelShaderSourceList) == static_cast<uint8_t>(ePixelShader::PixelShaderCount), "열거형값과 List의 요소가 서로 일치해야 합니다.");
+
+        HashID vsHashes[static_cast<uint8_t>(eVertexShader::VertexShaderCount)];
+        for (const VertexShaderSourceInfo shaderInfo : VertexShaderSourceList)
+        {
+            ShaderModule* shaderModule = new ShaderModule(mDevice);
+            HashID shaderHash;
+            if(shaderModule->Create(shaderInfo.SourcePath, eShaderStageType::Vertex, shaderHash) == false)
+            {
+                return false;
+            }
+            mShaderModules.insert({shaderHash, shaderModule});
+            vsHashes[static_cast<EnumInt>(shaderInfo.Type)] = shaderHash;
+        }
+
+        HashID psHashes[static_cast<uint8_t>(ePixelShader::PixelShaderCount)];
+        for (const PixelShaderSourceInfo shaderInfo : PixelShaderSourceList)
+        {
+            ShaderModule* shaderModule = new ShaderModule(mDevice);
+            HashID shaderHash;
+            if(shaderModule->Create(shaderInfo.SourcePath, eShaderStageType::Pixel, shaderHash) == false)
+            {
+                return false;
+            }
+            mShaderModules.insert({ shaderHash, shaderModule });
+            psHashes[static_cast<EnumInt>(shaderInfo.Type)] = shaderHash;
+        }
+
+        // construct shader mapping table
+        const ShaderStageHash ShaderMapTable[] =
+        {
+            {eShader::Outline, vsHashes[static_cast<uint8_t>(eVertexShader::VsOutline)], psHashes[static_cast<uint8_t>(ePixelShader::PsOutline)]},
+            {eShader::Skybox, vsHashes[static_cast<uint8_t>(eVertexShader::VsSkybox)], psHashes[static_cast<uint8_t>(ePixelShader::PsSkybox)]},
+            { eShader::Shadow, vsHashes[static_cast<uint8_t>(eVertexShader::VsShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsShadow)]},
+            {eShader::BasicWithShadow,  vsHashes[static_cast<uint8_t>(eVertexShader::VsBasicWithShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsBasicWithShadow)]},
+            {eShader::Texture,  vsHashes[static_cast<uint8_t>(eVertexShader::VsTexture)], psHashes[static_cast<uint8_t>(ePixelShader::PsTextureMRT)]},
+            {eShader::Color,  vsHashes[static_cast<uint8_t>(eVertexShader::VsSimple)], psHashes[static_cast<uint8_t>(ePixelShader::PsColor)]},
+            {eShader::DebugHUD,  vsHashes[static_cast<uint8_t>(eVertexShader::VsScreen)], psHashes[static_cast<uint8_t>(ePixelShader::PsTexture)]},
+            {eShader::Deferred,  vsHashes[static_cast<uint8_t>(eVertexShader::VsDeferred)], psHashes[static_cast<uint8_t>(ePixelShader::PsDeferred)]},
+            {eShader::DebugColor,  vsHashes[static_cast<uint8_t>(eVertexShader::VsDebugColor)], psHashes[static_cast<uint8_t>(ePixelShader::PsColor)]},
+            {eShader::Simple,  vsHashes[static_cast<uint8_t>(eVertexShader::VsSimple)], psHashes[static_cast<uint8_t>(ePixelShader::PsSimple)]},
+        };
+        static_assert(std::size(ShaderMapTable) == static_cast<uint8_t>(eShader::ShaderCount), "열거형값과 ShaderMapTable의 요소가 서로 일치해야 합니다.");
+
+        for (const auto& shaderEntryIt : ShaderMapTable)
+        {
+            const auto& vsModule = mShaderModules.find(shaderEntryIt.VertexShaderHash);
+            ASSERT(vsModule != mShaderModules.end(), "Vs Module이 제대로 초기화되지 않았습니다. type(%d)", static_cast<EnumInt>(shaderEntryIt.Type));
+            const auto& psModule = mShaderModules.find(shaderEntryIt.PixelShaderHash);
+            ASSERT(psModule != mShaderModules.end(), "Ps Module이 제대로 초기화되지 않았습니다. type(%d)", static_cast<EnumInt>(shaderEntryIt.Type));
+            Shader* shader = new Shader(mDevice);
+            if(shader->Create(shaderEntryIt.Type, vsModule->second, psModule->second) == false)
+            {
+                return false;
+            }
+            mShaders.push_back(shader);
+        }
+
         return true;
     }
 

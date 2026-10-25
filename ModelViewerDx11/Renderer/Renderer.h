@@ -3,6 +3,8 @@
 
 namespace renderer
 {
+    class ShaderModule;
+    class Shader;
     class Buffer;
     class Sampler;
     class ShaderManager;
@@ -108,8 +110,8 @@ namespace renderer
         // pipeline - test
         void SetSimplePipeline(HashID hash);
         // Shader
-        bool CreateShaderStage(const char* const path, bool bMakeAsPixelShader, HashID& outShaderStageHash);
-        bool CreateShaderLayout(eShader shader);
+        //bool CreateShaderStage(const char* const path, bool bMakeAsPixelShader, HashID& outShaderStageHash);
+        //bool CreateShaderLayout(eShader shader);
         bool CreateDescriptorSet();
         bool UpdateDescriptorSet(eShader shader);
         void UpdateUniformData(void* const pData, uint32_t sizeInBytes, BufferInfo uniformBuffer);
@@ -145,6 +147,7 @@ namespace renderer
         bool createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const;
         bool createCommandBuffers(VkCommandPool commandPool, uint32_t bufferCount, VkCommandBufferLevel level, VkCommandBuffer& outBuffers) const;
         bool createSamplers();
+        bool createShaders();
         uint32_t acquireSwapChainImage(const PerFrame& frame);
         void transitionImageLayout(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask);
         void transitionImageLayoutNew(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask);
@@ -178,8 +181,8 @@ namespace renderer
         std::unordered_map<HashID, PipelineStateBitField> mPipelineBitLayout;
         std::unordered_map<HashID, VkPipeline> mPipelines;
         // shader
-        std::unordered_map<HashID, ShaderStage> mShaderInfos;
-        std::unordered_map<eShader, ShaderLayout> mShaderLayouts;
+        std::unordered_map<HashID, ShaderModule*> mShaderModules;
+        std::vector<Shader*> mShaders;
         // buffer
         Buffer* mVertexBuffer;
         Buffer* mIndexBuffer;

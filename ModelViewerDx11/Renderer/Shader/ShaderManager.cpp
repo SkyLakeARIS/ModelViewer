@@ -89,46 +89,46 @@ namespace renderer
 
         HashID vsHashes[static_cast<uint8_t>(eVertexShader::VertexShaderCount)];
 
-        for (const VertexShaderSourceInfo shaderInfo : VertexShaderSourceList)
-        {
-            if(renderer.CreateShaderStage(shaderInfo.SourcePath, false, vsHashes[static_cast<uint8_t>(shaderInfo.Type)]) == false)
-            {
-                return false;
-            }
-        }
+        //for (const VertexShaderSourceInfo shaderInfo : VertexShaderSourceList)
+        //{
+        //    if(renderer.CreateShaderStage(shaderInfo.SourcePath, false, vsHashes[static_cast<uint8_t>(shaderInfo.Type)]) == false)
+        //    {
+        //        return false;
+        //    }
+        //}
 
-        HashID psHashes[static_cast<uint8_t>(ePixelShader::PixelShaderCount)];
-        for (const PixelShaderSourceInfo shaderInfo : PixelShaderSourceList)
-        {
-            if(renderer.CreateShaderStage(shaderInfo.SourcePath, true, psHashes[static_cast<uint8_t>(shaderInfo.Type)]) == false)
-            {
-                return false;
-            }
-        }
+        //HashID psHashes[static_cast<uint8_t>(ePixelShader::PixelShaderCount)];
+        //for (const PixelShaderSourceInfo shaderInfo : PixelShaderSourceList)
+        //{
+        //    if(renderer.CreateShaderStage(shaderInfo.SourcePath, true, psHashes[static_cast<uint8_t>(shaderInfo.Type)]) == false)
+        //    {
+        //        return false;
+        //    }
+        //}
 
-        // construct shader mapping table
-        const ShaderStageHash ShaderMapTable[] =
-        {
-            {eShader::Outline, vsHashes[static_cast<uint8_t>(eVertexShader::VsOutline)], psHashes[static_cast<uint8_t>(ePixelShader::PsOutline)]},
-            {eShader::Skybox, vsHashes[static_cast<uint8_t>(eVertexShader::VsSkybox)], psHashes[static_cast<uint8_t>(ePixelShader::PsSkybox)]},
-            { eShader::Shadow, vsHashes[static_cast<uint8_t>(eVertexShader::VsShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsShadow)]},
-            {eShader::BasicWithShadow,  vsHashes[static_cast<uint8_t>(eVertexShader::VsBasicWithShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsBasicWithShadow)]},
-            {eShader::Texture,  vsHashes[static_cast<uint8_t>(eVertexShader::VsTexture)], psHashes[static_cast<uint8_t>(ePixelShader::PsTextureMRT)]},
-            {eShader::Color,  vsHashes[static_cast<uint8_t>(eVertexShader::VsSimple)], psHashes[static_cast<uint8_t>(ePixelShader::PsColor)]},
-            {eShader::DebugHUD,  vsHashes[static_cast<uint8_t>(eVertexShader::VsScreen)], psHashes[static_cast<uint8_t>(ePixelShader::PsTexture)]},
-            {eShader::Deferred,  vsHashes[static_cast<uint8_t>(eVertexShader::VsDeferred)], psHashes[static_cast<uint8_t>(ePixelShader::PsDeferred)]},
-            {eShader::DebugColor,  vsHashes[static_cast<uint8_t>(eVertexShader::VsDebugColor)], psHashes[static_cast<uint8_t>(ePixelShader::PsColor)]},
-            {eShader::Simple,  vsHashes[static_cast<uint8_t>(eVertexShader::VsSimple)], psHashes[static_cast<uint8_t>(ePixelShader::PsSimple)]},
-        };
-        static_assert(std::size(ShaderMapTable) == static_cast<uint8_t>(eShader::ShaderCount), "열거형값과 ShaderMapTable의 요소가 서로 일치해야 합니다.");
-        static_assert(sizeof(mShaderHashes) == sizeof(ShaderMapTable), "mShaderHashes and ShaderMapTable MUST be same size.");
-        memcpy(mShaderHashes, ShaderMapTable, sizeof(mShaderHashes));
+        //// construct shader mapping table
+        //const ShaderStageHash ShaderMapTable[] =
+        //{
+        //    {eShader::Outline, vsHashes[static_cast<uint8_t>(eVertexShader::VsOutline)], psHashes[static_cast<uint8_t>(ePixelShader::PsOutline)]},
+        //    {eShader::Skybox, vsHashes[static_cast<uint8_t>(eVertexShader::VsSkybox)], psHashes[static_cast<uint8_t>(ePixelShader::PsSkybox)]},
+        //    { eShader::Shadow, vsHashes[static_cast<uint8_t>(eVertexShader::VsShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsShadow)]},
+        //    {eShader::BasicWithShadow,  vsHashes[static_cast<uint8_t>(eVertexShader::VsBasicWithShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsBasicWithShadow)]},
+        //    {eShader::Texture,  vsHashes[static_cast<uint8_t>(eVertexShader::VsTexture)], psHashes[static_cast<uint8_t>(ePixelShader::PsTextureMRT)]},
+        //    {eShader::Color,  vsHashes[static_cast<uint8_t>(eVertexShader::VsSimple)], psHashes[static_cast<uint8_t>(ePixelShader::PsColor)]},
+        //    {eShader::DebugHUD,  vsHashes[static_cast<uint8_t>(eVertexShader::VsScreen)], psHashes[static_cast<uint8_t>(ePixelShader::PsTexture)]},
+        //    {eShader::Deferred,  vsHashes[static_cast<uint8_t>(eVertexShader::VsDeferred)], psHashes[static_cast<uint8_t>(ePixelShader::PsDeferred)]},
+        //    {eShader::DebugColor,  vsHashes[static_cast<uint8_t>(eVertexShader::VsDebugColor)], psHashes[static_cast<uint8_t>(ePixelShader::PsColor)]},
+        //    {eShader::Simple,  vsHashes[static_cast<uint8_t>(eVertexShader::VsSimple)], psHashes[static_cast<uint8_t>(ePixelShader::PsSimple)]},
+        //};
+        //static_assert(std::size(ShaderMapTable) == static_cast<uint8_t>(eShader::ShaderCount), "열거형값과 ShaderMapTable의 요소가 서로 일치해야 합니다.");
+        //static_assert(sizeof(mShaderHashes) == sizeof(ShaderMapTable), "mShaderHashes and ShaderMapTable MUST be same size.");
+        //memcpy(mShaderHashes, ShaderMapTable, sizeof(mShaderHashes));
 
-        for(const auto& shader : ShaderMapTable)
-        {
-            renderer.CreateShaderLayout(shader.Type);
-        }
-        renderer.CreateDescriptorSet();
+        //for(const auto& shader : ShaderMapTable)
+        //{
+        //    renderer.CreateShaderLayout(shader.Type);
+        //}
+        //renderer.CreateDescriptorSet();
 
         return true;
     }
