@@ -6,7 +6,7 @@
 #include "../../Util/Macro.h"
 #include "../../Util/Util.h"
 #include "../Resources/VertexType.h"
-
+#include <Windows.h>
 namespace renderer
 {
 

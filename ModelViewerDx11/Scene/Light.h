@@ -1,12 +1,6 @@
 #pragma once
 #include "../Renderer/Resources/Mesh.h"
 
-namespace renderer
-{
-    struct RenderPacket;
-    class Renderer;
-}
-
 namespace scene
 {
     class Camera;
@@ -18,9 +12,9 @@ namespace scene
         Light(XMFLOAT3 pos, XMFLOAT3 dir, XMFLOAT3 color, float nearPlane, float farPlane);
         ~Light();
 
-        void SubmitDebugCommand(std::vector<renderer::RenderPacket>& commandList);
+        void SubmitDebugCommand();
 
-        void Update(renderer::Renderer& renderer);
+        void Update();
 
         XMFLOAT4 GetDirection() const;
         XMFLOAT3 GetPosition() const;

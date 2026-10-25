@@ -3,7 +3,6 @@
 
 namespace renderer
 {
-    struct RenderPacket;
     class TextureManager;
 }
 
@@ -17,9 +16,9 @@ namespace scene
         Sky();
         ~Sky();
 
-        HRESULT Initialize(uint32_t latLines, uint32_t lonLines, renderer::TextureManager* const texManager);
+        bool Initialize(uint32_t latLines, uint32_t lonLines, renderer::TextureManager* const texManager);
 
-        void SubmitCommand(std::vector<renderer::RenderPacket>& commandList);
+        void SubmitCommand();
         void Update(const XMFLOAT3& cameraPosition);
 
     private:

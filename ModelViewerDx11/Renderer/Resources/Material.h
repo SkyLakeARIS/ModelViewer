@@ -1,4 +1,5 @@
 #pragma once
+#include "../../Core/MathPrerequisites.h"
 #include "TextureData.h"
 
 namespace renderer

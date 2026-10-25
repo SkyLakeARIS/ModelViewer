@@ -1,7 +1,6 @@
 #include "Floor.h"
 #include "../Renderer/Renderer.h"
 #include "../Renderer/Primitive/MeshGenerator.h"
-#include "../Renderer/Resources/RenderPacket.h"
 #include "../Util/Macro.h"
 
 namespace scene
@@ -27,56 +26,7 @@ namespace scene
     {
     }
 
-    void Floor::SubmitCommand(std::vector<renderer::RenderPacket>& commandList)
+    void Floor::SubmitCommand()
     {
-        XMMATRIX mat = XMMatrixIdentity();
-
-        for (const auto& subMesh : mMesh.SubMeshes)
-        {
-            renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                renderer::eVertexFormat::P,
-                renderer::GetVertexStrideSize(mMesh.VertexFormat),
-                renderer::eBufferUsage::Static,
-                false,
-                subMesh.VertexRange,
-                subMesh.IndexRange,
-                subMesh.Material,
-                renderer::eRenderPass::Shadow,
-                mat,
-                renderer::eShader::Shadow,
-                renderer::eRasterType::Basic,
-                renderer::eSamplerType::SamplerCount,
-                renderer::eBlendState::Opaque,
-                renderer::ePrimitiveTopology::Triangles,
-                false,
-                renderer::eDepthStencilState::DepthOffStencilOff
-            );
-
-            commandList.push_back(command);
-        }
-
-        for (const auto& subMesh : mMesh.SubMeshes)
-        {
-            renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                mMesh.VertexFormat,
-                renderer::GetVertexStrideSize(mMesh.VertexFormat),
-                renderer::eBufferUsage::Static,
-                false,
-                subMesh.VertexRange,
-                subMesh.IndexRange,
-                subMesh.Material,
-                renderer::eRenderPass::Main,
-                mat,
-                renderer::eShader::Color,
-                renderer::eRasterType::Basic,
-                renderer::eSamplerType::SamplerCount,
-                renderer::eBlendState::Opaque,
-                renderer::ePrimitiveTopology::Triangles,
-                false,
-                renderer::eDepthStencilState::DepthOffStencilOff
-            );
-
-            commandList.push_back(command);
-        }
     }
 }

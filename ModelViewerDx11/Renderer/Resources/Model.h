@@ -13,17 +13,13 @@ namespace scene
 
 namespace renderer
 {
-    struct RenderPacket;
-    class BufferManager;
-
-
     class Model
     {
     public:
-        Model(scene::Camera* camera, BufferManager* bufferManager);
+        Model(scene::Camera* camera);
         ~Model();
 
-        void SubmitCommand(std::vector<renderer::RenderPacket>& commandList);
+        void SubmitCommand();
         void DrawVk(VkRenderer& renderer);
         void Update();
 
@@ -34,7 +30,6 @@ namespace renderer
         XMFLOAT3 GetCenterPoint(int32_t subMeshIndex) const;
         XMMATRIX GetMatrix() const;
     private:
-        BufferManager* mBufferManager;
 
         Mesh mMesh;
 

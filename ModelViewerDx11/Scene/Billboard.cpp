@@ -1,12 +1,7 @@
 #include "Billboard.h"
 #include "../Renderer/Renderer.h"
 #include "../Renderer/Primitive/MeshGenerator.h"
-#include "../Renderer/Resources/RenderPacket.h"
 
-namespace renderer
-{
-    struct RenderPacket;
-}
 
 namespace scene
 {
@@ -28,33 +23,8 @@ namespace scene
         mMesh.SubMeshes.front().Material.Factors.IsLitOn = static_cast<float>(false);
     }
 
-    void Billboard::SubmitCommand(std::vector<renderer::RenderPacket>& commandList)
+    void Billboard::SubmitCommand()
     {
-        const XMMATRIX matTranslate = XMMatrixTranslation(mPosition.x, mPosition.y, mPosition.z);
-        const XMMATRIX matWorld = mMatWorld * matTranslate;
-
-        for (const auto& subMesh : mMesh.SubMeshes)
-        {
-            renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                mMesh.VertexFormat,
-                renderer::GetVertexStrideSize(mMesh.VertexFormat),
-                renderer::eBufferUsage::Static,
-                true,
-                subMesh.VertexRange,
-                subMesh.IndexRange,
-                subMesh.Material,
-                renderer::eRenderPass::Main,
-                XMMatrixTranspose(matWorld),
-                renderer::eShader::Texture,
-                renderer::eRasterType::Basic,
-                renderer::eSamplerType::AnisotropicWrap,
-                renderer::eBlendState::AlphaBlend,
-                renderer::ePrimitiveTopology::TriangleStrip,
-                false,
-                renderer::eDepthStencilState::DepthOffStencilOff
-            );
-            commandList.push_back(command);
-        }
     }
 
     void Billboard::UpdateScaleMatrix(const XMMATRIX& viewMatrix)

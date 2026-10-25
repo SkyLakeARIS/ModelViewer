@@ -128,16 +128,16 @@ namespace renderer
         outMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
         newSubMesh.SubMeshHash = outMesh.MeshHash;
 
-        const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexFormat);
-        const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
+        //const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexFormat);
+        //const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
 
-        sBufferManager->AddVertex(reinterpret_cast<int8_t*>(vertices.data()), strideVertex * vertices.size(), newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
-        sBufferManager->AddIndex(reinterpret_cast<int8_t*>(indices.data()), strideIndex * indices.size(), newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
+        //sBufferManager->AddVertex(reinterpret_cast<int8_t*>(vertices.data()), strideVertex * vertices.size(), newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
+        //sBufferManager->AddIndex(reinterpret_cast<int8_t*>(indices.data()), strideIndex * indices.size(), newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
 
-        outMesh.VertexRange = newSubMesh.VertexRange;
-        outMesh.IndexRange = newSubMesh.IndexRange;
+        //outMesh.VertexRange = newSubMesh.VertexRange;
+        //outMesh.IndexRange = newSubMesh.IndexRange;
 
-        outMesh.SubMeshes.push_back(std::move(newSubMesh));
+        //outMesh.SubMeshes.push_back(std::move(newSubMesh));
     }
 
     void MeshGenerator::CreateGrid(XMFLOAT2 startPoint, uint16_t horizontalLines, uint16_t verticalLines, float gapEachLine, Mesh& outMesh)
@@ -240,17 +240,17 @@ namespace renderer
         newSubMesh.SubMeshHash = outMesh.MeshHash;
 
 
-        sBufferManager->AddVertex(reinterpret_cast<int8_t*>(vertices.get()), strideVertex * numVertices, newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
+        //sBufferManager->AddVertex(reinterpret_cast<int8_t*>(vertices.get()), strideVertex * numVertices, newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
 
-        const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
-        sBufferManager->AddIndex(reinterpret_cast<int8_t*>(indices.get()), strideIndex * numIndices, newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
+        //const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
+        //sBufferManager->AddIndex(reinterpret_cast<int8_t*>(indices.get()), strideIndex * numIndices, newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
 
-        outMesh.VertexRange = newSubMesh.VertexRange;
-        outMesh.IndexRange = newSubMesh.IndexRange;
+        //outMesh.VertexRange = newSubMesh.VertexRange;
+        //outMesh.IndexRange = newSubMesh.IndexRange;
 
-        newSubMesh.Material.Factors.IsLitOn = static_cast<float>(true);
+        //newSubMesh.Material.Factors.IsLitOn = static_cast<float>(true);
 
-        outMesh.SubMeshes.push_back(std::move(newSubMesh));
+        //outMesh.SubMeshes.push_back(std::move(newSubMesh));
     }
 
     void MeshGenerator::CreatePlane(Mesh& outMesh)
@@ -286,16 +286,16 @@ namespace renderer
         outMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
         newSubMesh.SubMeshHash = outMesh.MeshHash;
 
-        const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexFormat);
-        const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
+        //const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexFormat);
+        //const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
 
-        sBufferManager->AddVertex(reinterpret_cast<const int8_t*>(vertices), sizeof(vertices), newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
-        sBufferManager->AddIndex(reinterpret_cast<const int8_t*>(indices), sizeof(indices), newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
+        //sBufferManager->AddVertex(reinterpret_cast<const int8_t*>(vertices), sizeof(vertices), newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
+        //sBufferManager->AddIndex(reinterpret_cast<const int8_t*>(indices), sizeof(indices), newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
 
-        outMesh.VertexRange = newSubMesh.VertexRange;
-        outMesh.IndexRange = newSubMesh.IndexRange;
+        //outMesh.VertexRange = newSubMesh.VertexRange;
+        //outMesh.IndexRange = newSubMesh.IndexRange;
 
-        outMesh.SubMeshes.push_back(std::move(newSubMesh));
+        //outMesh.SubMeshes.push_back(std::move(newSubMesh));
     }
 
     void MeshGenerator::CreateScreenPlane(int16_t originX, int16_t originY, int16_t width, int16_t height, Mesh& outMesh)
@@ -336,16 +336,16 @@ namespace renderer
         outMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
         newSubMesh.SubMeshHash = outMesh.MeshHash;
 
-        const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexFormat);
-        const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
+        //const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexFormat);
+        //const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
 
-        sBufferManager->AddVertex(reinterpret_cast<const int8_t*>(vertices), sizeof(vertices), newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
-        sBufferManager->AddIndex(reinterpret_cast<const int8_t*>(indices), sizeof(indices), newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
+        //sBufferManager->AddVertex(reinterpret_cast<const int8_t*>(vertices), sizeof(vertices), newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
+        //sBufferManager->AddIndex(reinterpret_cast<const int8_t*>(indices), sizeof(indices), newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
 
-        outMesh.VertexRange = newSubMesh.VertexRange;
-        outMesh.IndexRange = newSubMesh.IndexRange;
+        //outMesh.VertexRange = newSubMesh.VertexRange;
+        //outMesh.IndexRange = newSubMesh.IndexRange;
 
-        outMesh.SubMeshes.push_back(std::move(newSubMesh));
+        //outMesh.SubMeshes.push_back(std::move(newSubMesh));
     }
 
     void MeshGenerator::CreateNdcPlane(Mesh& outMesh)
@@ -380,15 +380,15 @@ namespace renderer
         outMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
         newSubMesh.SubMeshHash = outMesh.MeshHash;
 
-        const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexFormat);
-        const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
+        //const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexFormat);
+        //const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
 
-        sBufferManager->AddVertex(reinterpret_cast<const int8_t*>(vertices), sizeof(vertices), newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
-        sBufferManager->AddIndex(reinterpret_cast<const int8_t*>(indices), sizeof(indices), newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
+        //sBufferManager->AddVertex(reinterpret_cast<const int8_t*>(vertices), sizeof(vertices), newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
+        //sBufferManager->AddIndex(reinterpret_cast<const int8_t*>(indices), sizeof(indices), newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
 
-        outMesh.VertexRange = newSubMesh.VertexRange;
-        outMesh.IndexRange = newSubMesh.IndexRange;
+        //outMesh.VertexRange = newSubMesh.VertexRange;
+        //outMesh.IndexRange = newSubMesh.IndexRange;
 
-        outMesh.SubMeshes.push_back(std::move(newSubMesh));
+        //outMesh.SubMeshes.push_back(std::move(newSubMesh));
     }
 }

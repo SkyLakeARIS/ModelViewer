@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include "Material.h"
 #include "RenderTypes.h"
 #include "../../Util/Define.h"

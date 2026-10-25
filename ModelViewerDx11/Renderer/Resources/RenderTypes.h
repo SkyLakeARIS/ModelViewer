@@ -95,11 +95,6 @@ namespace renderer
     {
         // MEMO: 셰이더
         eShader ShaderType;
-        // MEMO: 정의된 머티리얼, 셰이더 파일로부터 정보를 얻어와야 하지만,
-        // 프로젝트가 외부 fbx를 읽기 때문에 별도 파일은 만들지 않고, 엔진에서 어느 정도 하드코드하는 형식으로 선택.
-        // 프로젝트가 고도화되었을 때 파일 형식으로 갈지는 그때 가서 고민하기로
-        // MEMO: 머티리얼을 생성할 때 셰이더 매니저로부터 얻어오도록
-        MaterialCbBinding CbBindingDesc;
         int8_t TexBindingSlots[static_cast<uint8_t>(eTextureType::TextureTypeCount)];
         int8_t SamplerBindingSlot;
         // MEMO: 렌더 상태

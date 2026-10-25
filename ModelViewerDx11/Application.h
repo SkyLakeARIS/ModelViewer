@@ -1,7 +1,6 @@
 #pragma once
 #include "Renderer/Resources/Mesh.h"
-#include "Renderer/Resources/RenderPacket.h"
-
+#include "framework.h"
 
 namespace core
 {
@@ -29,11 +28,6 @@ namespace renderer
     class VkRenderer;
     class Model;
     class ModelImporter;
-    class TextureManager;
-    class BufferManager;
-    class ResourceManager;
-    class Renderer;
-    class ShaderManager;
 }
 
 class Application
@@ -43,22 +37,12 @@ public:
     Application();
     ~Application();
 
-    bool InitializeWithWindows(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int32_t nCmdShow);
     bool InitializeWithWindowsVk(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int32_t nCmdShow);
-    void Run();
     void RunWithVulkan();
 
 private:
-    bool initializeScene();
-    bool initializeManagers();
-
     bool initializeSceneVulkan();
     bool initializeManagersVulkan();
-
-    void processInput(double deltaTime);
-    void updateScene();
-
-    void renderScene();
 
     void processInputVulkan(double deltaTime);
     void updateSceneVulkan();
@@ -75,9 +59,6 @@ private:
     renderer::Mesh mNdcMeshDeferred;
 
     int32_t mCurSubMeshIndexFocusModel;
-    std::vector<renderer::RenderPacket> mCommandList;
-    renderer::RenderPacketCache mCommandCache;
-    renderer::Renderer* mRenderer;
     renderer::VkRenderer* mVkRenderer;
     renderer::ModelImporter* mImporter;
     renderer::Model* mCharacter;
@@ -86,15 +67,5 @@ private:
     scene::Light* mLight;
     scene::Billboard* mLightIcon;
     scene::Floor* mFloor;
-    renderer::BufferManager* mBufferManager;
-    renderer::TextureManager* mTextureManager;
-    renderer::ResourceManager* mResourceManager;
-    renderer::ShaderManager* mShaderManager;
     core::DirectInput* mDirectInput;
-    ui::DebugPanel* mShadowDebugPanel;
-    ui::DebugPanel* mGBufferColorDebugPanel;
-    ui::DebugPanel* mGBufferNormalDebugPanel;
-    ui::DebugPanel* mGBufferPositionDebugPanel;
-    ui::DebugPanel* mGBufferSpecularDebugPanel;
-    ui::DebugPanel* mGBufferAmbientDebugPanel;
 };

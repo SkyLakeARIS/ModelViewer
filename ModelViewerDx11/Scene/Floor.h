@@ -1,12 +1,6 @@
 #pragma once
 #include "../Renderer/Resources/Mesh.h"
 
-namespace renderer
-{
-    struct RenderPacket;
-    class Renderer;
-}
-
 namespace scene
 {
     class Floor
@@ -15,7 +9,7 @@ namespace scene
         Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY);
         ~Floor();
 
-        void SubmitCommand(std::vector<renderer::RenderPacket>& commandList);
+        void SubmitCommand();
     private:
         renderer::Mesh mMesh;
     };

@@ -1,5 +1,4 @@
 #pragma once
-#include "../../Util/Type.h"
 
 namespace renderer
 {
@@ -30,12 +29,5 @@ namespace renderer
         DebugColor,
         Simple,
         ShaderCount
-    };
-
-    struct MaterialCbBinding
-    {
-        eCbType Type;
-        bool bBindPixelShader;
-        int8_t BindSlot;
     };
 }

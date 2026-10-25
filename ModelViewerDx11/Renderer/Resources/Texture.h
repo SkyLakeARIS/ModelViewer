@@ -16,7 +16,7 @@ namespace renderer
         bool Create(const int8_t* const filePath, HashID& outHash, bool bIsDDS);
         void Release();
     private:
-        bool loadImage(const int8_t* const filePath, ScratchImage& outImage);
+        bool loadImage(const int8_t* const filePath, DirectX::ScratchImage& outImage);
     private:
         VkDevice mDevice;
         Image* mImage;

@@ -4,8 +4,6 @@
 
 namespace renderer
 {
-    class Renderer;
-    struct RenderPacket;
 }
 
 namespace scene
@@ -20,7 +18,7 @@ namespace scene
 
         void Initialize();
 
-        void SubmitCommand(std::vector<renderer::RenderPacket>& commandList);
+        void SubmitCommand();
 
         void UpdateScaleMatrix(const XMMATRIX& viewMatrix);
 

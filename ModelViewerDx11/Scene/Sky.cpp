@@ -1,7 +1,5 @@
 #include "Sky.h"
 #include "../Renderer/Primitive/MeshGenerator.h"
-#include "../Renderer/Resources/RenderPacket.h"
-#include "../Renderer/Resources/TextureManager.h"
 
 namespace scene
 {
@@ -14,46 +12,17 @@ namespace scene
     Sky::~Sky()
     {}
 
-    HRESULT Sky::Initialize(uint32_t latLines, uint32_t lonLines, renderer::TextureManager* const texManager)
+    bool Sky::Initialize(uint32_t latLines, uint32_t lonLines, renderer::TextureManager* const texManager)
     {
         renderer::MeshGenerator::CreateSphere(latLines, lonLines, mMesh);
         mMesh.SubMeshes.front().Material.Factors.IsLitOn = static_cast<float>(false);
 
-
-
-        const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/skybox.dds");
-        HashID texDiffuseHash = 0;
-        texManager->AddTextureDDS(filePath, texDiffuseHash);
-        mMesh.SubMeshes.front().Material.TextureHashes[static_cast<int8_t>(renderer::eTextureType::Diffuse)] = texDiffuseHash;
-        mMesh.SubMeshes.front().Material.TextureSerials[static_cast<int8_t>(renderer::eTextureType::Diffuse)] = texManager->GetTextureSerial(texDiffuseHash);
-        return S_OK;
+        return true;
     }
 
-    void Sky::SubmitCommand(std::vector<renderer::RenderPacket>& commandList)
+    void Sky::SubmitCommand()
     {
-        for (const auto& subMesh : mMesh.SubMeshes)
-        {
-            renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                mMesh.VertexFormat,
-                renderer::GetVertexStrideSize(mMesh.VertexFormat),
-                renderer::eBufferUsage::Static,
-                false,
-                subMesh.VertexRange,
-                subMesh.IndexRange,
-                subMesh.Material,
-                renderer::eRenderPass::Main,
-                mWorld,
-                renderer::eShader::Skybox,
-                renderer::eRasterType::Skybox,
-                renderer::eSamplerType::AnisotropicWrap,
-                renderer::eBlendState::Opaque,
-                renderer::ePrimitiveTopology::Triangles,
-                false,
-                renderer::eDepthStencilState::DepthOnMaskAllCompLessEqual
-            );
 
-            commandList.push_back(command);
-        }
     }
 
     void Sky::Update(const XMFLOAT3& cameraPosition)

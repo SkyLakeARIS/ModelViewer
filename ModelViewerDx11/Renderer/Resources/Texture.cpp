@@ -34,7 +34,7 @@ namespace renderer
 
         const HashID texHash = util::GetDjb2Hash(filePath);
 
-        ScratchImage rawImage;
+        DirectX::ScratchImage rawImage;
         loadImage(filePath, rawImage);
 
         std::unique_ptr<Buffer> stagingBuffer = std::make_unique<Buffer>(mDevice);
@@ -103,7 +103,7 @@ namespace renderer
         // MEMO: Pooling 시에 활용할 리셋 함수
     }
 
-    bool Texture::loadImage(const int8_t* const filePath, ScratchImage& outImage)
+    bool Texture::loadImage(const int8_t* const filePath, DirectX::ScratchImage& outImage)
     {
         wchar_t texFilePath[util::MAX_PATH_LENGTH];
         const uint32_t filePathLength = strlen(reinterpret_cast<char const*>(filePath));
@@ -111,7 +111,7 @@ namespace renderer
         (void)mbstowcs_s(&numConverted, texFilePath, util::MAX_PATH_LENGTH, reinterpret_cast<char const*>(filePath), filePathLength);
         ASSERT(numConverted == (filePathLength + 1), "conversion result is incorrect. converted(%u) pathLength(%u)", numConverted, filePathLength);
 
-        if (FAILED(LoadFromWICFile(texFilePath, WIC_FLAGS_NONE, nullptr, outImage)))
+        if (FAILED(LoadFromWICFile(texFilePath, DirectX::WIC_FLAGS_NONE, nullptr, outImage)))
         {
             return false;
         }

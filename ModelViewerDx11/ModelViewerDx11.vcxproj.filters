@@ -111,12 +111,6 @@
     <ClInclude Include="Renderer\Resources\Material.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\Resources\RenderPacket.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Shader\ShaderManager.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="Renderer\Importer\FbxPrerequisites.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -219,9 +213,6 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Billboard.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\Shader\ShaderManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\Resources\Buffer.cpp">
