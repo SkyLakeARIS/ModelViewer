@@ -5,6 +5,7 @@ namespace renderer
 {
     class ShaderModule;
     class Shader;
+    class DescriptorSet;
     class Buffer;
     class Sampler;
     class ShaderManager;
@@ -112,9 +113,9 @@ namespace renderer
         // Shader
         //bool CreateShaderStage(const char* const path, bool bMakeAsPixelShader, HashID& outShaderStageHash);
         //bool CreateShaderLayout(eShader shader);
-        bool CreateDescriptorSet();
-        bool UpdateDescriptorSet(eShader shader);
-        void UpdateUniformData(void* const pData, uint32_t sizeInBytes, BufferInfo uniformBuffer);
+        //bool CreateDescriptorSet();
+        //bool UpdateDescriptorSet(eShader shader);
+        //void UpdateUniformData(void* const pData, uint32_t sizeInBytes, BufferInfo uniformBuffer);
         // pipeline
         bool TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, HashID VsStageHash, HashID PsStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
         HashID MakePipelineHash(eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
@@ -183,11 +184,12 @@ namespace renderer
         // shader
         std::unordered_map<HashID, ShaderModule*> mShaderModules;
         std::vector<Shader*> mShaders;
+        DescriptorSet* mDescriptorSets[static_cast<EnumInt>(eShader::ShaderCount)];
         // buffer
         Buffer* mVertexBuffer;
         Buffer* mIndexBuffer;
-        BufferInfo mUbPerFrames[sOverlappedFrame];
-        BufferInfo mUbPerObjects[sOverlappedFrame];
+        //BufferInfo mUbPerFrames[sOverlappedFrame];
+        //BufferInfo mUbPerObjects[sOverlappedFrame];
         // MEMO: 현재는 싱글스레드이므로 1:N 으로 set을 생성(cmdPool처럼해도 되고 이렇게 해도 됨)
         ShaderDescriptor mShaderDescriptors[static_cast<uint8_t>(eShader::ShaderCount)];
         // Texture

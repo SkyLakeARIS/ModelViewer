@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <fstream>
 
+#include "DescriptorSet.h"
 #include "Uploader.h"
 #include "VkHelper.h"
 #include "../Util/Macro.h"
@@ -112,8 +113,6 @@ namespace renderer
         , mSimplePipeline(nullptr)
         , mVertexBuffer()
         , mIndexBuffer()
-        , mUbPerFrames{}
-        , mUbPerObjects{}
         , mShaderDescriptors{}
     {
     }
@@ -148,6 +147,11 @@ namespace renderer
         }
         mPipelines.clear();
 
+        for(const auto& descriptorSet : mDescriptorSets)
+        {
+            delete descriptorSet;
+        }
+
         for(const auto& shaderIt : mShaders)
         {
             delete shaderIt;
@@ -160,16 +164,17 @@ namespace renderer
         }
         mShaderModules.clear();
 
-        for (const auto& uniformBuffer : mUbPerFrames)
-        {
-            vkFreeMemory(mDevice, uniformBuffer.Memory, nullptr);
-            vkDestroyBuffer(mDevice, uniformBuffer.Buffer, nullptr);
-        }
-        for (const auto& uniformBuffer : mUbPerObjects)
-        {
-            vkFreeMemory(mDevice, uniformBuffer.Memory, nullptr);
-            vkDestroyBuffer(mDevice, uniformBuffer.Buffer, nullptr);
-        }
+        //for (const auto& uniformBuffer : mUbPerFrames)
+        //{
+        //    vkFreeMemory(mDevice, uniformBuffer.Memory, nullptr);
+        //    vkDestroyBuffer(mDevice, uniformBuffer.Buffer, nullptr);
+        //}
+        //for (const auto& uniformBuffer : mUbPerObjects)
+        //{
+        //    vkFreeMemory(mDevice, uniformBuffer.Memory, nullptr);
+        //    vkDestroyBuffer(mDevice, uniformBuffer.Buffer, nullptr);
+        //}
+
         delete mVertexBuffer;
         delete mIndexBuffer;
 
@@ -271,6 +276,12 @@ namespace renderer
             return false;
         }
 
+        for(uint32_t shaderType = 0 ; shaderType < static_cast<uint32_t>(eShader::ShaderCount); ++shaderType)
+        {
+            mDescriptorSets[shaderType] = new DescriptorSet(mDevice);
+            mDescriptorSets[shaderType]->Create(sOverlappedFrame, mShaders[shaderType]);
+        }
+
         if(createSamplers() == false)
         {
             return false;
@@ -287,14 +298,14 @@ namespace renderer
         mIndexBuffer->Create(189792 * 2, Buffer::eBufferType::Index, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex);
         //CreateBuffer(771336 * 2, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mVertexBuffer);
         //CreateBuffer(189792 * 2, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mIndexBuffer);
-        for (auto& mUniformBuffer : mUbPerFrames)
+     /*   for (auto& mUniformBuffer : mUbPerFrames)
         {
             CreateBuffer(1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mUniformBuffer);
         }
         for (auto& mUniformBuffer : mUbPerObjects)
         {
             CreateBuffer(1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex, false, mUniformBuffer);
-        }
+        }*/
         const int8_t* const modelFilePath = reinterpret_cast<int8_t*>("/AssetData/textures/Unagi_Body_D.png");
         HashID texHash;
         CreateTexture(modelFilePath, texHash, false);
@@ -305,16 +316,9 @@ namespace renderer
         const uint32_t frameIndex = getCurrentFrameIndex();
         for(const auto& uniform : uniforms)
         {
-            if(uniform.first == eCbType::CbViewProj)
-            {
-                UpdateUniformData(uniform.second, sizeof(CbViewProj), mUbPerFrames[frameIndex]);
-            }
-            else
-            {
-                UpdateUniformData(uniform.second, sizeof(CbWorld) , mUbPerObjects[frameIndex]);
-            }
+            mDescriptorSets[static_cast<EnumInt>(eShader::Simple)]->UpdateUniformData(uniform.second, 1, sizeof(CbViewProj), frameIndex, uniform.first == eCbType::CbViewProj);
         }
-        UpdateDescriptorSet(eShader::Simple);
+        mDescriptorSets[static_cast<EnumInt>(eShader::Simple)]->UpdateDescriptorSet(eShader::Simple, frameIndex);
     }
 
     void VkRenderer::RenderScene()
@@ -345,9 +349,10 @@ namespace renderer
         const VkIndexType indexType = VK_INDEX_TYPE_UINT32;
         vkCmdBindIndexBuffer(frame.Buffer, mIndexBuffer->GetBuffer(), 0, indexType);
 
-        const auto& shaderLayoutIt = mShaderLayouts.find(eShader::Simple);
-
-        vkCmdBindDescriptorSets(frame.Buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shaderLayoutIt->second.PipelineLayout, 0, 1, &mShaderDescriptors[static_cast<uint8_t>(eShader::Simple)].Set[frameIndex], 0, nullptr);
+        //const auto& shaderLayoutIt = mShaderLayouts.find(eShader::Simple);
+        //Shader shader = ;
+        const VkDescriptorSet descriptorSet = mDescriptorSets[static_cast<EnumInt>(eShader::Simple)]->GetDescriptorSet(frameIndex);
+        vkCmdBindDescriptorSets(frame.Buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mShaders[static_cast<EnumInt>(eShader::Simple)]->GetPipelineLayout(), 0, 1, &descriptorSet, 0, nullptr);
     }
 
     void VkRenderer::DrawIndexed(uint32_t indexCount, uint32_t vertexOffset, uint32_t indexOffset)
@@ -699,257 +704,257 @@ namespace renderer
         //return true;
     //}
 
-    bool VkRenderer::CreateDescriptorSet()
-    {
-        for (uint8_t shader = 0; shader < static_cast<uint8_t>(eShader::ShaderCount); ++shader)
-        {
-            const auto& shaderLayoutIt = mShaderLayouts.find(static_cast<eShader>(shader));
+    //bool VkRenderer::CreateDescriptorSet()
+    //{
+    //    for (uint8_t shader = 0; shader < static_cast<uint8_t>(eShader::ShaderCount); ++shader)
+    //    {
+    //        const auto& shaderLayoutIt = mShaderLayouts.find(static_cast<eShader>(shader));
 
-            std::vector<VkDescriptorPoolSize> poolSizes;
-            poolSizes.reserve(shaderLayoutIt->second.DescriptorInfos.size());
-            for(const auto& descriptorInfo : shaderLayoutIt->second.DescriptorInfos)
-            {
-                poolSizes.push_back({descriptorInfo.Type, descriptorInfo.Count * sOverlappedFrame });
-            }
+    //        std::vector<VkDescriptorPoolSize> poolSizes;
+    //        poolSizes.reserve(shaderLayoutIt->second.DescriptorInfos.size());
+    //        for(const auto& descriptorInfo : shaderLayoutIt->second.DescriptorInfos)
+    //        {
+    //            poolSizes.push_back({descriptorInfo.Type, descriptorInfo.Count * sOverlappedFrame });
+    //        }
 
-            VkDescriptorPoolCreateInfo poolCreateInfo{};
-            poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-            poolCreateInfo.maxSets = sOverlappedFrame;
-            poolCreateInfo.pPoolSizes = poolSizes.data();
-            poolCreateInfo.poolSizeCount = poolSizes.size();
-            poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-            
-            VkResult result = vkCreateDescriptorPool(mDevice, &poolCreateInfo, nullptr, &mShaderDescriptors[shader].Pool);
-            if(result != VK_SUCCESS)
-            {
-                ASSERT(false, "DescriptorPool 생성 실패.  result(%u)", result);
-                return false;
-            }
-            std::vector<VkDescriptorSetLayout> descriptorSetLayouts(sOverlappedFrame, shaderLayoutIt->second.SetLayout);
-            VkDescriptorSetAllocateInfo setAllocateInfo{};
-            setAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            setAllocateInfo.descriptorPool = mShaderDescriptors[shader].Pool;
-            setAllocateInfo.descriptorSetCount = descriptorSetLayouts.size();
-            setAllocateInfo.pSetLayouts = descriptorSetLayouts.data();
-            result = vkAllocateDescriptorSets(mDevice, &setAllocateInfo, mShaderDescriptors[shader].Set);
-            if (result != VK_SUCCESS)
-            {
-                ASSERT(false, "DescriptorSet 생성 실패.  result(%u)", result);
-                return false;
-            }
-        }
-        return true;
-    }
+    //        VkDescriptorPoolCreateInfo poolCreateInfo{};
+    //        poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    //        poolCreateInfo.maxSets = sOverlappedFrame;
+    //        poolCreateInfo.pPoolSizes = poolSizes.data();
+    //        poolCreateInfo.poolSizeCount = poolSizes.size();
+    //        poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    //        
+    //        VkResult result = vkCreateDescriptorPool(mDevice, &poolCreateInfo, nullptr, &mShaderDescriptors[shader].Pool);
+    //        if(result != VK_SUCCESS)
+    //        {
+    //            ASSERT(false, "DescriptorPool 생성 실패.  result(%u)", result);
+    //            return false;
+    //        }
+    //        std::vector<VkDescriptorSetLayout> descriptorSetLayouts(sOverlappedFrame, shaderLayoutIt->second.SetLayout);
+    //        VkDescriptorSetAllocateInfo setAllocateInfo{};
+    //        setAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    //        setAllocateInfo.descriptorPool = mShaderDescriptors[shader].Pool;
+    //        setAllocateInfo.descriptorSetCount = descriptorSetLayouts.size();
+    //        setAllocateInfo.pSetLayouts = descriptorSetLayouts.data();
+    //        result = vkAllocateDescriptorSets(mDevice, &setAllocateInfo, mShaderDescriptors[shader].Set);
+    //        if (result != VK_SUCCESS)
+    //        {
+    //            ASSERT(false, "DescriptorSet 생성 실패.  result(%u)", result);
+    //            return false;
+    //        }
+    //    }
+    //    return true;
+    //}
 
-    bool VkRenderer::UpdateDescriptorSet(eShader shader)
-    {
-        const uint32_t frameIndex = mFrameCount % sOverlappedFrame;
+    //bool VkRenderer::UpdateDescriptorSet(eShader shader)
+    //{
+        //const uint32_t frameIndex = mFrameCount % sOverlappedFrame;
 
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = mUbPerFrames[frameIndex].Buffer;
-        bufferInfo.offset = 0;
-        bufferInfo.range = 0;
+        //VkDescriptorBufferInfo bufferInfo{};
+        //bufferInfo.buffer = mUbPerFrames[frameIndex].Buffer;
+        //bufferInfo.offset = 0;
+        //bufferInfo.range = 0;
 
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = {};
-        imageInfo.imageView = 0;
-        imageInfo.sampler = {};
-        switch(shader)
-        {
-        case eShader::Outline:
-        {
-            VkDescriptorBufferInfo bufferInfoPerFrame{};
-            bufferInfoPerFrame.buffer = mUbPerFrames[frameIndex].Buffer;
-            bufferInfoPerFrame.offset = frameIndex * sizeof(CbViewProj);
-            bufferInfoPerFrame.range = sizeof(CbViewProj);
+        //VkDescriptorImageInfo imageInfo{};
+        //imageInfo.imageLayout = {};
+        //imageInfo.imageView = 0;
+        //imageInfo.sampler = {};
+        //switch(shader)
+        //{
+        //case eShader::Outline:
+        //{
+        //    VkDescriptorBufferInfo bufferInfoPerFrame{};
+        //    bufferInfoPerFrame.buffer = mUbPerFrames[frameIndex].Buffer;
+        //    bufferInfoPerFrame.offset = frameIndex * sizeof(CbViewProj);
+        //    bufferInfoPerFrame.range = sizeof(CbViewProj);
 
-            VkDescriptorBufferInfo bufferInfoPerObject{};
-            bufferInfoPerObject.buffer = mUbPerObjects[frameIndex].Buffer;
-            bufferInfoPerObject.offset = frameIndex * sizeof(CbWorld);
-            bufferInfoPerObject.range = sizeof(CbWorld);
+        //    VkDescriptorBufferInfo bufferInfoPerObject{};
+        //    bufferInfoPerObject.buffer = mUbPerObjects[frameIndex].Buffer;
+        //    bufferInfoPerObject.offset = frameIndex * sizeof(CbWorld);
+        //    bufferInfoPerObject.range = sizeof(CbWorld);
 
-            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-            {
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerObject, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 6, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
-            };
+        //    const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+        //    {
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerObject, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 6, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
+        //    };
 
-            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+        //    vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
 
-            break;
-        }
-        case eShader::Skybox:
-        {
-            //VkDescriptorBufferInfo bufferInfo{};
-            //bufferInfo.buffer = mUbPerFrames[frameIndex].Buffer;
-            //bufferInfo.offset = 0;
-            //bufferInfo.range = 0;
+        //    break;
+        //}
+        //case eShader::Skybox:
+        //{
+        //    //VkDescriptorBufferInfo bufferInfo{};
+        //    //bufferInfo.buffer = mUbPerFrames[frameIndex].Buffer;
+        //    //bufferInfo.offset = 0;
+        //    //bufferInfo.range = 0;
 
-            //VkDescriptorImageInfo imageInfo{};
-            //imageInfo.imageLayout = {};
-            //imageInfo.imageView = 0;
-            //imageInfo.sampler = {};
+        //    //VkDescriptorImageInfo imageInfo{};
+        //    //imageInfo.imageLayout = {};
+        //    //imageInfo.imageView = 0;
+        //    //imageInfo.sampler = {};
 
-            //VkWriteDescriptorSet writeDescriptorSet{};
-            //writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            //writeDescriptorSet.dstArrayElement = 0; // 배열 업데이트 시작 인덱스;
-            //writeDescriptorSet.descriptorCount = 1; // 업데이트 요소 수;
-            //writeDescriptorSet.dstSet = mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0];
-            //writeDescriptorSet.dstBinding = // 업데이트 할 binding slot;
-            //    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            //writeDescriptorSet.pBufferInfo = &bufferInfo;
+        //    //VkWriteDescriptorSet writeDescriptorSet{};
+        //    //writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        //    //writeDescriptorSet.dstArrayElement = 0; // 배열 업데이트 시작 인덱스;
+        //    //writeDescriptorSet.descriptorCount = 1; // 업데이트 요소 수;
+        //    //writeDescriptorSet.dstSet = mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0];
+        //    //writeDescriptorSet.dstBinding = // 업데이트 할 binding slot;
+        //    //    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        //    //writeDescriptorSet.pBufferInfo = &bufferInfo;
 
-            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-            {
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
-            };
+        //    const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+        //    {
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
+        //    };
 
-            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-            break;
-        }
-        case eShader::Shadow:
-        {
-            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-            {
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-            };
+        //    vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+        //    break;
+        //}
+        //case eShader::Shadow:
+        //{
+        //    const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+        //    {
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //    };
 
-            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-            break;
-        }
-        case eShader::BasicWithShadow:
-        {
-            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-            {
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 3, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 4, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //    vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+        //    break;
+        //}
+        //case eShader::BasicWithShadow:
+        //{
+        //    const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+        //    {
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 3, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 4, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
 
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
 
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
-            };
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
+        //    };
 
-            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-            break;
-        }
-        case eShader::Texture:
-        {
-            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-            {
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //    vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+        //    break;
+        //}
+        //case eShader::Texture:
+        //{
+        //    const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+        //    {
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
 
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
-            };
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
+        //    };
 
-            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-            break;
-        }
-        case eShader::Color:
-        {
-            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-            {
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //    vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+        //    break;
+        //}
+        //case eShader::Color:
+        //{
+        //    const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+        //    {
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
 
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
-            };
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
+        //    };
 
-            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-            break;
-        }
-        case eShader::DebugHUD:
-        {
-            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-            {
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 5, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
-            };
+        //    vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+        //    break;
+        //}
+        //case eShader::DebugHUD:
+        //{
+        //    const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+        //    {
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 5, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
+        //    };
 
-            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-            break;
-        }
-        case eShader::Deferred:
-        {
-            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-            {
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 3, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 4, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //    vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+        //    break;
+        //}
+        //case eShader::Deferred:
+        //{
+        //    const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+        //    {
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 3, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 4, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
 
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 8, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 9, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 10, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 11, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 12, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 8, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 9, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 10, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 11, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 12, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
 
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
-            };
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
+        //    };
 
-            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-            break;
-        }
-        case eShader::DebugColor:
-        {
-            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-            {
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //    vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+        //    break;
+        //}
+        //case eShader::DebugColor:
+        //{
+        //    const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+        //    {
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
 
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
-            };
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
+        //    };
 
-            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-            break;
-        }
-        case eShader::Simple:
-        {
-            VkDescriptorBufferInfo bufferInfoPerFrame{};
-            bufferInfoPerFrame.buffer = mUbPerFrames[frameIndex].Buffer;
-            bufferInfoPerFrame.offset = 0;
-            bufferInfoPerFrame.range = sizeof(CbViewProj);
+        //    vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+        //    break;
+        //}
+        //case eShader::Simple:
+        //{
+        //    VkDescriptorBufferInfo bufferInfoPerFrame{};
+        //    bufferInfoPerFrame.buffer = mUbPerFrames[frameIndex].Buffer;
+        //    bufferInfoPerFrame.offset = 0;
+        //    bufferInfoPerFrame.range = sizeof(CbViewProj);
 
-            VkDescriptorBufferInfo bufferInfoPerObject{};
-            bufferInfoPerObject.buffer = mUbPerObjects[frameIndex].Buffer;
-            bufferInfoPerObject.offset = 0;
-            bufferInfoPerObject.range = sizeof(CbWorld);
+        //    VkDescriptorBufferInfo bufferInfoPerObject{};
+        //    bufferInfoPerObject.buffer = mUbPerObjects[frameIndex].Buffer;
+        //    bufferInfoPerObject.offset = 0;
+        //    bufferInfoPerObject.range = sizeof(CbWorld);
 
-            const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-            {
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[frameIndex], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerObject, {}},
-                {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[frameIndex], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
-            };
+        //    const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+        //    {
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[frameIndex], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerObject, {}},
+        //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[frameIndex], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
+        //    };
 
-            vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-            break;
-        }
-        default:
-            ASSERT(false, "올바르지 않은 타입이 전달되었습니다. type(%u)", static_cast<uint8_t>(shader));
-            break;
-        }
-        return true;
-    }
+        //    vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
+        //    break;
+        //}
+        //default:
+        //    ASSERT(false, "올바르지 않은 타입이 전달되었습니다. type(%u)", static_cast<uint8_t>(shader));
+        //    break;
+        //}
+        //return true;
+    //}
 
-    void VkRenderer::UpdateUniformData(void* const pData, uint32_t sizeInBytes, BufferInfo uniformBuffer)
-    {
-        uploadBuffer(pData, sizeInBytes, 0, uniformBuffer.Memory);
-    }
+    //void VkRenderer::UpdateUniformData(void* const pData, uint32_t sizeInBytes, BufferInfo uniformBuffer)
+    //{
+    //    uploadBuffer(pData, sizeInBytes, 0, uniformBuffer.Memory);
+    //}
 
     bool VkRenderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, HashID VsStageHash, HashID PsStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
     {
