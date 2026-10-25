@@ -9,10 +9,7 @@ namespace renderer
     class DescriptorSet;
     class Buffer;
     class Sampler;
-}
 
-namespace renderer
-{
     class Renderer final
     {
     private:
