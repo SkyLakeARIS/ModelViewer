@@ -17,15 +17,11 @@ namespace renderer
         sCommandPool = pool;
         sGraphicsQueue = queue;
         sGraphicsQueueFamilyIndex = queueFamilyIndex;
-
-
-        /*vkCreateFence(device, mfen);*/
     }
 
     void Uploader::Release()
     {
-        vkDestroyFence(sDevice, sFence, nullptr);
-        //vkDestroyCommandPool(sDevice, sCommandPool, nullptr);
+        //vkDestroyFence(sDevice, sFence, nullptr);
     }
 
     void Uploader::UploadBuffer(const void* const pData, uint32_t sizeInBytes, uint32_t offset, uint32_t memProperties, VkDeviceMemory dstMemory, VkBuffer dstBuffer)
@@ -48,23 +44,6 @@ namespace renderer
 
     void Uploader::CopyBufferToBuffer(VkBuffer srcBuf, VkBuffer dstBuf, uint32_t copySize)
     {
-        //VkCommandPool commandPool;
-
-        //VkCommandPoolCreateInfo commandPoolCreateInfo{};
-        //commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        //commandPoolCreateInfo.queueFamilyIndex = sGraphicsQueueFamilyIndex;
-        //commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-
-        //vkCreateCommandPool(sDevice, &commandPoolCreateInfo, nullptr, &commandPool);
-
-        //VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-        //commandBufferAllocateInfo.commandPool = sCommandPool;
-        //commandBufferAllocateInfo.commandBufferCount = 1;
-        //commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-
-        //VkCommandBuffer commandBuffer;
-        //vkAllocateCommandBuffers(sDevice, &commandBufferAllocateInfo, &commandBuffer);
-
         VkCommandBufferBeginInfo commandBufferBeginInfo{};
         commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -102,12 +81,6 @@ namespace renderer
 
     void Uploader::CopyBufferToImage(VkBuffer srcBuf, VkImage dstImage, VkBufferImageCopy2& region)
     {
-        //VkCommandPool commandPool;
-        //createCommandPool(mGraphicsQueueIndex, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, commandPool);
-
-        //VkCommandBuffer commandBuffer;
-        //createCommandBuffers(commandPool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, commandBuffer);
-
         VkCommandBufferBeginInfo commandBufferBeginInfo{};
         commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -139,8 +112,6 @@ namespace renderer
         vkQueueSubmit2(sGraphicsQueue, 1, &submitInfo2, nullptr);
 
         vkQueueWaitIdle(sGraphicsQueue);
-
-        //vkDestroyCommandPool(mDevice, commandPool, nullptr);
     }
 
     void Uploader::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask)
@@ -172,16 +143,6 @@ namespace renderer
 
     void Uploader::uploadBufferStaging(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t sizeInBytes, uint32_t srcOffset, uint32_t dstOffset)
     {
-        //VkCommandPool commandPool;
-        //createCommandPool(mGraphicsQueueIndex, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, commandPool);
-        //VkCommandBuffer commandBuffer;
-        //createCommandBuffers(commandPool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, commandBuffer);
-
-        //VkCommandBufferBeginInfo commandBufferBeginInfo{};
-        //commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        //commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        //vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-
         VkBufferCopy2 bufferCopy2{};
         bufferCopy2.sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2;
         bufferCopy2.dstOffset = dstOffset;
@@ -209,8 +170,6 @@ namespace renderer
         vkQueueSubmit2(sGraphicsQueue, 1, &submitInfo2, nullptr);
 
         vkQueueWaitIdle(sGraphicsQueue);
-
-        //vkDestroyCommandPool(sDevice, sCommandPool, nullptr);
     }
 
     void Uploader::uploadBufferMap(const void* const pData, uint32_t sizeInBytes, uint32_t offset, VkDeviceMemory memory)

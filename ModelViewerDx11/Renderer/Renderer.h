@@ -82,11 +82,6 @@ namespace renderer
             uint32_t Layout;
             uint32_t Access;
         };
-        //enum class eSamplerType
-        //{
-        //    Linear,
-        //    SamplerCount,
-        //};
     public:
         VkRenderer();
         ~VkRenderer();
@@ -107,33 +102,11 @@ namespace renderer
 
         void CountFrame();
 
-        VkPipeline GetPipeline(HashID hash);
-        // pipeline - test
-        void SetSimplePipeline(HashID hash);
-        // Shader
-        //bool CreateShaderStage(const char* const path, bool bMakeAsPixelShader, HashID& outShaderStageHash);
-        //bool CreateShaderLayout(eShader shader);
-        //bool CreateDescriptorSet();
-        //bool UpdateDescriptorSet(eShader shader);
-        //void UpdateUniformData(void* const pData, uint32_t sizeInBytes, BufferInfo uniformBuffer);
         // pipeline
         bool TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, HashID VsStageHash, HashID PsStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
-        //HashID MakePipelineHash(eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
-        // Buffer
-        //bool CreateBuffer(uint32_t requestSizeInBytes, uint32_t usage, uint32_t flag, uint32_t queueFamilyIndex, bool bUseStaging, BufferInfo& outBufferInfo); // 완
+
         void AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
         void AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
-        // Buffer - common
-        //void copyBufferStaging(VkBuffer srcBuf, VkBuffer dstBuf, uint32_t copySize); // 완
-        //void copyBufferToImageStaging(VkBuffer srcBuf, VkImage dstImage, VkBufferImageCopy2& region); // 완
-        //void uploadBuffer(const void* const pData, uint32_t sizeInBytes, uint32_t offset, VkDeviceMemory memory); // 완
-        //void uploadBufferStaging(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t sizeInBytes, uint32_t srcOffset, uint32_t dstOffset); // 완
-        //bool allocateMemory(uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory); // 완료
-        // Texture
-        //bool CreateTexture(const int8_t* const filePath, HashID& outHash, bool bIsDDS); // 완
-        // Texture - common
-        //void createImage(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, VkImageType type, VkFormat format, bool bUseStaging, VkMemoryPropertyFlagBits memoryProperty, VkDeviceMemory& outImageMemory, VkImage& outImage); // 완
-        //void getMemoryType(VkMemoryRequirements memoryRequirements, uint32_t flag, uint32_t& outMemoryType); // 완
 
     private:
         bool createInstance(const char* const appName);
@@ -144,7 +117,6 @@ namespace renderer
         bool createImageViews();
         bool createFrame();
         bool createSyncObjects();
-        //bool createGraphicsPipeline(eShader shader, HashID vsStageHash, HashID psStageHash, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass, VkPipeline& outPipeline);
         bool createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const;
         bool createCommandBuffers(VkCommandPool commandPool, uint32_t bufferCount, VkCommandBufferLevel level, VkCommandBuffer& outBuffers) const;
         bool createSamplers();
@@ -179,8 +151,6 @@ namespace renderer
         uint32_t mCurImageIndex;
         // pipeline
         VkPipeline mSimplePipeline;
-        std::unordered_map<HashID, PipelineStateBitField> mPipelineBitLayout;
-        std::unordered_map<HashID, VkPipeline> mPipelines;
         // shader
         std::unordered_map<HashID, ShaderModule*> mShaderModules;
         std::vector<Shader*> mShaders;
@@ -188,10 +158,6 @@ namespace renderer
         // buffer
         Buffer* mVertexBuffer;
         Buffer* mIndexBuffer;
-        //BufferInfo mUbPerFrames[sOverlappedFrame];
-        //BufferInfo mUbPerObjects[sOverlappedFrame];
-        // MEMO: 현재는 싱글스레드이므로 1:N 으로 set을 생성(cmdPool처럼해도 되고 이렇게 해도 됨)
-        ShaderDescriptor mShaderDescriptors[static_cast<uint8_t>(eShader::ShaderCount)];
         // Texture
         std::unordered_map<HashID, TextureInfo> mTextures;
         std::unordered_map<eSamplerType, Sampler*> mSamplers;
