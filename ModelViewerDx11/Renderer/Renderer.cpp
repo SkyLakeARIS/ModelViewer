@@ -1,6 +1,8 @@
 #include "Renderer.h"
 #include <algorithm>
 #include <fstream>
+
+#include "VkHelper.h"
 #include "../Util/Macro.h"
 #include "../Util/Util.h"
 #include "Resources/BufferManager.h"
@@ -108,7 +110,6 @@ namespace renderer
         , mUbPerFrames{}
         , mUbPerObjects{}
         , mShaderDescriptors{}
-        , mbStagingEnabled(false)
     {
     }
 
@@ -216,6 +217,14 @@ namespace renderer
         {
             return false;
         }
+
+        VkPhysicalDeviceMemoryProperties2 physicalDeviceMemoryProperties2{};
+        physicalDeviceMemoryProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2;
+
+        vkGetPhysicalDeviceMemoryProperties2(mPhysicalDevice, &physicalDeviceMemoryProperties2);
+        VkHelper::SetPhysicalDeviceMemoryProperties(physicalDeviceMemoryProperties2.memoryProperties);
+
+        VkHelper::SetQueueFamilyIndices(mGraphicsQueueIndex, UINT32_MAX);
 
         if(createLogicalDevice() == false)
         {
@@ -1227,21 +1236,21 @@ namespace renderer
         vkDestroyCommandPool(mDevice, commandPool, nullptr);
     }
 
-    bool VkRenderer::allocateMemory(uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory)
-    {
-        VkMemoryAllocateInfo memoryAllocateInfo{};
-        memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        memoryAllocateInfo.allocationSize = allocSize;
-        memoryAllocateInfo.memoryTypeIndex = memoryType;
+    //bool VkRenderer::allocateMemory(uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory)
+    //{
+    //    VkMemoryAllocateInfo memoryAllocateInfo{};
+    //    memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    //    memoryAllocateInfo.allocationSize = allocSize;
+    //    memoryAllocateInfo.memoryTypeIndex = memoryType;
 
-        const VkResult result = vkAllocateMemory(mDevice, &memoryAllocateInfo, nullptr, &outMemory);
-        if (result != VK_SUCCESS)
-        {
-            ASSERT(false, "AllocateMemory 실패 resultCode(%d)", result);
-            return false;
-        }
-        return true;
-    }
+    //    const VkResult result = vkAllocateMemory(mDevice, &memoryAllocateInfo, nullptr, &outMemory);
+    //    if (result != VK_SUCCESS)
+    //    {
+    //        ASSERT(false, "AllocateMemory 실패 resultCode(%d)", result);
+    //        return false;
+    //    }
+    //    return true;
+    //}
 
     bool VkRenderer::CreateTexture(const int8_t* const filePath, HashID& outHash, bool bIsDDS)
     {
@@ -1592,8 +1601,7 @@ namespace renderer
             return false;
         }
 
-        // MEMO: 일단은 간단하게 처리
-        mbStagingEnabled = mPhysicalDeviceProperties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+        VkHelper::SetSupportStagingUpload(mPhysicalDeviceProperties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
         return true;
     }
 
@@ -2184,22 +2192,22 @@ namespace renderer
         return mFrameCount % sOverlappedFrame;
     }
 
-    void VkRenderer::getMemoryType(VkMemoryRequirements memoryRequirements, uint32_t flag, uint32_t& outMemoryType)
-    {
-        VkPhysicalDeviceMemoryProperties2 physicalDeviceMemoryProperties2{};
-        physicalDeviceMemoryProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2;
+    //void VkRenderer::getMemoryType(VkMemoryRequirements memoryRequirements, uint32_t flag, uint32_t& outMemoryType)
+    //{
+    //    VkPhysicalDeviceMemoryProperties2 physicalDeviceMemoryProperties2{};
+    //    physicalDeviceMemoryProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2;
 
-        vkGetPhysicalDeviceMemoryProperties2(mPhysicalDevice, &physicalDeviceMemoryProperties2);
+    //    vkGetPhysicalDeviceMemoryProperties2(mPhysicalDevice, &physicalDeviceMemoryProperties2);
 
-        for (uint32_t bit = 0; bit < physicalDeviceMemoryProperties2.memoryProperties.memoryTypeCount; ++bit)
-        {
-            if (memoryRequirements.memoryTypeBits & (1 << bit) &&
-                physicalDeviceMemoryProperties2.memoryProperties.memoryTypes[bit].propertyFlags == flag)
-            {
-                outMemoryType = bit;
-            }
-        }
-    }
+    //    for (uint32_t bit = 0; bit < physicalDeviceMemoryProperties2.memoryProperties.memoryTypeCount; ++bit)
+    //    {
+    //        if (memoryRequirements.memoryTypeBits & (1 << bit) &&
+    //            physicalDeviceMemoryProperties2.memoryProperties.memoryTypes[bit].propertyFlags == flag)
+    //        {
+    //            outMemoryType = bit;
+    //        }
+    //    }
+    //}
 
     Renderer::Renderer()
         : mRefCount(1)

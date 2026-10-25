@@ -123,13 +123,13 @@ namespace renderer
         void copyBufferToImageStaging(VkBuffer srcBuf, VkImage dstImage, VkBufferImageCopy2& region);
         void uploadBuffer(const void* const pData, uint32_t sizeInBytes, uint32_t offset, VkDeviceMemory memory);
         void uploadBufferStaging(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t sizeInBytes, uint32_t srcOffset, uint32_t dstOffset);
-        bool allocateMemory(uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory);
+        //bool allocateMemory(uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory); // 완료
         // Texture
         bool CreateTexture(const int8_t* const filePath, HashID& outHash, bool bIsDDS);
         bool createSamplers();
         // Texture - common
         void createImage(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, VkImageType type, VkFormat format, bool bUseStaging, VkMemoryPropertyFlagBits memoryProperty, VkDeviceMemory& outImageMemory, VkImage& outImage);
-        void getMemoryType(VkMemoryRequirements memoryRequirements, uint32_t flag, uint32_t& outMemoryType);
+        //void getMemoryType(VkMemoryRequirements memoryRequirements, uint32_t flag, uint32_t& outMemoryType); // 완
 
     private:
         bool createInstance(const char* const appName);
@@ -185,7 +185,6 @@ namespace renderer
         BufferInfo mUbPerObjects[sOverlappedFrame];
         // MEMO: 현재는 싱글스레드이므로 1:N 으로 set을 생성(cmdPool처럼해도 되고 이렇게 해도 됨)
         ShaderDescriptor mShaderDescriptors[static_cast<uint8_t>(eShader::ShaderCount)];
-        bool mbStagingEnabled;
         // Texture
         std::unordered_map<HashID, TextureInfo> mTextures;
         std::unordered_map<eSamplerType, VkSampler> mSamplers;
