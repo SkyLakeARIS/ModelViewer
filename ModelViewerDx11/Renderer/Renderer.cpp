@@ -258,17 +258,6 @@ namespace renderer
         }
 
         if(createSyncObjects() == false)
-        if(createCommandPool(mGraphicsQueueIndex, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, mCommandPoolTransfer) == false)
-        {
-            return false;
-        }
-        
-        if(createCommandBuffers(mCommandPoolTransfer, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, mCommandBufferTransfer) == false)
-        {
-            return false;
-        }
-
-        Uploader::Initialize(mDevice, mCommandBufferTransfer, mCommandPoolTransfer, mQueue, mGraphicsQueueIndex);
         {
             return false;
         }
@@ -289,6 +278,17 @@ namespace renderer
             return false;
         }
 
+        if(createCommandPool(mGraphicsQueueIndex, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, mCommandPoolTransfer) == false)
+        {
+            return false;
+        }
+        
+        if(createCommandBuffers(mCommandPoolTransfer, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, mCommandBufferTransfer) == false)
+        {
+            return false;
+        }
+
+        Uploader::Initialize(mDevice, mCommandBufferTransfer, mCommandPoolTransfer, mQueue, mGraphicsQueueIndex);
         return true;
     }
 
