@@ -193,6 +193,7 @@ call "compileShaders.bat"</Command>
     <ClInclude Include="Renderer\Resources\Image.h" />
     <ClInclude Include="Renderer\Resources\PipelineBuilder.h" />
     <ClInclude Include="Renderer\Resources\Sampler.h" />
+    <ClInclude Include="Renderer\Resources\Texture.h" />
     <ClInclude Include="Renderer\Resources\VertexType.h" />
     <ClInclude Include="Renderer\Resources\Material.h" />
     <ClInclude Include="Renderer\Resources\RenderPacket.h" />
@@ -238,6 +239,7 @@ call "compileShaders.bat"</Command>
     <ClCompile Include="Renderer\Resources\Image.cpp" />
     <ClCompile Include="Renderer\Resources\PipelineBuilder.cpp" />
     <ClCompile Include="Renderer\Resources\Sampler.cpp" />
+    <ClCompile Include="Renderer\Resources\Texture.cpp" />
     <ClCompile Include="Renderer\Shader\Shader.cpp" />
     <ClCompile Include="Renderer\Shader\ShaderManager.cpp" />
     <ClCompile Include="Renderer\Shader\ShaderModule.cpp" />
