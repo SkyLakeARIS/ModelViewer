@@ -34,7 +34,7 @@ namespace renderer
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             (VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT),
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         };
         static_assert(std::size(BUFFER_USAGE_FLAG) == static_cast<EnumInt>(eBufferType::BufferTypeCount), "BUFFER_USAGE_FLAG 요소 수와 eBufferType열거형 수가 맞아야 합니다.");
         VkBufferCreateInfo createInfo{};
@@ -44,7 +44,17 @@ namespace renderer
         createInfo.queueFamilyIndexCount = 1;
         createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         createInfo.usage = BUFFER_USAGE_FLAG[static_cast<EnumInt>(type)];
+        const bool bIsSupportStagingUpload = VkHelper::IsSupportStagingUpload();
+        if((memProperties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && bIsSupportStagingUpload)
+        {
+            createInfo.usage |=  VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        }
 
+        if (bIsSupportStagingUpload == false && (memProperties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+        {
+            ASSERT(false, "staging 이 필요하지 않은 GPU일 수 있습니다.");
+        }
+    
         vkCreateBuffer(mDevice, &createInfo, nullptr, &mBuffer);
 
         VkBufferMemoryRequirementsInfo2 bufferMemoryRequirements{};
@@ -55,19 +65,10 @@ namespace renderer
         memoryRequirements2.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
         vkGetBufferMemoryRequirements2(mDevice, &bufferMemoryRequirements, &memoryRequirements2);
 
-        uint32_t propertiesFlags = memProperties;
-        if (memProperties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-        {
-            const bool bIsSupportStagingUpload = VkHelper::IsSupportStagingUpload();
-            if (bIsSupportStagingUpload == false && (memProperties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
-            {
-                ASSERT(false, "staging 이 필요하지 않은 GPU일 수 있습니다.");
-            }
-        }
 
         uint32_t memoryType = 0;
-        VkHelper::GetMemoryType(memoryRequirements2.memoryRequirements, propertiesFlags, memoryType);
-        mMemoryProperties = propertiesFlags;
+        VkHelper::GetMemoryType(memoryRequirements2.memoryRequirements, memProperties, memoryType);
+        mMemoryProperties = memProperties;
         mAlignment = memoryRequirements2.memoryRequirements.alignment;
         mAllocationSize = memoryRequirements2.memoryRequirements.size;
 

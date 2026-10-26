@@ -6,7 +6,7 @@ namespace renderer
     class Uploader final
     {
     public:
-        static void Initialize(VkDevice device, VkCommandBuffer buffer, VkCommandPool pool, VkQueue queue, uint32_t queueFamilyIndex);
+        static bool Initialize(VkDevice device, VkCommandBuffer buffer, VkCommandPool pool, VkQueue queue, uint32_t queueFamilyIndex);
         static void Release();
 
         // memProperties에 따라서 변경.

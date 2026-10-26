@@ -1,4 +1,7 @@
+#include <memory>
 #include "Uploader.h"
+#include "../Util/Macro.h"
+#include "Resources/Buffer.h"
 
 namespace renderer
 {
@@ -9,7 +12,7 @@ namespace renderer
     VkFence Uploader::sFence = {};
     uint32_t Uploader::sGraphicsQueueFamilyIndex = {};
 
-    void Uploader::Initialize(VkDevice device, VkCommandBuffer buffer, VkCommandPool pool, VkQueue queue, uint32_t queueFamilyIndex)
+    bool Uploader::Initialize(VkDevice device, VkCommandBuffer buffer, VkCommandPool pool, VkQueue queue, uint32_t queueFamilyIndex)
     {
         sDevice = device;
         // TODO: Buffer/Pool은 여기에서 만들도록. Queue도 Transfer Queue로 지원할 경우 만들기.
@@ -17,20 +20,33 @@ namespace renderer
         sCommandPool = pool;
         sGraphicsQueue = queue;
         sGraphicsQueueFamilyIndex = queueFamilyIndex;
+
+        VkFenceCreateInfo fenceCreateInfo{};
+        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        const VkResult result = vkCreateFence(sDevice, &fenceCreateInfo, nullptr, &sFence);
+
+        if (result != VK_SUCCESS)
+        {
+            ASSERT(false, "Fence 생성 실패 resultCode(%d)", result);
+            return false;
+        }
+        return true;
     }
 
     void Uploader::Release()
     {
-        //vkDestroyFence(sDevice, sFence, nullptr);
+        vkDestroyFence(sDevice, sFence, nullptr);
     }
 
     void Uploader::UploadBuffer(const void* const pData, uint32_t sizeInBytes, uint32_t offset, uint32_t memProperties, VkDeviceMemory dstMemory, VkBuffer dstBuffer)
     {
         if(memProperties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
         {
-            // TODO: 여기에서 staging 버퍼 만들고, CopyBufferToBuffer로 연결하는 것이 좋아보임.
-            // staging 버퍼 만들고 -> uploadBufferMap로 staging버퍼에 넣고, CopyBufferToBuffer로 dstBuffer에 복사
-            //uploadBufferStaging();
+            std::unique_ptr<Buffer> staging = std::make_unique<Buffer>(sDevice);
+            staging->Create(sizeInBytes, Buffer::eBufferType::Staging, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sGraphicsQueueFamilyIndex);
+            staging->AddDataOffset(pData, 1, sizeInBytes, 0);
+            uploadBufferStaging(staging->GetBuffer(), dstBuffer, sizeInBytes, 0, offset);
         }
         else
         {
@@ -74,9 +90,10 @@ namespace renderer
         submitInfo2.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
         submitInfo2.commandBufferInfoCount = 1;
         submitInfo2.pCommandBufferInfos = &commandBufferSubmitInfo;
-        vkQueueSubmit2(sGraphicsQueue, 1, &submitInfo2, nullptr);
+        vkQueueSubmit2(sGraphicsQueue, 1, &submitInfo2, sFence);
 
-        vkQueueWaitIdle(sGraphicsQueue);
+        const VkResult result = vkWaitForFences(sDevice, 1, &sFence, VK_FALSE, UINT64_MAX);
+        ASSERT(result == VK_SUCCESS, "Uploader Fence 대기 실패");
     }
 
     void Uploader::CopyBufferToImage(VkBuffer srcBuf, VkImage dstImage, VkBufferImageCopy2& region)
@@ -143,6 +160,11 @@ namespace renderer
 
     void Uploader::uploadBufferStaging(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t sizeInBytes, uint32_t srcOffset, uint32_t dstOffset)
     {
+        VkCommandBufferBeginInfo bufferBeginInfo{};
+        bufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        bufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        vkBeginCommandBuffer(sCommandBuffer, &bufferBeginInfo);
+
         VkBufferCopy2 bufferCopy2{};
         bufferCopy2.sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2;
         bufferCopy2.dstOffset = dstOffset;

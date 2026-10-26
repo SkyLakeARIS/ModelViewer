@@ -174,9 +174,9 @@ namespace renderer
     void Renderer::PrepareObjects()
     {
         mVertexBuffer = new Buffer(mDevice);
-        mVertexBuffer->Create(771336 * 2, Buffer::eBufferType::Vertex, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex);
+        mVertexBuffer->Create(771336 * 2, Buffer::eBufferType::Vertex, (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), mGraphicsQueueIndex);
         mIndexBuffer = new Buffer(mDevice);
-        mIndexBuffer->Create(189792 * 2, Buffer::eBufferType::Index, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), mGraphicsQueueIndex);
+        mIndexBuffer->Create(189792 * 2, Buffer::eBufferType::Index, (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), mGraphicsQueueIndex);
     }
 
     void Renderer::UpdateScene(std::vector<std::pair<renderer::eCbType, void*>>& uniforms)
