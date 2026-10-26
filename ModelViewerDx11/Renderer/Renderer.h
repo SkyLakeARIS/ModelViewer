@@ -4,6 +4,7 @@
 
 namespace renderer
 {
+    class FrameContext;
     class ShaderModule;
     class Shader;
     class DescriptorSet;
@@ -13,14 +14,6 @@ namespace renderer
     class Renderer final
     {
     private:
-        struct PerFrame
-        {
-            VkCommandPool Pool;
-            VkCommandBuffer Buffer;
-            VkSemaphore ImageReadySemaphore;
-            VkFence DrawFinishedFence;
-        };
-
         // MEMO: Pool-Buffer = 1:1, 더블버퍼링
         static constexpr uint8_t sOverlappedFrame = 2;
     public:
@@ -93,7 +86,7 @@ namespace renderer
         void SubmitCommands() const;
         void Present() const;
 
-        void CountFrame();
+        void CountFrame() const;
 
         // pipeline
         bool TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
@@ -108,17 +101,13 @@ namespace renderer
         bool createLogicalDevice();
         bool createSwapChain(uint16_t width, uint16_t height);
         bool createImageViews();
-        bool createFrame();
         bool createSyncObjects();
         bool createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const;
         bool createCommandBuffers(VkCommandPool commandPool, uint32_t bufferCount, VkCommandBufferLevel level, VkCommandBuffer& outBuffers) const;
         bool createSamplers();
         bool createShaders();
-        uint32_t acquireSwapChainImage(const PerFrame& frame);
         void transitionImageLayout(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask);
         void transitionImageLayoutNew(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask);
-        PerFrame getCurrentFrameResource() const;
-        uint32_t getCurrentFrameIndex() const;
     private:
         int16_t mWindowHeight;
         int16_t mWindowWidth;
@@ -138,16 +127,14 @@ namespace renderer
         std::vector<VkImage> mImages;
         std::vector<VkImageView> mImageViews;
 
-        PerFrame mFrames[sOverlappedFrame];
+        FrameContext* mFrameContext;
         std::vector<VkSemaphore> mRenderFinishedSemaphores;
-        uint64_t mFrameCount;
         uint32_t mCurImageIndex;
         // pipeline
         VkPipeline mSimplePipeline;
         // shader
         std::unordered_map<HashID, ShaderModule*> mShaderModules;
         std::vector<Shader*> mShaders;
-        DescriptorSet* mDescriptorSets[static_cast<EnumInt>(eShader::ShaderCount)];
         // buffer
         Buffer* mVertexBuffer;
         Buffer* mIndexBuffer;

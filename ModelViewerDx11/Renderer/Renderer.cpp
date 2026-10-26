@@ -1,6 +1,7 @@
 #include "Renderer.h"
 #include <algorithm>
 #include "DescriptorSet.h"
+#include "FrameContext.h"
 #include "Uploader.h"
 #include "VkHelper.h"
 #include "../Util/Macro.h"
@@ -26,9 +27,7 @@ namespace renderer
         , mSurfaceFormat()
         , mSwapChain(nullptr)
         , mSwapChainExtent()
-        , mFrames{}
-        , mFrameCount(0)
-        , mCurImageIndex(0)
+        , mFrameContext(nullptr)
         , mSimplePipeline(nullptr)
         , mVertexBuffer()
         , mIndexBuffer()
@@ -54,11 +53,6 @@ namespace renderer
             delete samplerIt.second;
         }
 
-        for(const auto& descriptorSet : mDescriptorSets)
-        {
-            delete descriptorSet;
-        }
-
         for(const auto& shaderIt : mShaders)
         {
             delete shaderIt;
@@ -74,16 +68,11 @@ namespace renderer
         delete mVertexBuffer;
         delete mIndexBuffer;
 
+        delete mFrameContext;
+        mFrameContext = nullptr;
         vkDestroyCommandPool(mDevice, mCommandPoolTransfer, nullptr);
         vkDestroyPipeline(mDevice, mSimplePipeline, nullptr);
 
-
-        for(const auto& frame : mFrames)
-        {
-            vkDestroyCommandPool(mDevice, frame.Pool, nullptr);
-            vkDestroySemaphore(mDevice, frame.ImageReadySemaphore, nullptr);
-            vkDestroyFence(mDevice, frame.DrawFinishedFence, nullptr);
-        }
 
     	for(const auto& semaphore : mRenderFinishedSemaphores)
         {
@@ -130,12 +119,12 @@ namespace renderer
         vkGetPhysicalDeviceMemoryProperties2(mPhysicalDevice, &physicalDeviceMemoryProperties2);
         VkHelper::SetPhysicalDeviceMemoryProperties(physicalDeviceMemoryProperties2.memoryProperties);
 
-        VkHelper::SetQueueFamilyIndices(mGraphicsQueueIndex, UINT32_MAX);
 
         if(createLogicalDevice() == false)
         {
             return false;
         }
+        VkHelper::SetQueueFamilyIndices(mGraphicsQueueIndex, UINT32_MAX);
 
         if(createSwapChain(width, height) == false)
         {
@@ -143,11 +132,6 @@ namespace renderer
         }
 
         if (createImageViews() == false)
-        {
-            return false;
-        }
-
-        if(createFrame() == false)
         {
             return false;
         }
@@ -162,10 +146,10 @@ namespace renderer
             return false;
         }
 
-        for(uint32_t shaderType = 0 ; shaderType < static_cast<uint32_t>(eShader::ShaderCount); ++shaderType)
+        mFrameContext = new FrameContext(mDevice);
+        if(mFrameContext->Initialize(sOverlappedFrame, mShaders) == false)
         {
-            mDescriptorSets[shaderType] = new DescriptorSet(mDevice);
-            mDescriptorSets[shaderType]->Create(sOverlappedFrame, mShaders[shaderType]);
+            return false;
         }
 
         if(createSamplers() == false)
@@ -197,19 +181,18 @@ namespace renderer
 
     void Renderer::UpdateScene(std::vector<std::pair<renderer::eCbType, void*>>& uniforms)
     {
-        const uint32_t frameIndex = getCurrentFrameIndex();
         for(const auto& uniform : uniforms)
         {
-            mDescriptorSets[static_cast<EnumInt>(eShader::Simple)]->UpdateUniformData(uniform.second, 1, sizeof(CbViewProj), frameIndex, uniform.first == eCbType::CbViewProj);
+            mFrameContext->UpdateUniformData(eShader::Simple, uniform.second, 1, sizeof(CbViewProj), uniform.first == eCbType::CbViewProj);
         }
-        mDescriptorSets[static_cast<EnumInt>(eShader::Simple)]->UpdateDescriptorSet(eShader::Simple, frameIndex);
+        const bool result = mFrameContext->UpdateDescriptorSet(eShader::Simple);
+        ASSERT(result , "UpdateDescriptorSet 실패");
     }
 
     void Renderer::RenderScene()
     {
         // Scene Update
-        const PerFrame frame = getCurrentFrameResource();
-        const uint32_t frameIndex = getCurrentFrameIndex();
+        const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
         VkViewport viewport{};
         viewport.x = 0;
         viewport.y = 0;
@@ -218,60 +201,54 @@ namespace renderer
         viewport.maxDepth = 1.0f;
         viewport.minDepth = 0.0f;
 
-        vkCmdSetViewport(frame.Buffer, 0, 1, &viewport);
+        vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
 
         VkRect2D scissor{ {0, 0}, mSwapChainExtent };
-        vkCmdSetScissor(frame.Buffer, 0, 1, &scissor);
+        vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
 
-        vkCmdBindPipeline(frame.Buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mSimplePipeline);
+        vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mSimplePipeline);
 
         const VkDeviceSize offset = 0;
         const VkBuffer vertexBuffer = mVertexBuffer->GetBuffer();
-        vkCmdBindVertexBuffers(frame.Buffer, 0, 1, &vertexBuffer, &offset);
+        vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &offset);
 
         const VkIndexType indexType = VK_INDEX_TYPE_UINT32;
-        vkCmdBindIndexBuffer(frame.Buffer, mIndexBuffer->GetBuffer(), 0, indexType);
+        vkCmdBindIndexBuffer(cmdBuffer, mIndexBuffer->GetBuffer(), 0, indexType);
 
-        const VkDescriptorSet descriptorSet = mDescriptorSets[static_cast<EnumInt>(eShader::Simple)]->GetDescriptorSet(frameIndex);
-        vkCmdBindDescriptorSets(frame.Buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mShaders[static_cast<EnumInt>(eShader::Simple)]->GetPipelineLayout(), 0, 1, &descriptorSet, 0, nullptr);
+        const VkDescriptorSet descriptorSet = mFrameContext->GetCommandDescriptorSetInFlight(eShader::Simple);
+        vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mShaders[static_cast<EnumInt>(eShader::Simple)]->GetPipelineLayout(), 0, 1, &descriptorSet, 0, nullptr);
     }
 
     void Renderer::DrawIndexed(uint32_t indexCount, uint32_t vertexOffset, uint32_t indexOffset)
     {
-        const PerFrame frame = getCurrentFrameResource();
-        vkCmdDrawIndexed(frame.Buffer, indexCount, 1, indexOffset, vertexOffset, 0);
+        const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
+        vkCmdDrawIndexed(cmdBuffer, indexCount, 1, indexOffset, vertexOffset, 0);
     }
 
     void Renderer::WaitForLastFrame() const
     {
-        const PerFrame curFrame = getCurrentFrameResource();
-        // wait 1sec = 1'000'000'000
-        const VkResult result = vkWaitForFences(mDevice, 1, &curFrame.DrawFinishedFence, VK_TRUE, 1'000'000'000); 
-        if (result != VK_SUCCESS)
-        {
-            ASSERT(false, "Fence Wait LastFrame 실패 resultCode(%d)", result);
-        }
-        (void)vkResetFences(mDevice, 1, &curFrame.DrawFinishedFence);
+        mFrameContext->WaitForLastFrame();
+        mFrameContext->ResetFence();
     }
 
     void Renderer::BeginRender()
     {
-        const PerFrame curFrame = getCurrentFrameResource();
+        const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
 
-        mCurImageIndex = acquireSwapChainImage(curFrame);
+        mCurImageIndex = mFrameContext->AcquireSwapchainImage(mSwapChain);
 
         VkCommandBufferBeginInfo commandBufferBeginInfo{};
         commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         commandBufferBeginInfo.flags = VkCommandBufferUsageFlagBits::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         // MEMO: 암묵적 초기화
-        const VkResult result = vkBeginCommandBuffer(curFrame.Buffer, &commandBufferBeginInfo);
+        const VkResult result = vkBeginCommandBuffer(cmdBuffer, &commandBufferBeginInfo);
         if (result != VK_SUCCESS)
         {
             ASSERT(false, "vkBeginCommandBuffer 실패 resultCode(%d)", result);
         }
 
-        transitionImageLayout(curFrame.Buffer, mCurImageIndex, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_2_NONE, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT , VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+        transitionImageLayout(cmdBuffer, mCurImageIndex, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_2_NONE, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT , VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
 
         constexpr VkClearValue ClearColorValue{0.4f, 0.8f, 0.6f, 1.0f};
         constexpr VkImageSubresourceRange subresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
@@ -290,26 +267,26 @@ namespace renderer
         renderingInfo.colorAttachmentCount = 1;
         renderingInfo.layerCount = 1;
         renderingInfo.renderArea = { {0, 0}, mSwapChainExtent };
-        vkCmdBeginRendering(curFrame.Buffer, &renderingInfo);
+        vkCmdBeginRendering(cmdBuffer, &renderingInfo);
     }
 
     void Renderer::EndRender()
     {
-        const PerFrame curFrame = getCurrentFrameResource();
+        const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
 
-        vkCmdEndRendering(curFrame.Buffer);
+        vkCmdEndRendering(cmdBuffer);
 
-        transitionImageLayout(curFrame.Buffer, mCurImageIndex, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT);
-        vkEndCommandBuffer(curFrame.Buffer);
+        transitionImageLayout(cmdBuffer, mCurImageIndex, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT);
+        vkEndCommandBuffer(cmdBuffer);
     }
 
     void Renderer::SubmitCommands() const
     {
-        const PerFrame curFrame = getCurrentFrameResource();
+        const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
 
         VkCommandBufferSubmitInfo commandBufferSubmitInfo{};
         commandBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-        commandBufferSubmitInfo.commandBuffer = curFrame.Buffer;
+        commandBufferSubmitInfo.commandBuffer = cmdBuffer;
 
         VkSemaphoreSubmitInfo signalSemaphoreSubmitInfo{};
         signalSemaphoreSubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
@@ -319,7 +296,7 @@ namespace renderer
 
         VkSemaphoreSubmitInfo waitSemaphoreSubmitInfo{};
         waitSemaphoreSubmitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-        waitSemaphoreSubmitInfo.semaphore = curFrame.ImageReadySemaphore;
+        waitSemaphoreSubmitInfo.semaphore = mFrameContext->GetImageReadySemaphoreInFlight();
         waitSemaphoreSubmitInfo.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR;
         waitSemaphoreSubmitInfo.value = 1;
 
@@ -331,13 +308,11 @@ namespace renderer
         submitInfo.waitSemaphoreInfoCount = 1;
         submitInfo.pSignalSemaphoreInfos = &signalSemaphoreSubmitInfo;
         submitInfo.signalSemaphoreInfoCount = 1;
-        vkQueueSubmit2(mQueue, 1, & submitInfo, curFrame.DrawFinishedFence);
+        vkQueueSubmit2(mQueue, 1, & submitInfo, mFrameContext->GetRenderFinishedSemaphoreInFlight());
     }
 
     void Renderer::Present() const
     {
-        const PerFrame curFrame = getCurrentFrameResource();
-
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.pSwapchains = &mSwapChain;
@@ -350,10 +325,9 @@ namespace renderer
         vkQueuePresentKHR(mQueue, &presentInfo);
     }
 
-    void Renderer::CountFrame()
+    void Renderer::CountFrame() const
     {
-        ++mFrameCount;
-        mFrameCount = (mFrameCount == UINT64_MAX) ? mFrameCount % sOverlappedFrame : mFrameCount;
+        mFrameContext->CountFrame();
     }
 
     bool Renderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
@@ -851,49 +825,6 @@ namespace renderer
         return true;
     }
 
-    bool Renderer::createFrame()
-    {
-        ASSERT(mGraphicsQueueIndex != UINT_MAX, "mGraphicsQueueIndex가 유효하지 않습니다.");
-
-        VkSemaphoreCreateInfo semaphoreCreateInfo{};
-        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        VkFenceCreateInfo fenceCreateInfo{};
-        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-        for (auto& frame : mFrames)
-        {
-            if (createCommandPool(mGraphicsQueueIndex, VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, frame.Pool) == false)
-            {
-                ASSERT(false, "CommandPool 생성 실패");
-                return false;
-            }
-
-            if (createCommandBuffers(frame.Pool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY, frame.Buffer) == false)
-            {
-                ASSERT(false, "CommandBuffer 생성 실패");
-                return false;
-            }
-
-            VkResult result = vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &frame.ImageReadySemaphore);
-            if (result != VK_SUCCESS)
-            {
-                ASSERT(false, "Semaphore(ImageReady) 생성 실패 resultCode(%d)", result);
-                return false;
-            }
-
-            result = vkCreateFence(mDevice, &fenceCreateInfo, nullptr, &frame.DrawFinishedFence);
-            if (result != VK_SUCCESS)
-            {
-                ASSERT(false, "Fence 생성 실패 resultCode(%d)", result);
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     bool Renderer::createSyncObjects()
     {
         VkSemaphoreCreateInfo semaphoreCreateInfo{};
@@ -1069,25 +1000,6 @@ namespace renderer
         return true;
     }
 
-    uint32_t Renderer::acquireSwapChainImage(const PerFrame& frame)
-    {
-        uint32_t nextImageIndex = UINT32_MAX;
-        VkAcquireNextImageInfoKHR acqNextImageInfo{};
-        acqNextImageInfo.sType = VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR;
-        acqNextImageInfo.semaphore = frame.ImageReadySemaphore;
-        acqNextImageInfo.swapchain = mSwapChain;
-        acqNextImageInfo.timeout = 1'000'000'000; // 1sec
-        acqNextImageInfo.deviceMask = 1;
-
-        const VkResult result = vkAcquireNextImage2KHR(mDevice, &acqNextImageInfo, &nextImageIndex);
-        if (result != VK_SUCCESS)
-        {
-            ASSERT(false, "next image 획득 실패 resultCode(%d)", result);
-        }
-        ASSERT(nextImageIndex < mImages.size(), "유효하지 않은 image Index를 획득했거나, index 획득에 실패했습니다.  nextImageIndex(%u)", nextImageIndex);
-        return nextImageIndex;
-    }
-
     void Renderer::transitionImageLayout(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags2 srcAccessMask, VkAccessFlags2 dstAccessMask, VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask)
     {
         VkImageMemoryBarrier2 imageBarrier{};
@@ -1140,16 +1052,5 @@ namespace renderer
         dependencyInfo.imageMemoryBarrierCount = 1;
         dependencyInfo.pImageMemoryBarriers = &imageBarrier;
         vkCmdPipelineBarrier2(commandBuffer, &dependencyInfo);
-    }
-
-    Renderer::PerFrame Renderer::getCurrentFrameResource() const
-    {
-        const uint32_t curFrameIndex = mFrameCount % sOverlappedFrame;
-        return mFrames[curFrameIndex];
-    }
-
-    uint32_t Renderer::getCurrentFrameIndex() const
-    {
-        return mFrameCount % sOverlappedFrame;
     }
 }
