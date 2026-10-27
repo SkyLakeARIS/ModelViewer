@@ -17,48 +17,7 @@ namespace renderer
         // MEMO: Pool-Buffer = 1:1, 더블버퍼링
         static constexpr uint8_t sOverlappedFrame = 2;
     public:
-        struct SubDataRange
-        {
-            uint32_t StartIndex;
-            uint32_t Count;
-        };
-        struct BufferInfo
-        {
-            VkBuffer Buffer;
-            VkDeviceMemory Memory;
-            uint32_t Alignment;
-            uint32_t AllocationSize;
-            uint32_t Cursor;
-            std::unordered_map<HashID, SubDataRange> SubResources;
-        };
 
-        struct ShaderStage
-        {
-            VkShaderModule ShaderModule;
-            VkPipelineShaderStageCreateInfo PipelineShaderStage;
-        };
-        struct DescriptorInfo
-        {
-            VkDescriptorType Type;
-            uint32_t Count;
-        };
-        struct ShaderLayout
-        {
-            VkDescriptorSetLayout SetLayout;
-            VkPipelineLayout PipelineLayout;
-            std::vector<DescriptorInfo> DescriptorInfos;
-        };
-        struct ShaderDescriptor
-        {
-            VkDescriptorSet Set[sOverlappedFrame];
-            VkDescriptorPool Pool;
-        };
-        // pipeline
-        struct PipelineStateBitField
-        {
-            uint64_t Value;
-            uint64_t BitWidth;
-        };
         // Texture
         struct TextureInfo
         {
