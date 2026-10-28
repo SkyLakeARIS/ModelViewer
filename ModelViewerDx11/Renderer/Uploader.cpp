@@ -1,5 +1,6 @@
 #include <memory>
 #include "Uploader.h"
+#include "VkHelper.h"
 #include "../Util/Macro.h"
 #include "Resources/Buffer.h"
 
@@ -105,9 +106,10 @@ namespace renderer
 
         TransitionImageLayout(sCommandBuffer, dstImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {}, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT);
         VkCopyBufferToImageInfo2 copyBufferToImageInfo2{};
-        copyBufferToImageInfo2.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;
+        copyBufferToImageInfo2.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2;
         copyBufferToImageInfo2.srcBuffer = srcBuf;
         copyBufferToImageInfo2.dstImage = dstImage;
+        copyBufferToImageInfo2.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         copyBufferToImageInfo2.pRegions = &region;
         copyBufferToImageInfo2.regionCount = 1;
 
@@ -136,6 +138,9 @@ namespace renderer
         VkImageMemoryBarrier2 imageBarrier{};
         imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
         imageBarrier.image = image;
+
+        imageBarrier.srcQueueFamilyIndex = VkHelper::GetGraphicsQueueFamilyIndex();
+        imageBarrier.dstQueueFamilyIndex = VkHelper::GetGraphicsQueueFamilyIndex();
 
         imageBarrier.srcAccessMask = srcAccessMask;
         imageBarrier.dstAccessMask = dstAccessMask;

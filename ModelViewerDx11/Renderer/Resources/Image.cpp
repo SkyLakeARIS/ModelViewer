@@ -39,6 +39,7 @@ namespace renderer
         imageMemoryRequirements.image = mImage;
 
         VkMemoryRequirements2 memoryRequirements2{};
+        memoryRequirements2.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
         vkGetImageMemoryRequirements2(mDevice, &imageMemoryRequirements, &memoryRequirements2);
 
         uint32_t memoryType;
