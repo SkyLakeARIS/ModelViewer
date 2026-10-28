@@ -159,7 +159,7 @@
     <ClInclude Include="Renderer\Shader\ShaderModule.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\DescriptorSet.h">
+    <ClInclude Include="Renderer\Shader\DescriptorSet.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -248,7 +248,7 @@
     <ClCompile Include="Renderer\Shader\ShaderModule.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\DescriptorSet.cpp">
+    <ClCompile Include="Renderer\Shader\DescriptorSet.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

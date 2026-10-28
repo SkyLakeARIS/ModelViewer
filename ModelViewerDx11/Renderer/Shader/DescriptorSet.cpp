@@ -1,9 +1,9 @@
 #include "DescriptorSet.h"
-#include "VkHelper.h"
-#include "../Util/Macro.h"
-#include "Resources/Buffer.h"
-#include "Resources/RenderTypes.h"
-#include "Shader/Shader.h"
+#include "../VkHelper.h"
+#include "../../Util/Macro.h"
+#include "../Resources/Buffer.h"
+#include "../Resources/RenderTypes.h"
+#include "../Shader/Shader.h"
 
 namespace renderer
 {

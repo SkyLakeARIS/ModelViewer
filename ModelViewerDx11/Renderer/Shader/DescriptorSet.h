@@ -1,6 +1,6 @@
 #pragma once
-#include "GfxPrerequisites.h"
-#include "Shader/ShaderType.h"
+#include "../GfxPrerequisites.h"
+#include "ShaderType.h"
 
 namespace renderer
 {
