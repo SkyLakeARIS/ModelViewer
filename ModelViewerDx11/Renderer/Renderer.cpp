@@ -97,7 +97,7 @@ namespace renderer
     {
         mWindowWidth = width;
         mWindowHeight = height;
-
+        VkHelper::SetFrameInFlightCount(sOverlappedFrame);
         if(createInstance(appName) == false)
         {
             return false;

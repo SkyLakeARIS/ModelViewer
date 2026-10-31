@@ -7,6 +7,7 @@ namespace renderer
     uint32_t VkHelper::sTransferQueueFamilyIndex = UINT32_MAX;
     VkPhysicalDeviceMemoryProperties VkHelper::sDeviceMemoryProperties = {};
     bool VkHelper::sbSupportStagingUpload = false;
+    uint32_t VkHelper::sFrameInFlightCount = 0;
 
     bool VkHelper::AllocateMemory(const VkDevice& device, uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory)
     {
@@ -43,6 +44,11 @@ namespace renderer
         return ((((value) + (alignment) - 1) / (alignment)) * (alignment));
     }
 
+    void VkHelper::SetFrameInFlightCount(uint32_t inFlightCount)
+    {
+        sFrameInFlightCount = inFlightCount;
+    }
+
     void VkHelper::SetQueueFamilyIndices(uint32_t graphics, uint32_t transfer)
     {
         sGraphicsQueueFamilyIndex = graphics;
@@ -57,6 +63,11 @@ namespace renderer
     void VkHelper::SetSupportStagingUpload(bool bEnable)
     {
         sbSupportStagingUpload = bEnable;
+    }
+
+    uint32_t VkHelper::GetFrameInFlightCount()
+    {
+        return sFrameInFlightCount;
     }
 
     uint32_t VkHelper::GetGraphicsQueueFamilyIndex()

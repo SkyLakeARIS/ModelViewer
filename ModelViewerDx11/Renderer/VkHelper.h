@@ -11,10 +11,12 @@ namespace renderer
 
         static uint32_t AlignedSize(uint32_t value, uint32_t alignment);
 
+        static void SetFrameInFlightCount(uint32_t inFlightCount);
         static void SetQueueFamilyIndices(uint32_t graphics, uint32_t transfer);
         static void SetPhysicalDeviceMemoryProperties(const VkPhysicalDeviceMemoryProperties& properties);
         static void SetSupportStagingUpload(bool bEnable);
 
+        static uint32_t GetFrameInFlightCount();
         static uint32_t GetGraphicsQueueFamilyIndex();
         static uint32_t GetTransferQueueFamilyIndex();
 
@@ -23,6 +25,7 @@ namespace renderer
         VkHelper() = default;
         ~VkHelper() = default;
     private:
+        static uint32_t sFrameInFlightCount;
         static uint32_t sGraphicsQueueFamilyIndex;
         static uint32_t sTransferQueueFamilyIndex;
         static VkPhysicalDeviceMemoryProperties sDeviceMemoryProperties;
