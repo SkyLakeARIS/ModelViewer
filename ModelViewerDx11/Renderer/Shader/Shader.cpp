@@ -146,12 +146,17 @@ namespace renderer
             ASSERT(false, "DescriptorSetLayout 생성 실패.  result(%u)", result);
             return false;
         }
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = sizeof(PushConstantBlock);
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutCreateInfo.pSetLayouts = &mDescriptorSetLayout;
         pipelineLayoutCreateInfo.setLayoutCount = 1;
-        pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+        pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+        pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
         result = vkCreatePipelineLayout(mDevice, &pipelineLayoutCreateInfo, nullptr, &mPipelineLayout);
         if (result != VK_SUCCESS)

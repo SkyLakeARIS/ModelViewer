@@ -47,6 +47,7 @@ namespace renderer
 
         void CountFrame() const;
 
+        void UploadPushConstant(const PushConstantBlock& dataBlock, eShader shaderType) const;
         // pipeline
         bool TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
 

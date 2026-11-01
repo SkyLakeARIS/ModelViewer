@@ -8,11 +8,12 @@
     b4 : Camera Attribute (for lighting)
     b5 : Orthographic Matrix (for screen)
  */
-
-cbuffer CbMatWorld : register(b0)
+struct CbMatrix
 {
-    matrix MatWorld;
-}
+    matrix Matrix;
+};
+
+[[vk::push_constant]] CbMatrix MatWorld;
 
 cbuffer CbMatViewProj : register(b1)
 {
@@ -37,8 +38,8 @@ struct PsInput
 PsInput main(VsInput vsInput)
 {
     PsInput psInput;
-    psInput.Position = mul(vsInput.Position, MatWorld);
-    psInput.WorldNormal = mul(float4(vsInput.Normal, 0.0f), MatWorld).xyz;
+    psInput.Position = mul(vsInput.Position, MatWorld.Matrix);
+    psInput.WorldNormal = mul(float4(vsInput.Normal, 0.0f), MatWorld.Matrix).xyz;
     psInput.WorldPosition = psInput.Position.xyz;
     psInput.Position = mul(psInput.Position, MatViewProj);
 

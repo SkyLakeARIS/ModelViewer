@@ -330,6 +330,19 @@ namespace renderer
         mFrameContext->CountFrame();
     }
 
+    void Renderer::UploadPushConstant(const PushConstantBlock& dataBlock, eShader shaderType) const
+    {
+        VkCommandBuffer cmdBuf = mFrameContext->GetCommandBufferInFlight();
+        VkPushConstantsInfo pushConstantsInfo{};
+        pushConstantsInfo.sType = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO;
+        pushConstantsInfo.offset = 0;
+        pushConstantsInfo.size = sizeof(PushConstantBlock);
+        pushConstantsInfo.layout = mShaders[static_cast<EnumInt>(shaderType)]->GetPipelineLayout();
+        pushConstantsInfo.pValues = &dataBlock;
+        pushConstantsInfo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        vkCmdPushConstants2(cmdBuf, &pushConstantsInfo);
+    }
+
     bool Renderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
     {
         PipelineBuilder pipelinevBuilder(mDevice);

@@ -1,7 +1,13 @@
 #pragma once
+#include "../../Core/MathPrerequisites.h"
 
 namespace renderer
 {
+    struct PushConstantBlock
+    {
+        XMMATRIX WorldMatrix;
+    };
+
     enum class eCbType : uint8_t
     {
         CbWorld,

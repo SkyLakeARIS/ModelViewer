@@ -26,6 +26,8 @@ namespace renderer
 
     void Model::Draw(Renderer& renderer)
     {
+        PushConstantBlock pushConstantBlock{ mMatWorld };
+        renderer.UploadPushConstant(pushConstantBlock, eShader::Simple);
         for (const auto& subMesh : mMesh.SubMeshes)
         {
             renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);
