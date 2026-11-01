@@ -126,7 +126,7 @@ namespace renderer
 
         const PoolInfo ownerInfo{ nowPoolIndex, layoutHash };
         *outDescriptorSet = new DescriptorSet(mDevice, descriptorSets, ownerInfo);
-        if ((*outDescriptorSet)->Create(inFlightCount) == false)
+        if ((*outDescriptorSet)->Create() == false)
         {
             delete outDescriptorSet;
             outDescriptorSet = nullptr;

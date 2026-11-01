@@ -37,7 +37,7 @@ namespace renderer
         DescriptorSet(const VkDevice& device, const std::vector<VkDescriptorSet>& descriptorSets, const PoolInfo& ownerInfo);
         ~DescriptorSet();
 
-        bool Create(uint32_t frameOverlap);
+        bool Create();
         void UpdateDescriptorSet(eShader shader);
         void UpdateUniformData(const void* const pData, uint32_t count, uint32_t elementSize, uint32_t inFlightIndex, bool bPerFrame);
         VkDescriptorSet GetDescriptorSet(uint32_t inFlightIndex) const;

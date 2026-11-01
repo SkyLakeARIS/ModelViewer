@@ -24,10 +24,11 @@ namespace renderer
         std::vector<Buffer*>().swap(mBuffers);
     }
 
-    bool DescriptorSet::Create(uint32_t frameOverlap)
+    bool DescriptorSet::Create()
     {
-        mBuffers.reserve(frameOverlap);
-        for(uint32_t inFlightCount = 0; inFlightCount < frameOverlap; ++inFlightCount)
+        const uint32_t inFlightCount = VkHelper::GetFrameInFlightCount();
+        mBuffers.reserve(inFlightCount);
+        for(uint32_t index = 0; index < inFlightCount; ++index)
         {
             Buffer* buffer = new Buffer(mDevice);
             if(buffer->Create(512, Buffer::eBufferType::Uniform, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), VkHelper::GetGraphicsQueueFamilyIndex()) == false)
