@@ -25,6 +25,8 @@ namespace scene
 
 namespace renderer
 {
+    class ResourceManager;
+    class Loader;
     class Renderer;
     class Model;
     class ModelImporter;
@@ -57,7 +59,8 @@ private:
 
     Window* mWindow;
     renderer::Mesh mNdcMeshDeferred;
-
+    renderer::Loader* mLoader;
+    renderer::ResourceManager* mResourceManager;
     int32_t mCurSubMeshIndexFocusModel;
     renderer::Renderer* mVkRenderer;
     renderer::ModelImporter* mImporter;

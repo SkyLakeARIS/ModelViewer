@@ -186,6 +186,7 @@ call "compileShaders.bat"</Command>
     <ClInclude Include="Application.h" />
     <ClInclude Include="Core\InputPrerequisites.h" />
     <ClInclude Include="Core\MathPrerequisites.h" />
+    <ClInclude Include="Renderer\Loader.h" />
     <ClInclude Include="Renderer\Shader\DescriptorAllocator.h" />
     <ClInclude Include="Renderer\Shader\DescriptorSet.h" />
     <ClInclude Include="Renderer\FrameContext.h" />
@@ -234,6 +235,7 @@ call "compileShaders.bat"</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="Renderer\Loader.cpp" />
     <ClCompile Include="Renderer\Shader\DescriptorAllocator.cpp" />
     <ClCompile Include="Renderer\Shader\DescriptorSet.cpp" />
     <ClCompile Include="Renderer\FrameContext.cpp" />

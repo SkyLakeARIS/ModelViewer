@@ -165,6 +165,9 @@
     <ClInclude Include="Renderer\Shader\DescriptorAllocator.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Renderer\Loader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModelViewerDx11.cpp">
@@ -255,6 +258,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\Shader\DescriptorAllocator.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Loader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

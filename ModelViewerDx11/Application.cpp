@@ -4,10 +4,12 @@
 #include "Window.h"
 #include "Core/Input.h"
 #include "Core/Timer.h"
+#include "Renderer/Loader.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Importer/ImportedModelData.h"
 #include "Renderer/Importer/ModelImporter.h"
 #include "Renderer/Resources/Model.h"
+#include "Renderer/Resources/ResourceManager.h"
 #include "Scene/Billboard.h"
 #include "Scene/Camera.h"
 #include "Scene/Floor.h"
@@ -23,6 +25,8 @@ Application::Application()
     , mAppFrameRate(120)
     , mWindow(nullptr)
     , mNdcMeshDeferred{}
+    , mLoader(nullptr)
+    , mResourceManager(nullptr)
     , mCurSubMeshIndexFocusModel(0)
     , mVkRenderer(nullptr)
     , mImporter(nullptr)
@@ -39,6 +43,8 @@ Application::Application()
 
 Application::~Application()
 {
+    delete mLoader;
+    delete mResourceManager;
     mDirectInput->Release();
     delete mDirectInput;
     mDirectInput = nullptr;
@@ -176,62 +182,18 @@ bool Application::initializeScene()
         mWindowWidth,
         mWindowHeight);
 
-    mCharacter = new renderer::Model(mCamera);
-
-    HashID modelHash = 0;
-    renderer::ImportedModelContainer modelContainer;
     const int8_t* const modelFilePath = reinterpret_cast<int8_t*>("/AssetData/models/unagi.fbx");
-    mImporter->LoadFbxModel(modelFilePath, modelHash, modelContainer);
-
-    renderer::Mesh newMesh = {};
-    newMesh.SubMeshes.reserve(modelContainer.SubMeshes.size());
-    newMesh.VertexFormat = renderer::eVertexFormat::PTN;
-    const int16_t strideVertex = GetVertexStrideSize(newMesh.VertexFormat);
-    const int16_t strideIndex = sizeof(uint32_t);
-    const int16_t filePathLength = static_cast<int16_t>(strlen(reinterpret_cast<char const*>(modelFilePath)));
-    ASSERT(filePathLength + 1 <= util::MAX_NAME_LENGTH, "str이 버퍼 사이즈보다 큼. 입력 문자열을 검점하거나, util의 Length 상수 조정 필요. str(%d)", filePathLength + 1);
-    (void)memcpy(newMesh.MeshName, modelFilePath, filePathLength + 1);
-    newMesh.MeshHash = modelHash;
-
-    int32_t totalVertexCount = 0;
-    int32_t totalIndexCount = 0;
-    for (auto& subMesh : modelContainer.SubMeshes)
+    if(mLoader->Load(modelFilePath, &mCharacter) == false)
     {
-        renderer::SubMesh newSubMesh = {};
-
-        newSubMesh.SubMeshHash = util::GetDjb2Hash(subMesh.MeshName, modelHash);
-        mVkRenderer->AddVertexData(subMesh.VertexBuffer.get(), sizeof(renderer::VertexPTN), subMesh.VertexCount, newSubMesh.SubMeshHash, newSubMesh.VertexRange);
-        mVkRenderer->AddIndexData(subMesh.IndexBuffer.get(), sizeof(uint32_t), subMesh.IndexCount, newSubMesh.SubMeshHash, newSubMesh.IndexRange);
-
-        totalVertexCount += newSubMesh.VertexRange.Count;
-        totalIndexCount += newSubMesh.IndexRange.Count;
-        (void)memcpy(newSubMesh.SubMeshName, subMesh.MeshName, util::MAX_NAME_LENGTH);
-
-        newSubMesh.MinBound = std::move(subMesh.MinBound);
-        newSubMesh.MaxBound = std::move(subMesh.MaxBound);
-
-        newSubMesh.Material.Factors = std::move(subMesh.MaterialParam);
-        newSubMesh.Material.Factors.IsLitOn = static_cast<float>(true);
-
-        newMesh.SubMeshes.push_back(std::move(newSubMesh));
+        return false;
     }
-
-    newMesh.VertexRange.StartIndex = newMesh.SubMeshes.front().VertexRange.StartIndex;
-    newMesh.VertexRange.Count = totalVertexCount;
-
-    newMesh.IndexRange.StartIndex = newMesh.SubMeshes.front().IndexRange.StartIndex;
-    newMesh.IndexRange.Count = totalIndexCount;
-
-    mCharacter->SetMesh(newMesh);
-
-    HashID simplePipelineHash;
-    mVkRenderer->TryCreateGraphicsPipeline(simplePipelineHash, renderer::eShader::Simple, renderer::eVertexFormat::PTN, renderer::ePrimitiveTopology::Triangles, renderer::eRasterType::Basic, renderer::Opaque, renderer::eDepthStencilState::DepthOffStencilOff, renderer::eRenderPass::Main);
-    //mVkRenderer->SetSimplePipeline(simplePipelineHash);
     return true;
 }
 
 bool Application::initializeManagers()
 {
+    mResourceManager = new renderer::ResourceManager();
+    mLoader = new renderer::Loader(mImporter, mVkRenderer, mResourceManager, mVkRenderer->GetDescriptorAllocator());
     mVkRenderer->PrepareObjects();
     return true;
 }

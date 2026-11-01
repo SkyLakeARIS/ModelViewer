@@ -389,6 +389,11 @@ namespace renderer
         mIndexBuffer->AddData(pData, count, attribSize, hash, outRange);
     }
 
+
+    DescriptorAllocator* Renderer::GetDescriptorAllocator() const
+    {
+        return mDescriptorAllocator;
+    }
     bool Renderer::createInstance(const char* const appName)
     {
         VkResult result = VK_SUCCESS;
