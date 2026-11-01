@@ -4,6 +4,7 @@
 
 namespace renderer
 {
+    class DescriptorAllocator;
     class FrameContext;
     class ShaderModule;
     class Shader;
@@ -91,6 +92,7 @@ namespace renderer
         // pipeline
         VkPipeline mSimplePipeline;
         // shader
+        DescriptorAllocator* mDescriptorAllocator;
         std::unordered_map<HashID, ShaderModule*> mShaderModules;
         std::vector<Shader*> mShaders;
         // buffer

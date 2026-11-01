@@ -10,16 +10,13 @@ namespace renderer
         : mDevice(device)
         , mOverlapCount(0)
         , mNowInFlightIndex(0)
-        , mDescriptorSets{}
+        , mCommonDescriptorSet(nullptr)
     {
     }
 
     FrameContext::~FrameContext()
     {
-        for (const auto& descriptorSet : mDescriptorSets)
-        {
-            delete descriptorSet;
-        }
+        mCommonDescriptorSet = nullptr;
 
         for (const auto& frame : mInFlights)
         {
@@ -84,15 +81,65 @@ namespace renderer
                 return false;
             }
         }
+        return true;
+    }
 
-        for (uint32_t shaderType = 0; shaderType < static_cast<uint32_t>(eShader::ShaderCount); ++shaderType)
+    bool FrameContext::Initialize(DescriptorSet* const commonDescriptorSet)
+    {
+        mOverlapCount = VkHelper::GetFrameInFlightCount();
+
+        VkCommandPoolCreateInfo commandPoolCreateInfo{};
+        commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        commandPoolCreateInfo.queueFamilyIndex = VkHelper::GetGraphicsQueueFamilyIndex();
+        commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+        VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+        commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        commandBufferAllocateInfo.commandBufferCount = 1;
+        commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+        VkSemaphoreCreateInfo semaphoreCreateInfo{};
+        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        VkFenceCreateInfo fenceCreateInfo{};
+        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        mInFlights.resize(mOverlapCount);
+        for (auto& frame : mInFlights)
         {
-            mDescriptorSets[shaderType] = new DescriptorSet(mDevice);
-            if(mDescriptorSets[shaderType]->Create(inFlightCount, shaders[shaderType]) == false)
+            VkResult result = vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &frame.Pool);
+            if (result != VK_SUCCESS)
             {
+                ASSERT(false, "CommandPool 생성 실패 resultCode(%d)", result);
+                return false;
+            }
+
+            commandBufferAllocateInfo.commandPool = frame.Pool;
+            result = vkAllocateCommandBuffers(mDevice, &commandBufferAllocateInfo, &frame.Buffer);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "CommandBuffer 생성 실패 resultCode(%d)", result);
+                return false;
+            }
+
+            result = vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &frame.ImageReadySemaphore);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "Semaphore(ImageReady) 생성 실패 resultCode(%d)", result);
+                return false;
+            }
+
+            result = vkCreateFence(mDevice, &fenceCreateInfo, nullptr, &frame.RenderFinishedFence);
+            if (result != VK_SUCCESS)
+            {
+                ASSERT(false, "Fence 생성 실패 resultCode(%d)", result);
                 return false;
             }
         }
+
+        commonDescriptorSet->UpdateDescriptorSet(eShader::Simple);
+        mCommonDescriptorSet = commonDescriptorSet;
         return true;
     }
 
@@ -135,14 +182,9 @@ namespace renderer
         mNowInFlightIndex = (mNowInFlightIndex + 1) % mOverlapCount;
     }
 
-    bool FrameContext::UpdateDescriptorSet(eShader shaderType) const
-    {
-        return mDescriptorSets[static_cast<EnumInt>(shaderType)]->UpdateDescriptorSet(shaderType, mNowInFlightIndex);
-    }
-
     void FrameContext::UpdateUniformData(eShader shaderType, const void* const pData, uint32_t count, uint32_t elementSize, bool bPerFrame) const
     {
-        return mDescriptorSets[static_cast<EnumInt>(shaderType)]->UpdateUniformData(pData, count, elementSize, mNowInFlightIndex, bPerFrame);
+        return mCommonDescriptorSet->UpdateUniformData(pData, count, elementSize, mNowInFlightIndex, bPerFrame);
     }
 
     VkSemaphore FrameContext::GetImageReadySemaphoreInFlight() const
@@ -160,8 +202,8 @@ namespace renderer
         return mInFlights[mNowInFlightIndex].Buffer;
     }
 
-    VkDescriptorSet FrameContext::GetCommandDescriptorSetInFlight(eShader shaderType) const
+    VkDescriptorSet FrameContext::GetCommandDescriptorSetInFlight() const
     {
-        return mDescriptorSets[static_cast<EnumInt>(shaderType)]->GetDescriptorSet(mNowInFlightIndex);
+        return mCommonDescriptorSet->GetDescriptorSet(mNowInFlightIndex);
     }
 }

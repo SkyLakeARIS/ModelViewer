@@ -23,6 +23,7 @@ namespace renderer
         ~FrameContext();
 
         bool Initialize(uint32_t inFlightCount, const std::vector<Shader*>& shaders);
+        bool Initialize(DescriptorSet* const commonDescriptorSet);
 
         uint32_t AcquireSwapchainImage(const VkSwapchainKHR& swapchain) const;
         void WaitForLastFrame() const;
@@ -30,18 +31,17 @@ namespace renderer
 
         void CountFrame();
 
-        bool UpdateDescriptorSet(eShader shaderType) const;
         void UpdateUniformData(eShader shaderType, const void* const pData, uint32_t count, uint32_t elementSize, bool bPerFrame) const;
 
         VkSemaphore GetImageReadySemaphoreInFlight() const;
         VkFence GetRenderFinishedSemaphoreInFlight() const;
         VkCommandBuffer GetCommandBufferInFlight() const;
-        VkDescriptorSet GetCommandDescriptorSetInFlight(eShader shaderType) const;
+        VkDescriptorSet GetCommandDescriptorSetInFlight() const;
     private:
         VkDevice mDevice;
         uint32_t mOverlapCount;
         std::vector<FrameData> mInFlights;
         uint32_t mNowInFlightIndex;
-        DescriptorSet* mDescriptorSets[static_cast<EnumInt>(eShader::ShaderCount)];
+        DescriptorSet* mCommonDescriptorSet;
     };
 }

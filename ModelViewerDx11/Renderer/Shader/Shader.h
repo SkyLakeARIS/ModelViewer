@@ -27,6 +27,7 @@ namespace renderer
         const ShaderModule* GetVs() const;
         const ShaderModule* GetPs() const;
         VkDescriptorSetLayout GetDescriptorSetLayout() const;
+        HashID GetLayoutHash() const;
         VkPipelineLayout GetPipelineLayout() const;
         const std::vector<DescriptorInfo>& GetDescriptorInfos() const;
     private:

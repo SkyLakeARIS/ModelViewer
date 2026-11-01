@@ -124,7 +124,6 @@ namespace renderer
             {
                 eShader::Simple,
                 {
-                   {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT , nullptr},
                     {1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT , nullptr},
                 }
             }
@@ -197,6 +196,12 @@ namespace renderer
     VkDescriptorSetLayout Shader::GetDescriptorSetLayout() const
     {
         return mDescriptorSetLayout;
+    }
+
+    HashID Shader::GetLayoutHash() const
+    {
+        // MEMO: layout 개선 전까지 Shader마다 Layout 생기므로 ShaderType을 Hash로 사용
+        return static_cast<HashID>(mShaderType);
     }
 
     VkPipelineLayout Shader::GetPipelineLayout() const

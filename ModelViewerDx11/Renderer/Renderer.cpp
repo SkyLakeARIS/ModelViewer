@@ -9,6 +9,7 @@
 #include "Resources/Buffer.h"
 #include "Resources/PipelineBuilder.h"
 #include "Resources/Sampler.h"
+#include "Shader/DescriptorAllocator.h"
 #include "Shader/Shader.h"
 #include "Shader/ShaderModule.h"
 
@@ -29,6 +30,7 @@ namespace renderer
         , mSwapChainExtent()
         , mFrameContext(nullptr)
         , mSimplePipeline(nullptr)
+        , mDescriptorAllocator(nullptr)
         , mVertexBuffer()
         , mIndexBuffer()
     {
@@ -73,6 +75,7 @@ namespace renderer
         vkDestroyCommandPool(mDevice, mCommandPoolTransfer, nullptr);
         vkDestroyPipeline(mDevice, mSimplePipeline, nullptr);
 
+        delete mDescriptorAllocator;
 
     	for(const auto& semaphore : mRenderFinishedSemaphores)
         {
@@ -146,8 +149,22 @@ namespace renderer
             return false;
         }
 
+        mDescriptorAllocator = new DescriptorAllocator(mDevice);
+        for (const auto& shader : mShaders)
+        {
+            if(mDescriptorAllocator->AllocatePool(static_cast<HashID>(shader->GetShaderType()), shader->GetDescriptorInfos()) == false)
+            {
+                return false;
+            }
+        }
+
+        DescriptorSet* commonDescriptorSet = nullptr;
+        if(mDescriptorAllocator->AllocateSet(mShaders[static_cast<EnumInt>(eShader::Simple)], &commonDescriptorSet) == false)
+        {
+            return false;
+        }
         mFrameContext = new FrameContext(mDevice);
-        if(mFrameContext->Initialize(sOverlappedFrame, mShaders) == false)
+        if(mFrameContext->Initialize(commonDescriptorSet) == false)
         {
             return false;
         }
@@ -185,8 +202,6 @@ namespace renderer
         {
             mFrameContext->UpdateUniformData(eShader::Simple, uniform.second, 1, sizeof(CbViewProj), uniform.first == eCbType::CbViewProj);
         }
-        const bool result = mFrameContext->UpdateDescriptorSet(eShader::Simple);
-        ASSERT(result , "UpdateDescriptorSet 실패");
     }
 
     void Renderer::RenderScene()
@@ -216,7 +231,7 @@ namespace renderer
         const VkIndexType indexType = VK_INDEX_TYPE_UINT32;
         vkCmdBindIndexBuffer(cmdBuffer, mIndexBuffer->GetBuffer(), 0, indexType);
 
-        const VkDescriptorSet descriptorSet = mFrameContext->GetCommandDescriptorSetInFlight(eShader::Simple);
+        const VkDescriptorSet descriptorSet = mFrameContext->GetCommandDescriptorSetInFlight();
         vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mShaders[static_cast<EnumInt>(eShader::Simple)]->GetPipelineLayout(), 0, 1, &descriptorSet, 0, nullptr);
     }
 
