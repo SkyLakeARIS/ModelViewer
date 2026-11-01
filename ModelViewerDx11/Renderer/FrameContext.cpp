@@ -8,7 +8,7 @@ namespace renderer
 {
     FrameContext::FrameContext(const VkDevice& device)
         : mDevice(device)
-        , mOverlapCount(0)
+        , mInFlightCount(0)
         , mNowInFlightIndex(0)
         , mCommonDescriptorSet(nullptr)
     {
@@ -30,7 +30,7 @@ namespace renderer
 
     bool FrameContext::Initialize(uint32_t inFlightCount, const std::vector<Shader*>& shaders)
     {
-        mOverlapCount = inFlightCount;
+        mInFlightCount = inFlightCount;
 
         VkCommandPoolCreateInfo commandPoolCreateInfo{};
         commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -86,7 +86,7 @@ namespace renderer
 
     bool FrameContext::Initialize(DescriptorSet* const commonDescriptorSet)
     {
-        mOverlapCount = VkHelper::GetFrameInFlightCount();
+        mInFlightCount = VkHelper::GetFrameInFlightCount();
 
         VkCommandPoolCreateInfo commandPoolCreateInfo{};
         commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -105,7 +105,7 @@ namespace renderer
         fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        mInFlights.resize(mOverlapCount);
+        mInFlights.resize(mInFlightCount);
         for (auto& frame : mInFlights)
         {
             VkResult result = vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &frame.Pool);
@@ -179,7 +179,7 @@ namespace renderer
 
     void FrameContext::CountFrame()
     {
-        mNowInFlightIndex = (mNowInFlightIndex + 1) % mOverlapCount;
+        mNowInFlightIndex = (mNowInFlightIndex + 1) % mInFlightCount;
     }
 
     void FrameContext::UpdateUniformData(eShader shaderType, const void* const pData, uint32_t count, uint32_t elementSize, bool bPerFrame) const

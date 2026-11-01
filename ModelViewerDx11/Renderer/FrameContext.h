@@ -39,7 +39,7 @@ namespace renderer
         VkDescriptorSet GetCommandDescriptorSetInFlight() const;
     private:
         VkDevice mDevice;
-        uint32_t mOverlapCount;
+        uint32_t mInFlightCount;
         std::vector<FrameData> mInFlights;
         uint32_t mNowInFlightIndex;
         DescriptorSet* mCommonDescriptorSet;

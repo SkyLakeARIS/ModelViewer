@@ -16,7 +16,7 @@ namespace renderer
     {
     private:
         // MEMO: Pool-Buffer = 1:1, 더블버퍼링
-        static constexpr uint8_t sOverlappedFrame = 2;
+        static constexpr uint8_t sFrameInFlightCount = 2;
     public:
 
         // Texture
