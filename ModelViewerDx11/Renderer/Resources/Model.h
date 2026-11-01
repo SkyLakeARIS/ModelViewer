@@ -16,7 +16,7 @@ namespace renderer
     class Model
     {
     public:
-        Model(scene::Camera* camera);
+        Model();
         ~Model();
 
         void SubmitCommand();

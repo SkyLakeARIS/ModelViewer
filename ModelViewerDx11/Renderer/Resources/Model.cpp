@@ -4,14 +4,13 @@
 
 namespace renderer
 {
-    Model::Model(scene::Camera* camera)
+    Model::Model()
         : mMesh()
         , mMatRotation(XMMatrixIdentity())
         , mMatScale(XMMatrixIdentity())
         , mbHighlight(false)
         , mbActiveEmissive(false)
     {
-        ASSERT(camera != nullptr, "do not pass nullptr");
 
         mMatWorld  = XMMatrixIdentity();
     }
