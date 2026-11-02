@@ -13,6 +13,7 @@ namespace renderer
         GBufferPosition,
         GBufferSpecular,
         GBufferAmbient,
+        Default,
         TextureTypeCount,
     };
 }

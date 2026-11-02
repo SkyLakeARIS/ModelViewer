@@ -89,6 +89,11 @@ namespace renderer
         // MEMO: Pooling 시에 활용할 리셋 함수
     }
 
+    VkImageView Texture::GetImageView() const
+    {
+        return mImageView;
+    }
+
     bool Texture::loadImage(const int8_t* const filePath, DirectX::ScratchImage& outImage)
     {
         wchar_t texFilePath[util::MAX_PATH_LENGTH];

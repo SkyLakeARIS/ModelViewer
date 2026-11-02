@@ -6,6 +6,8 @@
 #include "Importer/ModelImporter.h"
 #include "Resources/Mesh.h"
 #include "Resources/Model.h"
+#include "Resources/ResourceManager.h"
+#include "Resources/Texture.h"
 
 namespace renderer
 {
@@ -49,6 +51,21 @@ namespace renderer
             newSubMesh.SubMeshHash = util::GetDjb2Hash(subMesh.MeshName, modelHash);
             mRenderer->AddVertexData(subMesh.VertexBuffer.get(), sizeof(renderer::VertexPTN), subMesh.VertexCount, newSubMesh.SubMeshHash, newSubMesh.VertexRange);
             mRenderer->AddIndexData(subMesh.IndexBuffer.get(), sizeof(uint32_t), subMesh.IndexCount, newSubMesh.SubMeshHash, newSubMesh.IndexRange);
+
+            for (EnumInt textureType = 0; textureType < static_cast<EnumInt>(renderer::eTextureType::TextureTypeCount); ++textureType)
+            {
+                if (subMesh.Textures[textureType].TextureHash > 0)
+                {
+                    newSubMesh.Material.TextureHashes[static_cast<EnumInt>(subMesh.Textures[textureType].TextureType)] = subMesh.Textures[textureType].TextureHash;
+                    Texture* newTexture = new Texture(mRenderer->GetDevice());
+                    newTexture->Create(subMesh.Textures[textureType].FilePath, false);
+                    if(mResourceManager->TryAddTexture(subMesh.Textures[textureType].TextureHash, newTexture) == false)
+                    {
+                        delete newTexture;
+                    }
+                    newTexture = nullptr;
+                }
+            }
 
             totalVertexCount += newSubMesh.VertexRange.Count;
             totalIndexCount += newSubMesh.IndexRange.Count;

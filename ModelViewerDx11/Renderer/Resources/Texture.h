@@ -15,6 +15,8 @@ namespace renderer
 
         bool Create(const int8_t* const filePath, bool bIsDDS);
         void Release();
+
+        VkImageView GetImageView() const;
     private:
         bool loadImage(const int8_t* const filePath, DirectX::ScratchImage& outImage);
     private:
