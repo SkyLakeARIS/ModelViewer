@@ -9,11 +9,8 @@
 #include "Resources/Buffer.h"
 #include "Resources/PipelineBuilder.h"
 #include "Resources/ResourceManager.h"
-#include "Resources/Sampler.h"
 #include "Shader/DescriptorAllocator.h"
 #include "Shader/DescriptorLayout.h"
-#include "Shader/Shader.h"
-#include "Shader/ShaderModule.h"
 
 namespace renderer
 {

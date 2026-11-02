@@ -7,11 +7,8 @@ namespace renderer
     class ResourceManager;
     class DescriptorAllocator;
     class FrameContext;
-    class ShaderModule;
-    class Shader;
     class DescriptorSet;
     class Buffer;
-    class Sampler;
 
     class Renderer final
     {
@@ -103,7 +100,6 @@ namespace renderer
         // buffer
         Buffer* mVertexBuffer;
         Buffer* mIndexBuffer;
-        // Texture
         //
         VkCommandBuffer mCommandBufferTransfer;
         VkCommandPool mCommandPoolTransfer;
