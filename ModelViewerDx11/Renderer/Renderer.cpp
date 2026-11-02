@@ -358,24 +358,24 @@ namespace renderer
 
     bool Renderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
     {
-        PipelineBuilder pipelinevBuilder(mDevice);
-        pipelinevBuilder.SetColorBlendState(blendState);
-        pipelinevBuilder.SetDynamicState(true, true);
-        pipelinevBuilder.SetDepthStencilState(depthStencilState);
-        pipelinevBuilder.SetInputAssemblyState(topology);
-        pipelinevBuilder.SetMultiSamplerState(false);
-        pipelinevBuilder.SetRasterizationState(rasterType);
-        pipelinevBuilder.SetRenderPass(renderPass);
-        pipelinevBuilder.SetVertexInputState(vertexFormat);
-        pipelinevBuilder.SetShaderStage(*mShaders[static_cast<EnumInt>(shader)]);
-        pipelinevBuilder.SetViewportState(mSwapChainExtent.width, mSwapChainExtent.height);
+        PipelineBuilder pipelineBuilder(mDevice);
+        pipelineBuilder.SetColorBlendState(blendState);
+        pipelineBuilder.SetDynamicState(true, true);
+        pipelineBuilder.SetDepthStencilState(depthStencilState);
+        pipelineBuilder.SetInputAssemblyState(topology);
+        pipelineBuilder.SetMultiSamplerState(false);
+        pipelineBuilder.SetRasterizationState(rasterType);
+        pipelineBuilder.SetRenderPass(renderPass);
+        pipelineBuilder.SetVertexInputState(vertexFormat);
+        pipelineBuilder.SetShaderStage(*mShaders[static_cast<EnumInt>(shader)]);
+        pipelineBuilder.SetViewportState(mSwapChainExtent.width, mSwapChainExtent.height);
         const eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(shader);
-        pipelinevBuilder.SetPipelineLayout(DescriptorLayout::GetPipelineLayout(layoutType));
+        pipelineBuilder.SetPipelineLayout(DescriptorLayout::GetPipelineLayout(layoutType));
 
         std::vector<VkFormat> formats(1, mSurfaceFormat.format);
-        pipelinevBuilder.SetColorAttachInfo(formats);
+        pipelineBuilder.SetColorAttachInfo(formats);
 
-        return pipelinevBuilder.Create(mSimplePipeline, outPipelineHash);
+        return pipelineBuilder.Create(mSimplePipeline, outPipelineHash);
     }
 
     void Renderer::AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
