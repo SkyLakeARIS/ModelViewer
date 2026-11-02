@@ -80,7 +80,7 @@ namespace renderer
             pushConstantRange.size = sizeof(PushConstantBlock);
             pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-            // MEMO: set 0은 항상 Common, set 1은 각 레이아웃. Common은 열거형의 첫 값이라 먼저 만들어진다.
+            // MEMO: set 1은 set 0과 결합
             std::vector<VkDescriptorSetLayout> setLayouts(1, sLayoutPairs[eLayoutType::Common].SetLayout);
             if(static_cast<eLayoutType>(layoutType) != eLayoutType::Common)
             {
