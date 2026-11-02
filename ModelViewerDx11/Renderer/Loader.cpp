@@ -102,7 +102,7 @@ namespace renderer
                 }
                 else if(writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
                 {
-                    writeInfo.Sampler = mRenderer->GetSampler(eSamplerType::Linear);
+                    writeInfo.Sampler = mResourceManager->GetSamplerByType(eSamplerType::Linear);
                 }
             }
 

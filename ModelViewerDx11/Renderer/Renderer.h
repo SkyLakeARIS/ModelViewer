@@ -62,8 +62,7 @@ namespace renderer
         ResourceManager* GetResourceManager() const;
         DescriptorAllocator* GetDescriptorAllocator() const;
         VkDevice GetDevice() const;
-        // TODO: 샘플러가 ResourceManager로 옮겨지면 제거
-        Sampler* GetSampler(eSamplerType type) const;
+
     private:
         bool createInstance(const char* const appName);
         bool createSurface(HWND handleWindow, HINSTANCE handleInstance);
@@ -74,7 +73,6 @@ namespace renderer
         bool createSyncObjects();
         bool createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const;
         bool createCommandBuffers(VkCommandPool commandPool, uint32_t bufferCount, VkCommandBufferLevel level, VkCommandBuffer& outBuffers) const;
-        bool createSamplers();
     private:
         int16_t mWindowHeight;
         int16_t mWindowWidth;
@@ -106,7 +104,6 @@ namespace renderer
         Buffer* mVertexBuffer;
         Buffer* mIndexBuffer;
         // Texture
-        std::unordered_map<eSamplerType, Sampler*> mSamplers;
         //
         VkCommandBuffer mCommandBufferTransfer;
         VkCommandPool mCommandPoolTransfer;

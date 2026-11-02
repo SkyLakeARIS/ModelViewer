@@ -5,11 +5,9 @@
 
 namespace renderer
 {
+    class Sampler;
+    enum class eSamplerType : uint8_t;
     enum class eShader : uint8_t;
-}
-
-namespace renderer
-{
     class ShaderModule;
     class Shader;
     class Texture;
@@ -21,11 +19,13 @@ namespace renderer
         ~ResourceManager();
 
         bool CreateShaders();
+        bool CreateSamplers();
 
         bool TryAddTexture(HashID hash, Texture* const texture);
 
         Texture* GetTexture(HashID hash);
         Shader* GetShaderByType(eShader type) const;
+        Sampler* GetSamplerByType(eSamplerType type) const;
     private:
         VkDevice mDevice;
         // MEMO: 주요 리소스-- Texture, shader, sampler, shaderModule, image, buffer
@@ -34,6 +34,6 @@ namespace renderer
         std::unordered_map<HashID, Texture*> mTextures;
         std::unordered_map<HashID, ShaderModule*> mShaderModules;
         std::vector<Shader*> mShaders;
-
+        std::unordered_map<eSamplerType, Sampler*> mSamplers;
     };
 }

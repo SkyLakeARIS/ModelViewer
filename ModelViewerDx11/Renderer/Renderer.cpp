@@ -45,10 +45,6 @@ namespace renderer
 
         delete mResourceManager;
 
-        for(const auto& samplerIt : mSamplers)
-        {
-            delete samplerIt.second;
-        }
 
         DescriptorLayout::Release();
 
@@ -156,7 +152,7 @@ namespace renderer
             return false;
         }
 
-        if(createSamplers() == false)
+        if (mResourceManager->CreateSamplers() == false)
         {
             return false;
         }
@@ -408,14 +404,6 @@ namespace renderer
     VkDevice Renderer::GetDevice() const
     {
         return mDevice;
-    }
-
-    Sampler* Renderer::GetSampler(eSamplerType type) const
-    {
-        const auto& samplerIt = mSamplers.find(type);
-        ASSERT(samplerIt != mSamplers.end(), "Sampler가 제대로 초기화되지 않았습니다. type(%d)", static_cast<EnumInt>(type));
-
-        return samplerIt->second;
     }
 
     bool Renderer::createInstance(const char* const appName)
@@ -932,20 +920,4 @@ namespace renderer
         }
         return true;
     }
-
-    bool Renderer::createSamplers()
-    {
-        for(uint32_t samplerType = 0; samplerType < static_cast<uint32_t>(eSamplerType::SamplerCount); ++samplerType)
-        {
-            Sampler* sampler = new Sampler(mDevice);
-            if(sampler->Create(static_cast<eSamplerType>(samplerType)) == false)
-            {
-                return false;
-            }
-
-            mSamplers.insert({ static_cast<eSamplerType>(samplerType), sampler});
-        }
-        return true;
-    }
-
 }

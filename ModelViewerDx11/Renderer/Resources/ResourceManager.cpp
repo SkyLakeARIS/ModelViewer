@@ -1,4 +1,5 @@
 #include "ResourceManager.h"
+#include "Sampler.h"
 #include "Texture.h"
 #include "../../Util/Macro.h"
 #include "../Shader/Shader.h"
@@ -14,6 +15,11 @@ namespace renderer
 
     ResourceManager::~ResourceManager()
     {
+        for (const auto& samplerIt : mSamplers)
+        {
+            delete samplerIt.second;
+        }
+
         for (const auto& shaderIt : mShaders)
         {
             delete shaderIt;
@@ -143,6 +149,21 @@ namespace renderer
         return true;
     }
 
+    bool ResourceManager::CreateSamplers()
+    {
+        for (uint32_t samplerType = 0; samplerType < static_cast<uint32_t>(eSamplerType::SamplerCount); ++samplerType)
+        {
+            Sampler* sampler = new Sampler(mDevice);
+            if (sampler->Create(static_cast<eSamplerType>(samplerType)) == false)
+            {
+                return false;
+            }
+
+            mSamplers.insert({ static_cast<eSamplerType>(samplerType), sampler });
+        }
+        return true;
+    }
+
     bool ResourceManager::TryAddTexture(HashID hash, Texture* const texture)
     {
         if(mTextures.find(hash) != mTextures.end())
@@ -168,5 +189,12 @@ namespace renderer
     Shader* ResourceManager::GetShaderByType(eShader type) const
     {
         return mShaders[static_cast<EnumInt>(type)];
+    }
+
+    Sampler* ResourceManager::GetSamplerByType(eSamplerType type) const
+    {
+        const auto& samplerIt = mSamplers.find(type);
+        ASSERT(samplerIt != mSamplers.end(), "Sampler가 생성되지 않았거나 잘못된 type입니다. type(%u)", static_cast<EnumInt>(type));
+        return samplerIt->second;
     }
 }
