@@ -75,7 +75,6 @@ namespace renderer
         bool createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const;
         bool createCommandBuffers(VkCommandPool commandPool, uint32_t bufferCount, VkCommandBufferLevel level, VkCommandBuffer& outBuffers) const;
         bool createSamplers();
-        bool createShaders();
     private:
         int16_t mWindowHeight;
         int16_t mWindowWidth;
@@ -103,8 +102,6 @@ namespace renderer
         ResourceManager* mResourceManager;
         // shader
         DescriptorAllocator* mDescriptorAllocator;
-        std::unordered_map<HashID, ShaderModule*> mShaderModules;
-        std::vector<Shader*> mShaders;
         // buffer
         Buffer* mVertexBuffer;
         Buffer* mIndexBuffer;
