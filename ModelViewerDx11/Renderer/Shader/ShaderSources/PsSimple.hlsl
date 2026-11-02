@@ -1,3 +1,7 @@
+[[vk::binding(7, 1)]]
+Texture2D txDiffuse : register(t0);
+[[vk::binding(13, 1)]]
+SamplerState texSampler : register(s0);
 
 struct PsInput
 {
@@ -9,5 +13,5 @@ struct PsInput
 
 float4 main(PsInput psInput) : SV_TARGET
 {
-    return float4(1.0f, 1.0f, 0.0f, 1.0f);
+    return txDiffuse.Sample(texSampler, psInput.TexCoord);
 }

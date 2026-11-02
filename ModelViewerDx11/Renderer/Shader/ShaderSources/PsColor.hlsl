@@ -1,3 +1,4 @@
+[[vk::binding(15, 1)]]
 cbuffer cbMaterialFactors : register(b0)
 {
     float3 Diffuse;

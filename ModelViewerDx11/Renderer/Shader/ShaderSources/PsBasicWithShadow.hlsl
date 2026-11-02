@@ -2,11 +2,14 @@
 // Pixel Shader
 // 여러개 만들어도 된다. 컴파일 할 때 함수명만 잘 지정해두면. (여러 셰이더 컴파일 해두고, blob만 바꿔서 런타임에 쓰도록 하는것?)
 //--------------------------------------------------------------------------------------
+[[vk::binding(7, 1)]]
 Texture2D texModel : register(t0);
 
+[[vk::binding(13, 1)]]
 SamplerState texSampler : register(s0);
 
 
+[[vk::binding(15, 1)]]
 cbuffer cbMaterialFactors : register(b0)
 {
     float3 Diffuse;

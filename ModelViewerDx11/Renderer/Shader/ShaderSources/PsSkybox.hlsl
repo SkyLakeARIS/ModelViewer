@@ -1,8 +1,11 @@
 
+[[vk::binding(7, 1)]]
 TextureCube cubeTexture : register(t0);
 
+[[vk::binding(13, 1)]]
 SamplerState cubeSampler : register(s0);
 
+[[vk::binding(15, 1)]]
 cbuffer cbMaterialFactors : register(b0)
 {
     float3 Diffuse;

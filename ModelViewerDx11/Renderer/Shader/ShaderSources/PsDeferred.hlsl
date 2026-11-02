@@ -1,10 +1,17 @@
+[[vk::binding(7, 1)]]
 Texture2D texGColor : register(t0);
+[[vk::binding(8, 1)]]
 Texture2D texGNormal: register(t1);
+[[vk::binding(9, 1)]]
 Texture2D texGPosition: register(t2);
+[[vk::binding(10, 1)]]
 Texture2D texGSpecular: register(t3);
+[[vk::binding(11, 1)]]
 Texture2D texGAmbient: register(t4);
+[[vk::binding(12, 1)]]
 Texture2D texShadow: register(t5);
 
+[[vk::binding(13, 1)]]
 SamplerState texSampler : register(s0);
 
 
