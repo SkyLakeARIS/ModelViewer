@@ -8,6 +8,7 @@
 #include "../Util/Util.h"
 #include "Resources/Buffer.h"
 #include "Resources/PipelineBuilder.h"
+#include "Resources/ResourceManager.h"
 #include "Resources/Sampler.h"
 #include "Shader/DescriptorAllocator.h"
 #include "Shader/DescriptorLayout.h"
@@ -31,6 +32,7 @@ namespace renderer
         , mSwapChainExtent()
         , mFrameContext(nullptr)
         , mSimplePipeline(nullptr)
+        , mResourceManager(nullptr)
         , mDescriptorAllocator(nullptr)
         , mVertexBuffer()
         , mIndexBuffer()
@@ -41,6 +43,7 @@ namespace renderer
     {
         Uploader::Release();
 
+        delete mResourceManager;
 
         for(const auto& samplerIt : mSamplers)
         {
@@ -121,6 +124,7 @@ namespace renderer
         {
             return false;
         }
+        mResourceManager = new ResourceManager(mDevice);
         VkHelper::SetQueueFamilyIndices(mGraphicsQueueIndex, UINT32_MAX);
 
         if(createSwapChain(width, height) == false)
@@ -401,6 +405,11 @@ namespace renderer
     void Renderer::AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
     {
         mIndexBuffer->AddData(pData, count, attribSize, hash, outRange);
+    }
+
+    ResourceManager* Renderer::GetResourceManager() const
+    {
+        return mResourceManager;
     }
 
     DescriptorAllocator* Renderer::GetDescriptorAllocator() const

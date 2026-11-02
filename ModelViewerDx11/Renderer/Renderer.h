@@ -4,6 +4,7 @@
 
 namespace renderer
 {
+    class ResourceManager;
     class DescriptorAllocator;
     class FrameContext;
     class ShaderModule;
@@ -58,6 +59,7 @@ namespace renderer
         void AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
         void AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
 
+        ResourceManager* GetResourceManager() const;
         DescriptorAllocator* GetDescriptorAllocator() const;
         VkDevice GetDevice() const;
         // TODO: 샘플러가 ResourceManager로 옮겨지면 제거
@@ -98,6 +100,7 @@ namespace renderer
         uint32_t mCurImageIndex;
         // pipeline
         VkPipeline mSimplePipeline;
+        ResourceManager* mResourceManager;
         // shader
         DescriptorAllocator* mDescriptorAllocator;
         std::unordered_map<HashID, ShaderModule*> mShaderModules;

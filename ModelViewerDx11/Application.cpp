@@ -57,7 +57,6 @@ Application::~Application()
     delete mCamera;
 
     delete mWindow;
-    delete mResourceManager;
     delete mVkRenderer;
 }
 
@@ -193,8 +192,7 @@ bool Application::initializeScene()
 
 bool Application::initializeManagers()
 {
-    mResourceManager = new renderer::ResourceManager();
-    mLoader = new renderer::Loader(mImporter, mVkRenderer, mResourceManager, mVkRenderer->GetDescriptorAllocator());
+    mLoader = new renderer::Loader(mImporter, mVkRenderer, mVkRenderer->GetDescriptorAllocator());
     mVkRenderer->PrepareObjects();
     return true;
 }

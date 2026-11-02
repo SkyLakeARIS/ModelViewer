@@ -12,7 +12,7 @@ namespace renderer
     class Loader
     {
     public:
-        Loader(ModelImporter* const importer, Renderer* const renderer, ResourceManager* const resourceManager, DescriptorAllocator* const descriptorAllocator);
+        Loader(ModelImporter* const importer, Renderer* const renderer, DescriptorAllocator* const descriptorAllocator);
         ~Loader();
 
         bool Load(const int8_t* const filePath, Model** outModel) const;

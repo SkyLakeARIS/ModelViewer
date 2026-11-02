@@ -14,12 +14,13 @@
 
 namespace renderer
 {
-    Loader::Loader(ModelImporter* const importer, Renderer* const renderer, ResourceManager* const resourceManager, DescriptorAllocator* const descriptorAllocator)
+    Loader::Loader(ModelImporter* const importer, Renderer* const renderer, DescriptorAllocator* const descriptorAllocator)
         : mImporter(importer)
         , mRenderer(renderer)
-        , mResourceManager(resourceManager)
+        , mResourceManager(renderer->GetResourceManager())
         , mDescriptorAllocator(descriptorAllocator)
     {
+        ASSERT(mResourceManager, "ResourceManager가 초기화 되지 않은 것 같습니다.");
     }
 
     Loader::~Loader()
