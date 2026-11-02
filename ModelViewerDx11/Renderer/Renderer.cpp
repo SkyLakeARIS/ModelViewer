@@ -356,6 +356,17 @@ namespace renderer
         vkCmdPushConstants2(cmdBuf, &pushConstantsInfo);
     }
 
+    void Renderer::BindDescriptorSet(const DescriptorSet* const descriptorSet)
+    {
+        const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
+        const uint32_t nowInFlightIndex = mFrameContext->GetNowInFlightIndex();
+
+        const eLayoutType layoutType = descriptorSet->GetLayoutType();
+        const uint32_t setBindingSlot = 1;
+        const VkDescriptorSet descSet = descriptorSet->GetDescriptorSet(nowInFlightIndex);
+        vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DescriptorLayout::GetPipelineLayout(layoutType), setBindingSlot, 1, &descSet, 0, nullptr);
+    }
+
     bool Renderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
     {
         PipelineBuilder pipelineBuilder(mDevice);
@@ -388,7 +399,6 @@ namespace renderer
         mIndexBuffer->AddData(pData, count, attribSize, hash, outRange);
     }
 
-
     DescriptorAllocator* Renderer::GetDescriptorAllocator() const
     {
         return mDescriptorAllocator;
@@ -397,6 +407,14 @@ namespace renderer
     VkDevice Renderer::GetDevice() const
     {
         return mDevice;
+    }
+
+    Sampler* Renderer::GetSampler(eSamplerType type) const
+    {
+        const auto& samplerIt = mSamplers.find(type);
+        ASSERT(samplerIt != mSamplers.end(), "Sampler가 제대로 초기화되지 않았습니다. type(%d)", static_cast<EnumInt>(type));
+
+        return samplerIt->second;
     }
 
     bool Renderer::createInstance(const char* const appName)

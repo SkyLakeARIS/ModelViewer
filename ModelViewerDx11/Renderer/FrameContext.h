@@ -33,6 +33,7 @@ namespace renderer
 
         void UpdateUniformData(eShader shaderType, const void* const pData, uint32_t count, uint32_t elementSize, bool bPerFrame) const;
 
+        uint32_t GetNowInFlightIndex() const;
         VkSemaphore GetImageReadySemaphoreInFlight() const;
         VkFence GetRenderFinishedSemaphoreInFlight() const;
         VkCommandBuffer GetCommandBufferInFlight() const;

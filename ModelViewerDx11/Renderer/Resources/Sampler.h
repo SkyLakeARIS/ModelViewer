@@ -12,6 +12,8 @@ namespace renderer
 
         bool Create(eSamplerType type);
         void Release();
+
+        VkSampler GetSampler() const;
     private:
         VkDevice mDevice;
         VkSampler mSampler;

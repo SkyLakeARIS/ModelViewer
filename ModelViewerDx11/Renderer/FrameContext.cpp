@@ -190,6 +190,11 @@ namespace renderer
         return mCommonDescriptorSet->UpdateUniformData(pData, count, elementSize, mNowInFlightIndex, bPerFrame);
     }
 
+    uint32_t FrameContext::GetNowInFlightIndex() const
+    {
+        return mNowInFlightIndex;
+    }
+
     VkSemaphore FrameContext::GetImageReadySemaphoreInFlight() const
     {
         return mInFlights[mNowInFlightIndex].ImageReadySemaphore;

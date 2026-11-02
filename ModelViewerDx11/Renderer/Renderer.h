@@ -49,6 +49,7 @@ namespace renderer
         void CountFrame() const;
 
         void UploadPushConstant(const PushConstantBlock& dataBlock, eShader shaderType) const;
+        void BindDescriptorSet(const DescriptorSet* const descriptorSet);
         // pipeline
         bool TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
 
@@ -57,6 +58,8 @@ namespace renderer
 
         DescriptorAllocator* GetDescriptorAllocator() const;
         VkDevice GetDevice() const;
+        // TODO: 샘플러가 ResourceManager로 옮겨지면 제거
+        Sampler* GetSampler(eSamplerType type) const;
     private:
         bool createInstance(const char* const appName);
         bool createSurface(HWND handleWindow, HINSTANCE handleInstance);

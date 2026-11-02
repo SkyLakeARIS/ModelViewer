@@ -28,8 +28,11 @@ namespace renderer
     {
         PushConstantBlock pushConstantBlock{ mMatWorld };
         renderer.UploadPushConstant(pushConstantBlock, eShader::Simple);
+        const auto& descriptorSetIt = mDescriptorSets.find(eShader::Simple);
+        auto descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)
         {
+            renderer.BindDescriptorSet(*descriptorSet);
             renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);
         }
     }

@@ -43,4 +43,9 @@ namespace renderer
     {
         // MEMO: Pooling 시에 활용할 리셋 함수
     }
+
+    VkSampler Sampler::GetSampler() const
+    {
+        return mSampler;
+    }
 }
