@@ -26,13 +26,12 @@ namespace renderer
         vkDestroyImageView(mDevice, mImageView, nullptr);
     }
 
-    bool Texture::Create(const int8_t* const filePath, HashID& outHash, bool bIsDDS)
+    bool Texture::Create(const int8_t* const filePath, bool bIsDDS)
     {
         ASSERT(filePath != nullptr, "invalid path. (filePath is nullptr) ");
         ASSERT(*filePath != ' ', "invalid path. (filePath may empty string) ");
         ASSERT(*filePath != '\0', "invalid path. (filePath may empty(null) string) ");
 
-        const HashID texHash = util::GetDjb2Hash(filePath);
 
         DirectX::ScratchImage rawImage;
         if(loadImage(filePath, rawImage) == false)
@@ -82,7 +81,6 @@ namespace renderer
             return false;
         }
 
-        outHash = texHash;
         return true;
     }
 

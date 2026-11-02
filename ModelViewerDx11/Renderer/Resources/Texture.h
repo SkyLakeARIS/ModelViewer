@@ -13,7 +13,7 @@ namespace renderer
         Texture(const VkDevice& device);
         ~Texture();
 
-        bool Create(const int8_t* const filePath, HashID& outHash, bool bIsDDS);
+        bool Create(const int8_t* const filePath, bool bIsDDS);
         void Release();
     private:
         bool loadImage(const int8_t* const filePath, DirectX::ScratchImage& outImage);
