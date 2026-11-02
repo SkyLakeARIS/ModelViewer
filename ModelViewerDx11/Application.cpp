@@ -44,7 +44,6 @@ Application::Application()
 Application::~Application()
 {
     delete mLoader;
-    delete mResourceManager;
     mDirectInput->Release();
     delete mDirectInput;
     mDirectInput = nullptr;
@@ -57,6 +56,7 @@ Application::~Application()
     delete mCamera;
 
     delete mWindow;
+    delete mResourceManager;
     delete mVkRenderer;
 }
 
