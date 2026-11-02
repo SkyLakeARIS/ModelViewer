@@ -100,7 +100,6 @@ namespace renderer
         Buffer* mVertexBuffer;
         Buffer* mIndexBuffer;
         // Texture
-        std::unordered_map<HashID, TextureInfo> mTextures;
         std::unordered_map<eSamplerType, Sampler*> mSamplers;
         //
         VkCommandBuffer mCommandBufferTransfer;

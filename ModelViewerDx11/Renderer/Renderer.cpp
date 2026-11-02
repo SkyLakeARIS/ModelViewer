@@ -44,13 +44,6 @@ namespace renderer
         const VkResult result = vkDeviceWaitIdle(mDevice);
         ASSERT(result == VK_SUCCESS, "vkDeviceWaitIdle 실패. result(%u)", result);
 
-        for(const auto& textureIt : mTextures)
-        {
-            vkFreeMemory(mDevice, textureIt.second.ImageMemory, nullptr);
-            vkDestroyImageView(mDevice, textureIt.second.ImageView, nullptr);
-            vkDestroyImage(mDevice, textureIt.second.Image, nullptr);
-        }
-
         for(const auto& samplerIt : mSamplers)
         {
             delete samplerIt.second;
