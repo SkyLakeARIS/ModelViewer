@@ -28,11 +28,14 @@ namespace renderer
         , mSwapChain(nullptr)
         , mSwapChainExtent()
         , mFrameContext(nullptr)
+        , mCurImageIndex(0)
         , mSimplePipeline(nullptr)
         , mResourceManager(nullptr)
         , mDescriptorAllocator(nullptr)
         , mVertexBuffer()
         , mIndexBuffer()
+        , mCommandBufferTransfer(nullptr)
+        , mCommandPoolTransfer(nullptr)
     {
     }
 
