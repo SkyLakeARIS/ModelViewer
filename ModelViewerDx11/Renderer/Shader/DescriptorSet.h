@@ -6,20 +6,17 @@
 namespace renderer
 {
     enum class eTextureType : uint8_t;
+    enum class eLayoutType : uint8_t;
     class Sampler;
-}
-
-namespace renderer
-{
     class Texture;
     class Shader;
-    enum class eShader : uint8_t;
     class Buffer;
 
     struct PoolInfo
     {
         uint16_t PoolIndex;
         HashID LayoutHash; // MEMO: (아이디어 메모)일단 간단하게 하고, 나중에 Pool에서 관리하고 있는 어떤 key값으로 반환. key는 어떤 layout인지 + 어떤 PoolIndex인지 정보 조합
+        eLayoutType LayoutType;
     };
 
     struct TextureWriteInfo

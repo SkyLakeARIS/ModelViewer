@@ -4,15 +4,9 @@
 
 namespace renderer
 {
-    enum class eShaderStageType;
     class ShaderModule;
+    enum class eLayoutType : uint8_t;
     enum class eShader : uint8_t;
-
-    struct DescriptorInfo
-    {
-        VkDescriptorType Type;
-        uint32_t Count;
-    };
 
     class Shader
     {
@@ -26,17 +20,15 @@ namespace renderer
         eShader GetShaderType() const;
         const ShaderModule* GetVs() const;
         const ShaderModule* GetPs() const;
-        VkDescriptorSetLayout GetDescriptorSetLayout() const;
-        HashID GetLayoutHash() const;
-        VkPipelineLayout GetPipelineLayout() const;
-        const std::vector<DescriptorInfo>& GetDescriptorInfos() const;
+
+        eLayoutType GetLayoutType() const;
     private:
         VkDevice mDevice;
         VkDescriptorSetLayout mDescriptorSetLayout;
         VkPipelineLayout mPipelineLayout;
+        eLayoutType mLayoutType;
         ShaderModule* mVs;
         ShaderModule* mPs;
         eShader mShaderType;
-        std::vector<DescriptorInfo> mDescriptorInfos;
     };
 }

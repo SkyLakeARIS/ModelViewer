@@ -1,4 +1,5 @@
 #include "DescriptorAllocator.h"
+#include "DescriptorLayout.h"
 #include "DescriptorSet.h"
 #include "../VkHelper.h"
 #include "../../Util/Macro.h"
@@ -34,10 +35,13 @@ namespace renderer
             std::vector<VkDescriptorPool>().swap(poolsIt.second);
         }
         mDescriptorPools.clear();
+
+        mNowPoolIndices.clear();
     }
 
-    bool DescriptorAllocator::AllocatePool(HashID layoutHash, const std::vector<DescriptorInfo>& descriptorInfos)
+    bool DescriptorAllocator::AllocatePool(eLayoutType layoutType)
     {
+        const std::vector<DescriptorInfo>& descriptorInfos = DescriptorLayout::GetDescriptorInfos(layoutType);
         std::vector<VkDescriptorPoolSize> poolSizes;
         poolSizes.reserve(descriptorInfos.size());
         for (const auto& descriptorInfo : descriptorInfos)
@@ -56,45 +60,44 @@ namespace renderer
         const VkResult result = vkCreateDescriptorPool(mDevice, &descriptorPoolCreateInfo, nullptr, &pool);
         if (result != VK_SUCCESS)
         {
-            ASSERT(false, "DescriptorAllocator 생성 실패. layoutHash(%u), poolSizeCount(%d)", layoutHash, poolSizes.size());
+            ASSERT(false, "DescriptorAllocator 생성 실패. layoutHash(%u), poolSizeCount(%d)", layoutType, poolSizes.size());
             return false;
         }
 
-        const auto& poolIt = mDescriptorPools.find(layoutHash);
+        const auto& poolIt = mDescriptorPools.find(layoutType);
         if (poolIt == mDescriptorPools.end())
         {
             std::vector<VkDescriptorPool> pools(1, pool);
-            mDescriptorPools.insert({ layoutHash, std::move(pools) });
+            mDescriptorPools.insert({ layoutType, std::move(pools) });
         }
         else
         {
             poolIt->second.push_back(pool);
         }
 
-        const auto& poolIndexIt = mNowPoolIndices.find(layoutHash);
-        if(poolIndexIt == mNowPoolIndices.end())
+        const auto& poolIndexIt = mNowPoolIndices.find(layoutType);
+        if (poolIndexIt == mNowPoolIndices.end())
         {
-            mNowPoolIndices.insert({ layoutHash , 0});
+            mNowPoolIndices.insert({ layoutType , 0 });
         }
 
         return true;
     }
 
-    bool DescriptorAllocator::AllocateSet(const Shader* const shader, DescriptorSet** outDescriptorSet)
+    bool DescriptorAllocator::AllocateSet(eLayoutType layoutType, DescriptorSet** outDescriptorSet)
     {
         ASSERT(*outDescriptorSet == nullptr, "outDescriptorSet는 nullptr여야합니다.");
 
-        const HashID layoutHash = shader->GetLayoutHash();
-        auto poolIndexIt = mNowPoolIndices.find(layoutHash);
-        if(poolIndexIt == mNowPoolIndices.end())
+        auto poolIndexIt = mNowPoolIndices.find(layoutType);
+        if (poolIndexIt == mNowPoolIndices.end())
         {
-            ASSERT(false, "먼저 Pool을 할당해야 합니다. layoutHash(%u)", layoutHash);
+            ASSERT(false, "먼저 Pool을 할당해야 합니다. layoutHash(%u)", layoutType);
             return false;
         }
-        const auto& poolIt = mDescriptorPools.find(layoutHash);
+        const auto& poolIt = mDescriptorPools.find(layoutType);
         uint16_t nowPoolIndex = poolIndexIt->second;
         const uint32_t inFlightCount = VkHelper::GetFrameInFlightCount();
-        std::vector<VkDescriptorSetLayout> descriptorSetLayouts(inFlightCount, shader->GetDescriptorSetLayout());
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts(inFlightCount, DescriptorLayout::GetDescriptorSetLayout(layoutType));
         VkDescriptorSetAllocateInfo setAllocateInfo{};
         setAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         setAllocateInfo.descriptorPool = poolIt->second[nowPoolIndex];
@@ -103,11 +106,11 @@ namespace renderer
 
         std::vector<VkDescriptorSet> descriptorSets(inFlightCount);
         VkResult result = vkAllocateDescriptorSets(mDevice, &setAllocateInfo, descriptorSets.data());
-        if(result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL)
+        if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL)
         {
-            if (AllocatePool(layoutHash, shader->GetDescriptorInfos()) == false)
+            if (AllocatePool(layoutType) == false)
             {
-                ASSERT(false, "Pool을 확장하지 못했습니다. layoutHash(%u)", layoutHash);
+                ASSERT(false, "Pool을 확장하지 못했습니다. layoutHash(%u)", layoutType);
                 return false;
             }
 
@@ -124,7 +127,7 @@ namespace renderer
             return false;
         }
 
-        const PoolInfo ownerInfo{ nowPoolIndex, layoutHash };
+        const PoolInfo ownerInfo{ nowPoolIndex, 0, layoutType };
         *outDescriptorSet = new DescriptorSet(mDevice, descriptorSets, ownerInfo);
         if ((*outDescriptorSet)->Create() == false)
         {
@@ -134,13 +137,13 @@ namespace renderer
             return false;
         }
 
-        const auto descriptorSetPoolIt = mDescriptorSetPools.find(layoutHash);
-        if(descriptorSetPoolIt == mDescriptorSetPools.end())
+        const auto descriptorSetPoolIt = mDescriptorSetPools.find(layoutType);
+        if (descriptorSetPoolIt == mDescriptorSetPools.end())
         {
             std::vector<DescriptorSet*> descriptorSetPools;
             descriptorSetPools.reserve(4);
             descriptorSetPools.push_back(*outDescriptorSet);
-            mDescriptorSetPools.insert({ layoutHash, std::move(descriptorSetPools) });
+            mDescriptorSetPools.insert({ layoutType, std::move(descriptorSetPools) });
         }
         else
         {

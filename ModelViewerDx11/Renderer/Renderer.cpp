@@ -10,6 +10,7 @@
 #include "Resources/PipelineBuilder.h"
 #include "Resources/Sampler.h"
 #include "Shader/DescriptorAllocator.h"
+#include "Shader/DescriptorLayout.h"
 #include "Shader/Shader.h"
 #include "Shader/ShaderModule.h"
 
@@ -54,6 +55,8 @@ namespace renderer
         {
             delete samplerIt.second;
         }
+
+        DescriptorLayout::Release();
 
         for(const auto& shaderIt : mShaders)
         {
@@ -144,22 +147,23 @@ namespace renderer
             return false;
         }
 
+        DescriptorLayout::Initialize(mDevice);
         if(createShaders() == false)
         {
             return false;
         }
 
         mDescriptorAllocator = new DescriptorAllocator(mDevice);
-        for (const auto& shader : mShaders)
+        for (EnumInt layoutType = 0; layoutType < static_cast<EnumInt>(eLayoutType::LayoutCount); ++layoutType)
         {
-            if(mDescriptorAllocator->AllocatePool(static_cast<HashID>(shader->GetShaderType()), shader->GetDescriptorInfos()) == false)
+            if (mDescriptorAllocator->AllocatePool(static_cast<eLayoutType>(layoutType)) == false)
             {
                 return false;
             }
         }
 
         DescriptorSet* commonDescriptorSet = nullptr;
-        if(mDescriptorAllocator->AllocateSet(mShaders[static_cast<EnumInt>(eShader::Simple)], &commonDescriptorSet) == false)
+        if(mDescriptorAllocator->AllocateSet(eLayoutType::Common, &commonDescriptorSet) == false)
         {
             return false;
         }
@@ -232,7 +236,7 @@ namespace renderer
         vkCmdBindIndexBuffer(cmdBuffer, mIndexBuffer->GetBuffer(), 0, indexType);
 
         const VkDescriptorSet descriptorSet = mFrameContext->GetCommandDescriptorSetInFlight();
-        vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mShaders[static_cast<EnumInt>(eShader::Simple)]->GetPipelineLayout(), 0, 1, &descriptorSet, 0, nullptr);
+        vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DescriptorLayout::GetPipelineLayout(eLayoutType::Common), 0, 1, &descriptorSet, 0, nullptr);
     }
 
     void Renderer::DrawIndexed(uint32_t indexCount, uint32_t vertexOffset, uint32_t indexOffset)
@@ -352,7 +356,8 @@ namespace renderer
         pushConstantsInfo.sType = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO;
         pushConstantsInfo.offset = 0;
         pushConstantsInfo.size = sizeof(PushConstantBlock);
-        pushConstantsInfo.layout = mShaders[static_cast<EnumInt>(shaderType)]->GetPipelineLayout();
+        const eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(shaderType);
+        pushConstantsInfo.layout = DescriptorLayout::GetPipelineLayout(layoutType);
         pushConstantsInfo.pValues = &dataBlock;
         pushConstantsInfo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         vkCmdPushConstants2(cmdBuf, &pushConstantsInfo);
@@ -371,7 +376,8 @@ namespace renderer
         pipelinevBuilder.SetVertexInputState(vertexFormat);
         pipelinevBuilder.SetShaderStage(*mShaders[static_cast<EnumInt>(shader)]);
         pipelinevBuilder.SetViewportState(mSwapChainExtent.width, mSwapChainExtent.height);
-        pipelinevBuilder.SetPipelineLayout(mShaders[static_cast<EnumInt>(shader)]->GetPipelineLayout());
+        const eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(shader);
+        pipelinevBuilder.SetPipelineLayout(DescriptorLayout::GetPipelineLayout(layoutType));
 
         std::vector<VkFormat> formats(1, mSurfaceFormat.format);
         pipelinevBuilder.SetColorAttachInfo(formats);
