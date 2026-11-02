@@ -181,7 +181,7 @@ namespace renderer
         }
     }
 
-    void DescriptorLayout::GetLayoutWriteInfos(eLayoutType layoutType, eShader shaderType, std::vector<DescriptorWriteInfo>& outWriteInfos)
+    void DescriptorLayout::GetLayoutWriteInfosByShader(eLayoutType layoutType, eShader shaderType, std::vector<DescriptorWriteInfo>& outWriteInfos)
     {
         ASSERT(GetLayoutTypeByShaderType(shaderType) == layoutType, "shaderType과 맞지 않는 layoutType이 전달되었습니다. layoutType(%d), shaderType(%d)", static_cast<EnumInt>(layoutType), static_cast<EnumInt>(shaderType));
 

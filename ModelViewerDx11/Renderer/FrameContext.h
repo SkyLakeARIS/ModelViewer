@@ -22,7 +22,6 @@ namespace renderer
         FrameContext(const VkDevice& device);
         ~FrameContext();
 
-        bool Initialize(uint32_t inFlightCount, const std::vector<Shader*>& shaders);
         bool Initialize(DescriptorSet* const commonDescriptorSet);
 
         uint32_t AcquireSwapchainImage(const VkSwapchainKHR& swapchain) const;
@@ -31,7 +30,7 @@ namespace renderer
 
         void CountFrame();
 
-        void UpdateUniformData(eShader shaderType, const void* const pData, uint32_t count, uint32_t elementSize, bool bPerFrame) const;
+        void UpdateUniformData(const void* const pData, uint32_t count, uint32_t elementSize) const;
 
         uint32_t GetNowInFlightIndex() const;
         VkSemaphore GetImageReadySemaphoreInFlight() const;

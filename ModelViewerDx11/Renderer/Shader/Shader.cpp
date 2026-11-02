@@ -1,15 +1,12 @@
 #include "DescriptorLayout.h"
 #include "Shader.h"
 #include "ShaderType.h"
-#include "../../Util/Macro.h"
 
 namespace renderer
 {
 
     Shader::Shader(const VkDevice& device)
         : mDevice(device)
-        , mDescriptorSetLayout(nullptr)
-        , mPipelineLayout(nullptr)
         , mLayoutType()
         , mVs(nullptr)
         , mPs(nullptr)
@@ -21,8 +18,6 @@ namespace renderer
     {
         mVs = nullptr;
         mPs = nullptr;
-        vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
-        vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
     }
 
     bool Shader::Create(eShader shaderType, ShaderModule* const vs, ShaderModule* const ps)

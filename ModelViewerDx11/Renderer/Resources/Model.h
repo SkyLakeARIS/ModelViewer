@@ -33,7 +33,7 @@ namespace renderer
 
         int32_t  GetSubMeshCount() const;
         XMFLOAT3 GetCenterPoint(int32_t subMeshIndex) const;
-        XMMATRIX GetMatrix() const;
+
     private:
 
         Mesh mMesh;

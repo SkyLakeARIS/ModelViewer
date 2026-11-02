@@ -83,9 +83,4 @@ namespace renderer
         XMStoreFloat3(&centerPosition, mid);
         return centerPosition;
     }
-
-    XMMATRIX Model::GetMatrix() const
-    {
-        return mMatWorld;
-    }
 }

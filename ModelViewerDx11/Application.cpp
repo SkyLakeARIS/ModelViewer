@@ -282,7 +282,6 @@ void Application::processInput(double deltaTime)
 
 void Application::updateScene()
 {
-    // MEMO: 이후 작업들이 카메라 정보에 의존하므로 카메라를 먼저 업데이트
     mCamera->Update();
 
     // MEMO: Renderer가 예약한 CB들 업로드
@@ -290,11 +289,9 @@ void Application::updateScene()
     cbViewProj.Matrix = XMMatrixTranspose(mCamera->GetViewProjectionMatrix());
 
     mCharacter->Update();
-    renderer::CbWorld cbWorld{ mCharacter->GetMatrix() };
     std::vector<std::pair<renderer::eCbType, void*>> uniforms =
     {
         {renderer::eCbType::CbViewProj, static_cast<void*>(&cbViewProj)},
-        {renderer::eCbType::CbWorld, static_cast<void*>(&cbWorld)},
     };
     mVkRenderer->UpdateScene(uniforms);
 }

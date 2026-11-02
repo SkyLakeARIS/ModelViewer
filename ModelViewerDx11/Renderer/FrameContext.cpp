@@ -29,62 +29,6 @@ namespace renderer
         std::vector<FrameData>().swap(mInFlights);
     }
 
-    bool FrameContext::Initialize(uint32_t inFlightCount, const std::vector<Shader*>& shaders)
-    {
-        mInFlightCount = inFlightCount;
-
-        VkCommandPoolCreateInfo commandPoolCreateInfo{};
-        commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        commandPoolCreateInfo.queueFamilyIndex = VkHelper::GetGraphicsQueueFamilyIndex();
-        commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-        VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-        commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        commandBufferAllocateInfo.commandBufferCount = 1;
-        commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-
-        VkSemaphoreCreateInfo semaphoreCreateInfo{};
-        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        VkFenceCreateInfo fenceCreateInfo{};
-        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-        mInFlights.resize(inFlightCount);
-        for (auto& frame : mInFlights)
-        {
-            VkResult result = vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &frame.Pool);
-            if (result != VK_SUCCESS)
-            {
-                ASSERT(false, "CommandPool 생성 실패 resultCode(%d)", result);
-                return false;
-            }
-
-            commandBufferAllocateInfo.commandPool = frame.Pool;
-            result = vkAllocateCommandBuffers(mDevice, &commandBufferAllocateInfo, &frame.Buffer);
-            if (result != VK_SUCCESS)
-            {
-                ASSERT(false, "CommandBuffer 생성 실패 resultCode(%d)", result);
-                return false;
-            }
-
-            result = vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &frame.ImageReadySemaphore);
-            if (result != VK_SUCCESS)
-            {
-                ASSERT(false, "Semaphore(ImageReady) 생성 실패 resultCode(%d)", result);
-                return false;
-            }
-
-            result = vkCreateFence(mDevice, &fenceCreateInfo, nullptr, &frame.RenderFinishedFence);
-            if (result != VK_SUCCESS)
-            {
-                ASSERT(false, "Fence 생성 실패 resultCode(%d)", result);
-                return false;
-            }
-        }
-        return true;
-    }
-
     bool FrameContext::Initialize(DescriptorSet* const commonDescriptorSet)
     {
         mInFlightCount = VkHelper::GetFrameInFlightCount();
@@ -185,9 +129,9 @@ namespace renderer
         mNowInFlightIndex = (mNowInFlightIndex + 1) % mInFlightCount;
     }
 
-    void FrameContext::UpdateUniformData(eShader shaderType, const void* const pData, uint32_t count, uint32_t elementSize, bool bPerFrame) const
+    void FrameContext::UpdateUniformData(const void* const pData, uint32_t count, uint32_t elementSize) const
     {
-        return mCommonDescriptorSet->UpdateUniformData(pData, count, elementSize, mNowInFlightIndex, bPerFrame);
+        return mCommonDescriptorSet->UpdateUniformData(pData, count, elementSize, mNowInFlightIndex);
     }
 
     uint32_t FrameContext::GetNowInFlightIndex() const

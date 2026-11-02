@@ -50,7 +50,7 @@ namespace renderer
 
         static eLayoutType GetLayoutTypeByShaderType(eShader shader);
         static void GetLayoutWriteInfos(eLayoutType layoutType, std::vector<DescriptorWriteInfo>& outWriteInfos);
-        static void GetLayoutWriteInfos(eLayoutType layoutType, eShader shaderType, std::vector<DescriptorWriteInfo>& outWriteInfos);
+        static void GetLayoutWriteInfosByShader(eLayoutType layoutType, eShader shaderType, std::vector<DescriptorWriteInfo>& outWriteInfos);
         static const std::vector<DescriptorInfo>& GetDescriptorInfos(eLayoutType type);
         static VkDescriptorSetLayout GetDescriptorSetLayout(eLayoutType type);
         static VkPipelineLayout GetPipelineLayout(eLayoutType type);

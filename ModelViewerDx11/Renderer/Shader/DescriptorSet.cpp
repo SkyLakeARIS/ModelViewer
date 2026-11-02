@@ -119,10 +119,9 @@ namespace renderer
         }
     }
 
-    void DescriptorSet::UpdateUniformData(const void* const pData, uint32_t count, uint32_t elementSize, uint32_t inFlightIndex, bool bPerFrame)
+    void DescriptorSet::UpdateUniformData(const void* const pData, uint32_t count, uint32_t elementSize, uint32_t inFlightIndex)
     {
-        const uint32_t offset = bPerFrame ? 0 : sizeof(CbViewProj);
-        mBuffers[inFlightIndex]->AddDataOffset(pData, count, elementSize, offset);
+        mBuffers[inFlightIndex]->AddDataOffset(pData, count, elementSize, 0);
     }
 
     VkDescriptorSet DescriptorSet::GetDescriptorSet(uint32_t inFlightIndex) const

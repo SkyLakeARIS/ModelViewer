@@ -91,7 +91,7 @@ namespace renderer
                 return false;
             }
             std::vector<DescriptorWriteInfo> writeInfos;
-            DescriptorLayout::GetLayoutWriteInfos(layoutType, eShader::Simple, writeInfos);
+            DescriptorLayout::GetLayoutWriteInfosByShader(layoutType, eShader::Simple, writeInfos);
             for(auto& writeInfo : writeInfos)
             {
                 // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.

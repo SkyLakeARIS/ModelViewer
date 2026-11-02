@@ -127,7 +127,7 @@ namespace renderer
             return false;
         }
 
-        const PoolInfo ownerInfo{ nowPoolIndex, 0, layoutType };
+        const PoolInfo ownerInfo{ nowPoolIndex, layoutType };
         *outDescriptorSet = new DescriptorSet(mDevice, descriptorSets, ownerInfo);
         if ((*outDescriptorSet)->Create() == false)
         {

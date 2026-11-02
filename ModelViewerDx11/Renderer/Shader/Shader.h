@@ -24,8 +24,6 @@ namespace renderer
         eLayoutType GetLayoutType() const;
     private:
         VkDevice mDevice;
-        VkDescriptorSetLayout mDescriptorSetLayout;
-        VkPipelineLayout mPipelineLayout;
         eLayoutType mLayoutType;
         ShaderModule* mVs;
         ShaderModule* mPs;

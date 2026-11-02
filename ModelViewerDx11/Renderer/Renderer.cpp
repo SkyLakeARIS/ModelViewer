@@ -197,7 +197,7 @@ namespace renderer
     {
         for(const auto& uniform : uniforms)
         {
-            mFrameContext->UpdateUniformData(eShader::Simple, uniform.second, 1, sizeof(CbViewProj), uniform.first == eCbType::CbViewProj);
+            mFrameContext->UpdateUniformData(uniform.second, 1, sizeof(CbViewProj));
         }
     }
 
