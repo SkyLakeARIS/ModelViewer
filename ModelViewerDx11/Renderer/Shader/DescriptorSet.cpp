@@ -1,8 +1,11 @@
 #include "DescriptorSet.h"
+#include "DescriptorLayout.h"
 #include "../VkHelper.h"
 #include "../../Util/Macro.h"
 #include "../Resources/Buffer.h"
 #include "../Resources/RenderTypes.h"
+#include "../Resources/Sampler.h"
+#include "../Resources/Texture.h"
 #include "../Shader/Shader.h"
 
 namespace renderer
@@ -40,194 +43,79 @@ namespace renderer
         return true;
     }
 
-    void DescriptorSet::UpdateDescriptorSet(eShader shader)
+    void DescriptorSet::UpdateDescriptorSet(const std::vector<DescriptorWriteInfo>& writeInfos)
     {
+        ASSERT(writeInfos.empty() == false, "비어있는 배열이 전달되었습니다. 의도한지 체크하세요. layoutType(%u)", mOwnerInfo.LayoutType);
+        const std::vector<DescriptorInfo>& descriptorInfos = DescriptorLayout::GetDescriptorInfos(mOwnerInfo.LayoutType);
+        ASSERT(writeInfos.size() == descriptorInfos.size(), "writeInfos 개수가 레이아웃과 다릅니다. layoutType(%d), writeInfoCount(%d), layoutCount(%d)", static_cast<EnumInt>(mOwnerInfo.LayoutType), writeInfos.size(), descriptorInfos.size());
+
         const uint32_t inFlightCount = VkHelper::GetFrameInFlightCount();
-        for (uint32_t inFlightIndex = 0; inFlightIndex < inFlightCount; ++inFlightIndex)
+        for(uint32_t inFlightIndex = 0; inFlightIndex < inFlightCount; ++inFlightIndex)
         {
-            switch (shader)
+            std::vector<VkDescriptorImageInfo> imageInfos;
+            std::vector<VkDescriptorBufferInfo> bufferInfos;
+            std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+            imageInfos.reserve(writeInfos.size());
+            bufferInfos.reserve(writeInfos.size());
+            writeDescriptorSets.reserve(writeInfos.size());
+
+            for(const auto& writeInfo : writeInfos)
             {
-            case eShader::Outline:
-            {
-                //VkDescriptorBufferInfo bufferInfoPerFrame{};
-                //bufferInfoPerFrame.buffer = mUbPerFrames[inFlightIndex].Buffer;
-                //bufferInfoPerFrame.offset = inFlightIndex * sizeof(CbViewProj);
-                //bufferInfoPerFrame.range = sizeof(CbViewProj);
+                ASSERT(writeInfo.Descriptor.Count == 1, "배열 바인딩은 아직 지원하지 않습니다. (Count > 1) binding(%d), count(%d)", writeInfo.Descriptor.Binding, writeInfo.Descriptor.Count);
 
-                //VkDescriptorBufferInfo bufferInfoPerObject{};
-                //bufferInfoPerObject.buffer = mUbPerObjects[inFlightIndex].Buffer;
-                //bufferInfoPerObject.offset = inFlightIndex * sizeof(CbWorld);
-                //bufferInfoPerObject.range = sizeof(CbWorld);
-
-                //const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-                //{
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerObject, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 6, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
-                //};
-
-                //vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-
-                break;
-            }
-            case eShader::Skybox:
-            {
-                //VkDescriptorBufferInfo bufferInfo{};
-                //bufferInfo.buffer = mUbPerFrames[frameIndex].Buffer;
-                //bufferInfo.offset = 0;
-                //bufferInfo.range = 0;
-
-                //VkDescriptorImageInfo imageInfo{};
-                //imageInfo.imageLayout = {};
-                //imageInfo.imageView = 0;
-                //imageInfo.sampler = {};
-
-                //VkWriteDescriptorSet writeDescriptorSet{};
-                //writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                //writeDescriptorSet.dstArrayElement = 0; // 배열 업데이트 시작 인덱스;
-                //writeDescriptorSet.descriptorCount = 1; // 업데이트 요소 수;
-                //writeDescriptorSet.dstSet = mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0];
-                //writeDescriptorSet.dstBinding = // 업데이트 할 binding slot;
-                //    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                //writeDescriptorSet.pBufferInfo = &bufferInfo;
-    /*
-                const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+                if(writeInfo.bTexture && writeInfo.Texture == nullptr)
                 {
-                    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
-                    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
-                };
+                    continue;
+                }
 
-                vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-     */           break;
-            }
-            case eShader::Shadow:
-            {
-                /*           const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-                           {
-                               {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                               {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                           };
+                VkWriteDescriptorSet writeDescriptorSet{};
+                writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                writeDescriptorSet.dstSet = mDescriptorSets[inFlightIndex];
+                writeDescriptorSet.dstBinding = writeInfo.Descriptor.Binding;
+                writeDescriptorSet.dstArrayElement = 0;
+                writeDescriptorSet.descriptorCount = writeInfo.Descriptor.Count;
+                writeDescriptorSet.descriptorType = writeInfo.Descriptor.Type;
 
-                           vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);*/
-                break;
-            }
-            case eShader::BasicWithShadow:
-            {
-                //const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-                //{
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 3, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 4, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
-
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
-                //};
-
-                //vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-                break;
-            }
-            case eShader::Texture:
-            {
-                //const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-                //{
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
-                //};
-
-                //vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-                break;
-            }
-            case eShader::Color:
-            {
-                //const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-                //{
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
-                //};
-
-                //vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-                break;
-            }
-            case eShader::DebugHUD:
-            {
-                //const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-                //{
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 5, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
-                //};
-
-                //vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-                break;
-            }
-            case eShader::Deferred:
-            {
-                //const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-                //{
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 2, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 3, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 4, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 7, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 8, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 9, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 10, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 11, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 12, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo, {}, {}},
-
-                //    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 13, 0, 1, VK_DESCRIPTOR_TYPE_SAMPLER, &imageInfo, {}, {}},
-                //};
-
-                //vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-                break;
-            }
-            case eShader::DebugColor:
-            {
-                //    const std::vector<VkWriteDescriptorSet> WriteDescriptors =
-                //    {
-                //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 0, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-                //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfo, {}},
-
-                //        {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mShaderDescriptors[static_cast<uint8_t>(shader)].Set[0], 15, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &imageInfo, {}, {}},
-                //    };
-
-                //    vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-                break;
-            }
-            case eShader::Simple:
-            {
-                VkDescriptorBufferInfo bufferInfoPerFrame{};
-                bufferInfoPerFrame.buffer = mBuffers[inFlightIndex]->GetBuffer();
-                bufferInfoPerFrame.offset = 0;
-                bufferInfoPerFrame.range = sizeof(CbViewProj);
-
-                const std::vector<VkWriteDescriptorSet> WriteDescriptors =
+                switch (writeInfo.Descriptor.Type)
                 {
-                    {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, {}, mDescriptorSets[inFlightIndex], 1, 0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, {}, &bufferInfoPerFrame, {}},
-                };
+                case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+                {
+                    imageInfos.push_back({nullptr, writeInfo.Texture->GetImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+                    writeDescriptorSet.pImageInfo = &imageInfos.back();
+                    break;
+                }
+                case VK_DESCRIPTOR_TYPE_SAMPLER:
+                {
+                    ASSERT(writeInfo.Sampler != nullptr, "Sampler 정보가 세팅되지 않았습니다. binding(%d)", writeInfo.Descriptor.Binding);
+                    imageInfos.push_back({writeInfo.Sampler->GetSampler(), nullptr, VK_IMAGE_LAYOUT_UNDEFINED});
+                    writeDescriptorSet.pImageInfo = &imageInfos.back();
+                    break;
+                }
+                case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+                {
+                    // MEMO: 통합 버퍼 전까지는 넘어온 버퍼가 없으면 자기 버퍼를 연결한다.
+                    if(writeInfo.Buffer == nullptr)
+                    {
+                        bufferInfos.push_back({mBuffers[inFlightIndex]->GetBuffer(), 0, VK_WHOLE_SIZE});
+                    }
+                    else
+                    {
+                        bufferInfos.push_back({writeInfo.Buffer->GetBuffer(), writeInfo.Offset, writeInfo.Range});
+                    }
+                    writeDescriptorSet.pBufferInfo = &bufferInfos.back();
+                    break;
+                }
+                default:
+                {
+                    ASSERT(false, "처리되지 않은 DescriptorType이 전달되었습니다. type(%d)", writeInfo.Descriptor.Type);
+                    continue;
+                }
+                }
 
-                vkUpdateDescriptorSets(mDevice, WriteDescriptors.size(), WriteDescriptors.data(), 0, nullptr);
-                break;
+                writeDescriptorSets.push_back(writeDescriptorSet);
             }
-            default:
-                ASSERT(false, "올바르지 않은 타입이 전달되었습니다. type(%u)", static_cast<uint8_t>(shader));
-                break;
-            }
+
+            vkUpdateDescriptorSets(mDevice, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
         }
     }
 
@@ -306,5 +194,10 @@ namespace renderer
             break;
         }
         }
+    }
+
+    eLayoutType DescriptorSet::GetLayoutType() const
+    {
+        return mOwnerInfo.LayoutType;
     }
 }

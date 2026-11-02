@@ -1,6 +1,7 @@
 #include "Model.h"
 #include "../Renderer.h"
 #include "../../Util/Macro.h"
+#include "../Shader/Shader.h"
 
 namespace renderer
 {
@@ -47,6 +48,20 @@ namespace renderer
     void Model::SetHighlight(bool bSelection)
     {
         mbHighlight = bSelection;
+    }
+
+    void Model::SetDescriptorSets(renderer::eShader shaderType, std::vector<DescriptorSet*>& descriptorSets)
+    {
+        ASSERT(mDescriptorSets.empty(), "Descriptors를 여러 번 초기화 하는 것 같습니다.");
+        auto descriptorSetIt = mDescriptorSets.find(shaderType);
+        if (descriptorSetIt == mDescriptorSets.end())
+        {
+            mDescriptorSets.insert({ shaderType, std::move(descriptorSets) });
+        }
+        else
+        {
+            descriptorSetIt->second.insert(descriptorSetIt->second.end(), descriptorSets.begin(), descriptorSets.end());
+        }
     }
 
     int32_t Model::GetSubMeshCount() const

@@ -4,6 +4,10 @@
 namespace renderer
 {
     enum class eShader : uint8_t;
+    enum class eTextureType : uint8_t;
+    class Texture;
+    class Sampler;
+    class Buffer;
 
     enum class eLayoutType : uint8_t
     {
@@ -15,8 +19,21 @@ namespace renderer
 
     struct DescriptorInfo
     {
+        uint32_t Binding;
         VkDescriptorType Type;
         uint32_t Count;
+    };
+
+    struct DescriptorWriteInfo
+    {
+        DescriptorInfo Descriptor;
+        bool bTexture;
+        eTextureType TextureType; // MEMO: bTexture일 때만 유효. 아니면 TextureTypeCount
+        Texture* Texture;
+        Sampler* Sampler;
+        Buffer* Buffer;
+        VkDeviceSize Offset;
+        VkDeviceSize Range;
     };
 
     class DescriptorLayout
@@ -32,7 +49,8 @@ namespace renderer
         static void Release();
 
         static eLayoutType GetLayoutTypeByShaderType(eShader shader);
-        static void GetLayoutWriteInfos();
+        static void GetLayoutWriteInfos(eLayoutType layoutType, std::vector<DescriptorWriteInfo>& outWriteInfos);
+        static void GetLayoutWriteInfos(eLayoutType layoutType, eShader shaderType, std::vector<DescriptorWriteInfo>& outWriteInfos);
         static const std::vector<DescriptorInfo>& GetDescriptorInfos(eLayoutType type);
         static VkDescriptorSetLayout GetDescriptorSetLayout(eLayoutType type);
         static VkPipelineLayout GetPipelineLayout(eLayoutType type);

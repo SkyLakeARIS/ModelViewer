@@ -8,6 +8,9 @@
 #include "Resources/Model.h"
 #include "Resources/ResourceManager.h"
 #include "Resources/Texture.h"
+#include "Shader/DescriptorAllocator.h"
+#include "Shader/DescriptorLayout.h"
+#include "Shader/DescriptorSet.h"
 
 namespace renderer
 {
@@ -44,6 +47,7 @@ namespace renderer
 
         int32_t totalVertexCount = 0;
         int32_t totalIndexCount = 0;
+        std::vector<DescriptorSet*> descriptorSets;
         for (auto& subMesh : modelContainer.SubMeshes)
         {
             renderer::SubMesh newSubMesh = {};
@@ -77,6 +81,32 @@ namespace renderer
             newSubMesh.Material.Factors = std::move(subMesh.MaterialParam);
             newSubMesh.Material.Factors.IsLitOn = static_cast<float>(true);
 
+            // MEMO: configure DescriptorSet
+            const eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(eShader::Simple);
+            DescriptorSet* descriptorSet = nullptr;
+            if (mDescriptorAllocator->AllocateSet(layoutType, &descriptorSet) == false)
+            {
+                ASSERT(false, "Model 로드 중 DescriptorSet 구성 실패. filePath(%s)", filePath);
+                return false;
+            }
+            std::vector<DescriptorWriteInfo> writeInfos;
+            DescriptorLayout::GetLayoutWriteInfos(layoutType, eShader::Simple, writeInfos);
+            for(auto& writeInfo : writeInfos)
+            {
+                // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
+                if(writeInfo.bTexture && writeInfo.TextureType != eTextureType::TextureTypeCount)
+                {
+                    writeInfo.Texture = mResourceManager->GetTexture(newSubMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                }
+                else if(writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
+                {
+                    writeInfo.Sampler = mRenderer->GetSampler(eSamplerType::Linear);
+                }
+            }
+
+            descriptorSet->UpdateDescriptorSet(writeInfos);
+            descriptorSets.push_back(descriptorSet);
+
             newMesh.SubMeshes.push_back(std::move(newSubMesh));
         }
 
@@ -88,6 +118,7 @@ namespace renderer
 
         *outModel = new Model();
         (*outModel)->SetMesh(newMesh);
+        (*outModel)->SetDescriptorSets(eShader::Simple, descriptorSets);
 
         HashID simplePipelineHash;
         if(mRenderer->TryCreateGraphicsPipeline(simplePipelineHash, renderer::eShader::Simple, renderer::eVertexFormat::PTN, renderer::ePrimitiveTopology::Triangles, renderer::eRasterType::Basic, renderer::Opaque, renderer::eDepthStencilState::DepthOffStencilOff, renderer::eRenderPass::Main) == false)

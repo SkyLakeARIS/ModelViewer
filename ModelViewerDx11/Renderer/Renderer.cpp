@@ -393,6 +393,12 @@ namespace renderer
     {
         return mDescriptorAllocator;
     }
+
+    VkDevice Renderer::GetDevice() const
+    {
+        return mDevice;
+    }
+
     bool Renderer::createInstance(const char* const appName)
     {
         VkResult result = VK_SUCCESS;

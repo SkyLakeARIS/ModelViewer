@@ -1,5 +1,6 @@
 #include "DescriptorLayout.h"
 #include "ShaderType.h"
+#include "../Resources/TextureData.h"
 #include "../../Util/Macro.h"
 #include "../../Util/Type.h"
 
@@ -104,7 +105,7 @@ namespace renderer
             descriptorInfos.reserve(layoutBindings.size());
             for(const auto& bindingInfo : layoutBindings)
             {
-                descriptorInfos.push_back({bindingInfo.descriptorType, bindingInfo.descriptorCount});
+                descriptorInfos.push_back({bindingInfo.binding, bindingInfo.descriptorType, bindingInfo.descriptorCount});
             }
         }
 
@@ -164,8 +165,89 @@ namespace renderer
         return layoutType;
     }
 
-    void DescriptorLayout::GetLayoutWriteInfos()
+    void DescriptorLayout::GetLayoutWriteInfos(eLayoutType layoutType, std::vector<DescriptorWriteInfo>& outWriteInfos)
     {
+        ASSERT(outWriteInfos.empty(), "outWriteInfos는 비어있어야합니다.");
+
+        const std::vector<DescriptorInfo>& descriptorInfos = GetDescriptorInfos(layoutType);
+        outWriteInfos.reserve(descriptorInfos.size());
+        for(const auto& descriptorInfo : descriptorInfos)
+        {
+            DescriptorWriteInfo writeInfo{};
+            writeInfo.Descriptor = descriptorInfo;
+            writeInfo.bTexture = (descriptorInfo.Type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+            writeInfo.TextureType = eTextureType::TextureTypeCount;
+            outWriteInfos.push_back(writeInfo);
+        }
+    }
+
+    void DescriptorLayout::GetLayoutWriteInfos(eLayoutType layoutType, eShader shaderType, std::vector<DescriptorWriteInfo>& outWriteInfos)
+    {
+        ASSERT(GetLayoutTypeByShaderType(shaderType) == layoutType, "shaderType과 맞지 않는 layoutType이 전달되었습니다. layoutType(%d), shaderType(%d)", static_cast<EnumInt>(layoutType), static_cast<EnumInt>(shaderType));
+
+        GetLayoutWriteInfos(layoutType, outWriteInfos);
+
+        struct TextureSlot
+        {
+            uint32_t Binding;
+            eTextureType TextureType;
+        };
+
+        // MEMO: 바인딩 슬릇과 텍스처 타입으로 실제 리소스와 매칭
+        std::vector<TextureSlot> textureSlots;
+        switch (shaderType)
+        {
+        case eShader::Outline:
+        case eShader::Shadow:
+        case eShader::Color:
+        case eShader::DebugColor:
+        {
+            // MEMO: 텍스처를 쓰지 않는 셰이더
+            break;
+        }
+        case eShader::Skybox:
+        {
+            // TODO: eTextureType 정비 후 큐브맵 자리 지정
+            break;
+        }
+        case eShader::BasicWithShadow:
+        case eShader::Texture:
+        case eShader::DebugHUD:
+        case eShader::Simple:
+        {
+            textureSlots =
+            {
+                {7, eTextureType::Diffuse},
+            };
+            break;
+        }
+        case eShader::Deferred:
+        {
+            // TODO: 7~11 G-Buffer, 12 ShadowMap 자리 지정
+            break;
+        }
+        default:
+        {
+            ASSERT(false, "올바르지 않은 타입이거나 작업되지 않은 타입이 감지되었습니다. type(%u)", static_cast<EnumInt>(shaderType));
+            break;
+        }
+        }
+
+        for(const auto& textureSlot : textureSlots)
+        {
+            bool bFound = false;
+            for(auto& writeInfo : outWriteInfos)
+            {
+                if(writeInfo.Descriptor.Binding == textureSlot.Binding)
+                {
+                    ASSERT(writeInfo.bTexture, "TextureSlot의 binding이 텍스처 타입이 아닙니다. binding(%d)", textureSlot.Binding);
+                    writeInfo.TextureType = textureSlot.TextureType;
+                    bFound = true;
+                    break;
+                }
+            }
+            ASSERT(bFound, "TextureSlot의 binding이 레이아웃에 없습니다. layoutType(%d), binding(%d)", static_cast<EnumInt>(layoutType), textureSlot.Binding);
+        }
     }
 
     const std::vector<DescriptorInfo>& DescriptorLayout::GetDescriptorInfos(eLayoutType type)

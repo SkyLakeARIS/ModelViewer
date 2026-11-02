@@ -5,6 +5,11 @@
 
 namespace renderer
 {
+    struct DescriptorWriteInfo;
+}
+
+namespace renderer
+{
     enum class eTextureType : uint8_t;
     enum class eLayoutType : uint8_t;
     class Sampler;
@@ -35,10 +40,11 @@ namespace renderer
         ~DescriptorSet();
 
         bool Create();
-        void UpdateDescriptorSet(eShader shader);
+        void UpdateDescriptorSet(const std::vector<DescriptorWriteInfo>& writeInfos);
         void UpdateUniformData(const void* const pData, uint32_t count, uint32_t elementSize, uint32_t inFlightIndex, bool bPerFrame);
         VkDescriptorSet GetDescriptorSet(uint32_t inFlightIndex) const;
         void GetLayoutWriteInfos(eShader shaderType, std::vector<TextureWriteInfo>& outTextureWriteInfos);
+        eLayoutType GetLayoutType() const;
     private:
         VkDevice mDevice;
         std::vector<Buffer*> mBuffers;

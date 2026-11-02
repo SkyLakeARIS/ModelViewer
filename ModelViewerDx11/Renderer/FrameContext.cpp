@@ -2,6 +2,7 @@
 #include "../Util/Macro.h"
 #include "Shader/DescriptorSet.h"
 #include "VkHelper.h"
+#include "Shader/DescriptorLayout.h"
 #include "Shader/Shader.h"
 
 namespace renderer
@@ -137,8 +138,10 @@ namespace renderer
                 return false;
             }
         }
-
-        commonDescriptorSet->UpdateDescriptorSet(eShader::Simple);
+        const eLayoutType layoutType = commonDescriptorSet->GetLayoutType();
+        std::vector<DescriptorWriteInfo> writeInfos;
+        DescriptorLayout::GetLayoutWriteInfos(layoutType, writeInfos);
+        commonDescriptorSet->UpdateDescriptorSet(writeInfos);
         mCommonDescriptorSet = commonDescriptorSet;
         return true;
     }

@@ -56,6 +56,7 @@ namespace renderer
         void AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
 
         DescriptorAllocator* GetDescriptorAllocator() const;
+        VkDevice GetDevice() const;
     private:
         bool createInstance(const char* const appName);
         bool createSurface(HWND handleWindow, HINSTANCE handleInstance);
