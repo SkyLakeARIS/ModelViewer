@@ -24,6 +24,7 @@ namespace renderer
 
     Loader::~Loader()
     {
+        mImporter = nullptr;
         mRenderer = nullptr;
         mResourceManager = nullptr;
         mDescriptorAllocator = nullptr;
