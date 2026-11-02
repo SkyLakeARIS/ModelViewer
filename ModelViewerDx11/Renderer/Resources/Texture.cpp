@@ -48,7 +48,7 @@ namespace renderer
         }
 
         const uint32_t elementSize = rawImage.GetPixelsSize() / (rawImage.GetMetadata().height * rawImage.GetMetadata().width);
-        stagingBuffer->AddDataOffset(rawImage.GetPixels(), rawImage.GetImageCount(), elementSize, 0);
+        stagingBuffer->AddDataOffset(rawImage.GetPixels(), rawImage.GetPixelsSize(), 1, 0);
         //
         // MEMO: 이미지 및 메모리 생성
 
@@ -102,7 +102,7 @@ namespace renderer
         (void)mbstowcs_s(&numConverted, texFilePath, util::MAX_PATH_LENGTH, reinterpret_cast<char const*>(filePath), filePathLength);
         ASSERT(numConverted == (filePathLength + 1), "conversion result is incorrect. converted(%u) pathLength(%u)", numConverted, filePathLength);
 
-        const HRESULT result = LoadFromWICFile(texFilePath, DirectX::WIC_FLAGS_NONE, nullptr, outImage);
+        const HRESULT result = LoadFromWICFile(texFilePath, DirectX::WIC_FLAGS_FORCE_RGB, nullptr, outImage);
         if (FAILED(result))
         {
             return false;
