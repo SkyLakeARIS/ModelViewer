@@ -43,6 +43,7 @@ Application::Application()
 
 Application::~Application()
 {
+    mVkRenderer->WaitForDevice();
     delete mLoader;
     mDirectInput->Release();
     delete mDirectInput;

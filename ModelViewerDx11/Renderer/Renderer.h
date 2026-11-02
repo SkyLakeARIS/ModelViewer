@@ -48,6 +48,8 @@ namespace renderer
 
         void CountFrame() const;
 
+        void WaitForDevice() const;
+
         void UploadPushConstant(const PushConstantBlock& dataBlock, eShader shaderType) const;
         void BindDescriptorSet(const DescriptorSet* const descriptorSet);
         // pipeline

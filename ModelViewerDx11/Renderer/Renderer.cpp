@@ -41,8 +41,6 @@ namespace renderer
     {
         Uploader::Release();
 
-        const VkResult result = vkDeviceWaitIdle(mDevice);
-        ASSERT(result == VK_SUCCESS, "vkDeviceWaitIdle 실패. result(%u)", result);
 
         for(const auto& samplerIt : mSamplers)
         {
@@ -340,6 +338,12 @@ namespace renderer
     void Renderer::CountFrame() const
     {
         mFrameContext->CountFrame();
+    }
+
+    void Renderer::WaitForDevice() const
+    {
+        const VkResult result = vkDeviceWaitIdle(mDevice);
+        ASSERT(result == VK_SUCCESS, "vkDeviceWaitIdle 실패. result(%u)", result);
     }
 
     void Renderer::UploadPushConstant(const PushConstantBlock& dataBlock, eShader shaderType) const
