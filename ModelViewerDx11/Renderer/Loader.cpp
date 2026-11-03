@@ -62,14 +62,17 @@ namespace renderer
             {
                 if (subMesh.Textures[textureType].TextureHash > 0)
                 {
-                    newSubMesh.Material.TextureHashes[static_cast<EnumInt>(subMesh.Textures[textureType].TextureType)] = subMesh.Textures[textureType].TextureHash;
-                    Texture* newTexture = new Texture(mRenderer->GetDevice());
-                    newTexture->Create(subMesh.Textures[textureType].FilePath, false);
-                    if(mResourceManager->TryAddTexture(subMesh.Textures[textureType].TextureHash, newTexture) == false)
+                    if(mResourceManager->TryGetTexture(subMesh.Textures[textureType].TextureHash) == nullptr)
                     {
-                        delete newTexture;
+                        Texture* newTexture = new Texture(mRenderer->GetDevice());
+                        newTexture->Create(subMesh.Textures[textureType].FilePath, false);
+                        if (mResourceManager->TryAddTexture(subMesh.Textures[textureType].TextureHash, newTexture) == false)
+                        {
+                            delete newTexture;
+                        }
+                        newTexture = nullptr;
                     }
-                    newTexture = nullptr;
+                    newSubMesh.Material.TextureHashes[static_cast<EnumInt>(subMesh.Textures[textureType].TextureType)] = subMesh.Textures[textureType].TextureHash;
                 }
             }
 
