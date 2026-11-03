@@ -72,7 +72,7 @@ namespace renderer
                         }
                         mResourceManager->AddTexture(subMesh.Textures[textureType].TextureHash, newTexture);
                     }
-                    newSubMesh.Material.TextureHashes[static_cast<EnumInt>(subMesh.Textures[textureType].TextureType)] = subMesh.Textures[textureType].TextureHash;
+                    newSubMesh.Material.TextureHashes[textureType] = subMesh.Textures[textureType].TextureHash;
                 }
             }
 
