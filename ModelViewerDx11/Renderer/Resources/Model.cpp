@@ -36,6 +36,7 @@ namespace renderer
             renderer.BindPipeline(pipelineIt->second);
             renderer.BindDescriptorSet(*descriptorSet);
             renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);
+            ++descriptorSet;
         }
     }
 
