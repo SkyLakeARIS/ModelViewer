@@ -21,7 +21,7 @@ namespace renderer
         bool CreateShaders();
         bool CreateSamplers();
 
-        bool TryAddTexture(HashID hash, Texture* const texture);
+        void AddTexture(HashID hash, Texture* const texture);
         void AddPipeline(HashID hash, VkPipeline pipeline);
 
         Texture* TryGetTexture(HashID hash);

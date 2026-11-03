@@ -170,15 +170,10 @@ namespace renderer
         return true;
     }
 
-    bool ResourceManager::TryAddTexture(HashID hash, Texture* const texture)
+    void ResourceManager::AddTexture(HashID hash, Texture* const texture)
     {
-        if(mTextures.find(hash) != mTextures.end())
-        {
-            return false;
-        }
-
+        ASSERT(mTextures.find(hash) == mTextures.end(), "texture 개체가 중복 삽입 되었습니다. 릭 가능성이 있습니다. hash(%u)", hash);
         mTextures.insert({ hash, texture });
-        return true;
     }
 
     void ResourceManager::AddPipeline(HashID hash, VkPipeline pipeline)
