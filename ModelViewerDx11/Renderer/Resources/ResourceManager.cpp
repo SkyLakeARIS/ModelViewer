@@ -187,7 +187,7 @@ namespace renderer
         mPipelines.insert({ hash, pipeline });
     }
 
-    Texture* ResourceManager::GetTexture(HashID hash)
+    Texture* ResourceManager::TryGetTexture(HashID hash)
     {
         Texture* tex = nullptr;
         const auto& texIt = mTextures.find(hash);

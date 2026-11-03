@@ -24,7 +24,7 @@ namespace renderer
         bool TryAddTexture(HashID hash, Texture* const texture);
         void AddPipeline(HashID hash, VkPipeline pipeline);
 
-        Texture* GetTexture(HashID hash);
+        Texture* TryGetTexture(HashID hash);
         Shader* GetShaderByType(eShader type) const;
         Sampler* GetSamplerByType(eSamplerType type) const;
         VkPipeline TryGetPipeline(HashID hash) const;

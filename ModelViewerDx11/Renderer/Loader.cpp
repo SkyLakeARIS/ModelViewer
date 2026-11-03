@@ -98,7 +98,7 @@ namespace renderer
                 // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
                 if(writeInfo.bTexture && writeInfo.TextureType != eTextureType::TextureTypeCount)
                 {
-                    writeInfo.Texture = mResourceManager->GetTexture(newSubMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                    writeInfo.Texture = mResourceManager->TryGetTexture(newSubMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
                 }
                 else if(writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
                 {
