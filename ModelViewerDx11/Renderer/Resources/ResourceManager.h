@@ -22,10 +22,12 @@ namespace renderer
         bool CreateSamplers();
 
         bool TryAddTexture(HashID hash, Texture* const texture);
+        void AddPipeline(HashID hash, VkPipeline pipeline);
 
         Texture* GetTexture(HashID hash);
         Shader* GetShaderByType(eShader type) const;
         Sampler* GetSamplerByType(eSamplerType type) const;
+        VkPipeline TryGetPipeline(HashID hash) const;
     private:
         VkDevice mDevice;
         // MEMO: 주요 리소스-- Texture, shader, sampler, shaderModule, image, buffer
@@ -35,5 +37,6 @@ namespace renderer
         std::unordered_map<HashID, ShaderModule*> mShaderModules;
         std::vector<Shader*> mShaders;
         std::unordered_map<eSamplerType, Sampler*> mSamplers;
+        std::unordered_map<HashID, VkPipeline> mPipelines;
     };
 }

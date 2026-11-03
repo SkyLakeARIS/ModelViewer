@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <unordered_map>
 #include "Material.h"
 #include "RenderTypes.h"
 #include "../../Util/Define.h"
@@ -22,6 +23,8 @@ namespace renderer
         XMFLOAT3 MaxBound;
         // for debugging
         int8_t SubMeshName[util::MAX_NAME_LENGTH];
+        // MEMO: RenderPass별 PipelineHash
+        std::unordered_map<eRenderPass, HashID> Pipelines;
     };
 
     struct Mesh

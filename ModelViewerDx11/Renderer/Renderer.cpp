@@ -29,7 +29,6 @@ namespace renderer
         , mSwapChainExtent()
         , mFrameContext(nullptr)
         , mCurImageIndex(0)
-        , mSimplePipeline(nullptr)
         , mResourceManager(nullptr)
         , mDescriptorAllocator(nullptr)
         , mVertexBuffer()
@@ -54,7 +53,6 @@ namespace renderer
         delete mFrameContext;
         mFrameContext = nullptr;
         vkDestroyCommandPool(mDevice, mCommandPoolTransfer, nullptr);
-        vkDestroyPipeline(mDevice, mSimplePipeline, nullptr);
 
         delete mDescriptorAllocator;
 
@@ -205,7 +203,6 @@ namespace renderer
         vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
 
-        vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mSimplePipeline);
 
         const VkDeviceSize offset = 0;
         const VkBuffer vertexBuffer = mVertexBuffer->GetBuffer();
@@ -359,9 +356,23 @@ namespace renderer
         vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DescriptorLayout::GetPipelineLayout(layoutType), setBindingSlot, 1, &descSet, 0, nullptr);
     }
 
+    void Renderer::BindPipeline(HashID hash) const
+    {
+        const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
+
+        const VkPipeline pipeline = mResourceManager->TryGetPipeline(hash);
+        vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    }
+
     bool Renderer::TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
     {
         PipelineBuilder pipelineBuilder(mDevice);
+        const HashID peekHash = pipelineBuilder.PeekPipelineHash(shader, vertexFormat, topology, rasterType, blendState, depthStencilState, renderPass);
+        if(mResourceManager->TryGetPipeline(peekHash))
+        {
+            outPipelineHash = peekHash;
+            return true;
+        }
         pipelineBuilder.SetColorBlendState(blendState);
         pipelineBuilder.SetDynamicState(true, true);
         pipelineBuilder.SetDepthStencilState(depthStencilState);
@@ -377,8 +388,14 @@ namespace renderer
 
         std::vector<VkFormat> formats(1, mSurfaceFormat.format);
         pipelineBuilder.SetColorAttachInfo(formats);
+        VkPipeline pipeline;
+        if(pipelineBuilder.Create(pipeline, outPipelineHash) == false)
+        {
+            return false;
+        }
 
-        return pipelineBuilder.Create(mSimplePipeline, outPipelineHash);
+        mResourceManager->AddPipeline(outPipelineHash, pipeline);
+        return true;
     }
 
     void Renderer::AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)

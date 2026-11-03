@@ -58,9 +58,11 @@ namespace renderer
 
         bool Create(VkPipeline& outPipeline, HashID& outPipelineHash);
         void Release();
+
+        HashID PeekPipelineHash(eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
     private:
 
-        HashID makePipelineHash();
+        HashID makePipelineHash(const PipelineHashComponents& hashComponents);
     private:
         VkDevice mDevice;
 

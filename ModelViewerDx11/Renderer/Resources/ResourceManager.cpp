@@ -38,6 +38,12 @@ namespace renderer
             texIt.second = nullptr;
         }
         mTextures.clear();
+
+        for (auto& pipelineIt : mPipelines)
+        {
+            vkDestroyPipeline(mDevice, pipelineIt.second, nullptr);
+        }
+        mPipelines.clear();
     }
 
     bool ResourceManager::CreateShaders()
@@ -175,6 +181,12 @@ namespace renderer
         return true;
     }
 
+    void ResourceManager::AddPipeline(HashID hash, VkPipeline pipeline)
+    {
+        ASSERT(mPipelines.find(hash) == mPipelines.end(), "pipeline 개체가 중복 삽입 되었습니다. 릭 가능성이 있습니다. hash(%u)", hash);
+        mPipelines.insert({ hash, pipeline });
+    }
+
     Texture* ResourceManager::GetTexture(HashID hash)
     {
         Texture* tex = nullptr;
@@ -196,5 +208,17 @@ namespace renderer
         const auto& samplerIt = mSamplers.find(type);
         ASSERT(samplerIt != mSamplers.end(), "Sampler가 생성되지 않았거나 잘못된 type입니다. type(%u)", static_cast<EnumInt>(type));
         return samplerIt->second;
+    }
+
+    VkPipeline ResourceManager::TryGetPipeline(HashID hash) const
+    {
+        VkPipeline pipeline = nullptr;
+
+        const auto& pipelineIt = mPipelines.find(hash);
+        if(pipelineIt != mPipelines.end())
+        {
+            pipeline = pipelineIt->second;
+        }
+        return pipeline;
     }
 }

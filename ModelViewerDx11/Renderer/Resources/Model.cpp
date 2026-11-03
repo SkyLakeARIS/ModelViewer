@@ -32,6 +32,8 @@ namespace renderer
         auto descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)
         {
+            const auto& pipelineIt = subMesh.Pipelines.find(eRenderPass::Main);
+            renderer.BindPipeline(pipelineIt->second);
             renderer.BindDescriptorSet(*descriptorSet);
             renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);
         }

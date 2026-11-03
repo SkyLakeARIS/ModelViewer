@@ -50,6 +50,7 @@ namespace renderer
 
         void UploadPushConstant(const PushConstantBlock& dataBlock, eShader shaderType) const;
         void BindDescriptorSet(const DescriptorSet* const descriptorSet);
+        void BindPipeline(HashID hash) const;
         // pipeline
         bool TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
 
@@ -93,7 +94,6 @@ namespace renderer
         std::vector<VkSemaphore> mRenderFinishedSemaphores;
         uint32_t mCurImageIndex;
         // pipeline
-        VkPipeline mSimplePipeline;
         ResourceManager* mResourceManager;
         // shader
         DescriptorAllocator* mDescriptorAllocator;

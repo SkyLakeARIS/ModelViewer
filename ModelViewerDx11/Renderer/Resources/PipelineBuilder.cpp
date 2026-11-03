@@ -304,7 +304,7 @@ namespace renderer
             return false;
         }
 
-        outPipelineHash = makePipelineHash();
+        outPipelineHash = makePipelineHash(mHashComponents);
 
         return true;
     }
@@ -314,7 +314,20 @@ namespace renderer
         // MEMO: Pooling 시에 활용할 리셋 함수
     }
 
-    HashID PipelineBuilder::makePipelineHash()
+    HashID PipelineBuilder::PeekPipelineHash(eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass)
+    {
+        PipelineHashComponents hashComponents;
+        hashComponents.RenderPass = renderPass;
+        hashComponents.RasterType = rasterType;
+        hashComponents.BlendState = blendState;
+        hashComponents.DepthStencilState = depthStencilState;
+        hashComponents.VertexFormat = vertexFormat;
+        hashComponents.Shader = shader;
+        hashComponents.PrimitiveTopology = topology;
+        return makePipelineHash(hashComponents);
+    }
+
+    HashID PipelineBuilder::makePipelineHash(const PipelineHashComponents& hashComponents)
     {
         struct PipelineStateBitField
         {
@@ -324,13 +337,13 @@ namespace renderer
 
         const PipelineStateBitField PipelineBitLayout[] =
         {
-            {static_cast<HashID>(mHashComponents.Shader), GetBitCount(eShader::ShaderCount)},
-            {static_cast<HashID>(mHashComponents.VertexFormat), GetBitCount(eVertexFormat::FormatCount)},
-            {static_cast<HashID>(mHashComponents.PrimitiveTopology), GetBitCount(ePrimitiveTopology::TopologyCount)},
-            {static_cast<HashID>(mHashComponents.RasterType), GetBitCount(eRasterType::RasterCount)},
-            {static_cast<HashID>(mHashComponents.BlendState), GetBitCount(eBlendState::StateCount)},
-            {static_cast<HashID>(mHashComponents.DepthStencilState), GetBitCount(eDepthStencilState::StateCount)},
-            {static_cast<HashID>(mHashComponents.RenderPass), GetBitCount(eRenderPass::PassCount)},
+            {static_cast<HashID>(hashComponents.Shader), GetBitCount(eShader::ShaderCount)},
+            {static_cast<HashID>(hashComponents.VertexFormat), GetBitCount(eVertexFormat::FormatCount)},
+            {static_cast<HashID>(hashComponents.PrimitiveTopology), GetBitCount(ePrimitiveTopology::TopologyCount)},
+            {static_cast<HashID>(hashComponents.RasterType), GetBitCount(eRasterType::RasterCount)},
+            {static_cast<HashID>(hashComponents.BlendState), GetBitCount(eBlendState::StateCount)},
+            {static_cast<HashID>(hashComponents.DepthStencilState), GetBitCount(eDepthStencilState::StateCount)},
+            {static_cast<HashID>(hashComponents.RenderPass), GetBitCount(eRenderPass::PassCount)},
         };
 
 
