@@ -131,8 +131,8 @@ namespace renderer
         *outDescriptorSet = new DescriptorSet(mDevice, descriptorSets, ownerInfo);
         if ((*outDescriptorSet)->Create() == false)
         {
-            delete outDescriptorSet;
-            outDescriptorSet = nullptr;
+            delete *outDescriptorSet;
+            *outDescriptorSet = nullptr;
             ASSERT(false, "DescriptorSet 개체 초기화 실패.  result(%u)", result);
             return false;
         }
