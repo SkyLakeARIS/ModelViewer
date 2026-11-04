@@ -7,6 +7,7 @@
 #include "../Util/Macro.h"
 #include "../Util/Util.h"
 #include "Resources/Buffer.h"
+#include "Resources/Image.h"
 #include "Resources/PipelineBuilder.h"
 #include "Resources/ResourceManager.h"
 #include "Shader/DescriptorAllocator.h"
@@ -27,6 +28,9 @@ namespace renderer
         , mSurfaceFormat()
         , mSwapChain(nullptr)
         , mSwapChainExtent()
+        , mDepthStencil(nullptr)
+        , mDepthStencilView(nullptr)
+        , mDepthStencilFormat()
         , mFrameContext(nullptr)
         , mCurImageIndex(0)
         , mResourceManager(nullptr)
@@ -69,6 +73,11 @@ namespace renderer
         }
         mImageViews.clear();
         std::vector<VkImageView>().swap(mImageViews);
+
+        vkDestroyImageView(mDevice, mDepthStencilView, nullptr);
+        delete mDepthStencil;
+        mDepthStencil = nullptr;
+
         vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
         vkDestroySurfaceKHR(mVkInstance, mSurface, nullptr);
         vkDestroyDevice(mDevice, nullptr);
@@ -94,6 +103,7 @@ namespace renderer
         {
             return false;
         }
+        VkHelper::SetPhysicalDevice(mPhysicalDevice);
 
         VkPhysicalDeviceMemoryProperties2 physicalDeviceMemoryProperties2{};
         physicalDeviceMemoryProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2;
@@ -115,6 +125,11 @@ namespace renderer
         }
 
         if (createImageViews() == false)
+        {
+            return false;
+        }
+
+        if (createDepthStencil() == false)
         {
             return false;
         }
@@ -166,6 +181,7 @@ namespace renderer
         }
 
         Uploader::Initialize(mDevice, mCommandBufferTransfer, mCommandPoolTransfer, mQueue, mGraphicsQueueIndex);
+        mResourceManager->CreateBuffers();
         return true;
     }
 
@@ -243,10 +259,12 @@ namespace renderer
             ASSERT(false, "vkBeginCommandBuffer 실패 resultCode(%d)", result);
         }
 
-        Uploader::TransitionImageLayout(cmdBuffer, mImages[mCurImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_2_NONE, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT , VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+        Uploader::TransitionImageLayout(cmdBuffer, mImages[mCurImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_2_NONE, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT , VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+
+        Uploader::TransitionImageLayout(cmdBuffer, mDepthStencil->GetImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
         constexpr VkClearValue ClearColorValue{0.4f, 0.8f, 0.6f, 1.0f};
-        constexpr VkImageSubresourceRange subresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
+        VkClearValue ClearDepthStencilValue;
 
         VkRenderingAttachmentInfo renderingAttachmentInfo{};
         renderingAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -256,10 +274,22 @@ namespace renderer
         renderingAttachmentInfo.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
         renderingAttachmentInfo.clearValue = ClearColorValue;
 
+        ClearDepthStencilValue.depthStencil = VkClearDepthStencilValue{ 1.0f, 0 };
+        constexpr VkImageSubresourceRange subresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
+
+        VkRenderingAttachmentInfo renderingAttachmentInfoDepth{};
+        renderingAttachmentInfoDepth.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        renderingAttachmentInfoDepth.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        renderingAttachmentInfoDepth.imageView = mDepthStencilView;
+        renderingAttachmentInfoDepth.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+        renderingAttachmentInfoDepth.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        renderingAttachmentInfoDepth.clearValue = ClearDepthStencilValue;
+
         VkRenderingInfo renderingInfo{};
         renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
         renderingInfo.pColorAttachments = &renderingAttachmentInfo;
         renderingInfo.colorAttachmentCount = 1;
+        renderingInfo.pDepthAttachment = &renderingAttachmentInfoDepth;
         renderingInfo.layerCount = 1;
         renderingInfo.renderArea = { {0, 0}, mSwapChainExtent };
         vkCmdBeginRendering(cmdBuffer, &renderingInfo);
@@ -271,7 +301,7 @@ namespace renderer
 
         vkCmdEndRendering(cmdBuffer);
 
-        Uploader::TransitionImageLayout(cmdBuffer, mImages[mCurImageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT);
+        Uploader::TransitionImageLayout(cmdBuffer, mImages[mCurImageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
         vkEndCommandBuffer(cmdBuffer);
     }
 
@@ -387,7 +417,7 @@ namespace renderer
         pipelineBuilder.SetPipelineLayout(DescriptorLayout::GetPipelineLayout(layoutType));
 
         std::vector<VkFormat> formats(1, mSurfaceFormat.format);
-        pipelineBuilder.SetColorAttachInfo(formats);
+        pipelineBuilder.SetColorAttachInfo(formats, mDepthStencilFormat);
         VkPipeline pipeline;
         if(pipelineBuilder.Create(pipeline, outPipelineHash) == false)
         {
@@ -935,6 +965,34 @@ namespace renderer
             ASSERT(false, "CommandBuffer 생성 실패 resultCode(%d)", result);
             return false;
         }
+        return true;
+    }
+
+    bool Renderer::createDepthStencil()
+    {
+        const VkFormat depthStencilFormat = VkHelper::GetSupportImageFormat({ VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+        if(depthStencilFormat == VK_FORMAT_MAX_ENUM)
+        {
+            ASSERT(false, "DepthStencilView 생성 중 포멧 선정 실패. returnFormat(%d)", depthStencilFormat);
+            return false;
+        }
+        mDepthStencil = new Image(mDevice);
+        mDepthStencil->Create(VK_IMAGE_LAYOUT_UNDEFINED, mGraphicsQueueIndex, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { mSwapChainExtent.width, mSwapChainExtent.height, 1 }, VK_IMAGE_TYPE_2D, depthStencilFormat, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        VkImageViewCreateInfo imageViewCreateInfo{};
+        imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewCreateInfo.format = depthStencilFormat;
+        imageViewCreateInfo.components = {};
+        imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewCreateInfo.image = mDepthStencil->GetImage();
+        imageViewCreateInfo.subresourceRange = { VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0, 1, 0, 1 };
+        const VkResult result = vkCreateImageView(mDevice, &imageViewCreateInfo, nullptr, &mDepthStencilView);
+        if(result != VK_SUCCESS)
+        {
+            ASSERT(false, "DepthStencilView 생성 실패. result(%d)", result);
+            return false;
+        }
+        mDepthStencilFormat = depthStencilFormat;
         return true;
     }
 }

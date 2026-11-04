@@ -52,7 +52,7 @@ namespace renderer
         void SetColorBlendState(eBlendState blendState);
         void SetRasterizationState(eRasterType rasterType);
         void SetPipelineLayout(const VkPipelineLayout& pipelineLayout);
-        void SetColorAttachInfo(const std::vector<VkFormat>& formats);
+        void SetColorAttachInfo(const std::vector<VkFormat>& formats, VkFormat depthStencilFormat);
 
         void SetRenderPass(eRenderPass renderPass);
 

@@ -113,7 +113,7 @@ namespace renderer
             descriptorSets.push_back(descriptorSet);
 
             HashID pipelineHash;
-            if (mRenderer->TryCreateGraphicsPipeline(pipelineHash, renderer::eShader::Simple, renderer::eVertexFormat::PTN, renderer::ePrimitiveTopology::Triangles, renderer::eRasterType::Basic, renderer::Opaque, renderer::eDepthStencilState::DepthOffStencilOff, renderer::eRenderPass::Main) == false)
+            if (mRenderer->TryCreateGraphicsPipeline(pipelineHash, renderer::eShader::Simple, renderer::eVertexFormat::PTN, renderer::ePrimitiveTopology::Triangles, renderer::eRasterType::Basic, renderer::Opaque, renderer::eDepthStencilState::DepthOnMaskAllCompLessEqual, renderer::eRenderPass::Main) == false)
             {
                 ASSERT(false, "Model 로드 중 파이프라인 구성 실패. filePath(%s)", filePath);
                 return false;

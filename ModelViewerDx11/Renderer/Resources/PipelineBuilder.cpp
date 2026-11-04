@@ -247,7 +247,7 @@ namespace renderer
         mValidation.bPipelineLayoutValid = true;
     }
 
-    void PipelineBuilder::SetColorAttachInfo(const std::vector<VkFormat>& formats)
+    void PipelineBuilder::SetColorAttachInfo(const std::vector<VkFormat>& formats, VkFormat depthStencilFormat)
     {
         ASSERT(mColorAttachmentFormats.empty(), "SetColorAttachInfo가 두 번 호출되었습니다. 기존 내용을 버립니다.");
         mColorAttachmentFormats.clear();
@@ -257,6 +257,7 @@ namespace renderer
         mRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
         mRenderingCreateInfo.colorAttachmentCount = mColorAttachmentFormats.size();
         mRenderingCreateInfo.pColorAttachmentFormats = mColorAttachmentFormats.data();
+        mRenderingCreateInfo.depthAttachmentFormat = depthStencilFormat;
         mValidation.bColorAttachValid = true;
     }
 

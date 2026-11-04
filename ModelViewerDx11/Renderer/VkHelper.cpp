@@ -8,6 +8,7 @@ namespace renderer
     VkPhysicalDeviceMemoryProperties VkHelper::sDeviceMemoryProperties = {};
     bool VkHelper::sbSupportStagingUpload = false;
     uint32_t VkHelper::sFrameInFlightCount = 0;
+    VkPhysicalDevice VkHelper::sPhysicalDevice = {};
 
     bool VkHelper::AllocateMemory(const VkDevice& device, uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory)
     {
@@ -39,6 +40,23 @@ namespace renderer
         }
     }
 
+    VkFormat VkHelper::GetSupportImageFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags featureFlags)
+    {
+        for(const auto& candidate : candidates)
+        {
+            VkFormatProperties formatProperties;
+            vkGetPhysicalDeviceFormatProperties(sPhysicalDevice, candidate, &formatProperties);
+
+            if (((tiling == VkImageTiling::VK_IMAGE_TILING_LINEAR) && (formatProperties.linearTilingFeatures & featureFlags)) ||
+                ((tiling == VkImageTiling::VK_IMAGE_TILING_OPTIMAL) && (formatProperties.optimalTilingFeatures & featureFlags)))
+            {
+                return candidate;
+            }
+        }
+        ASSERT(false, "지원되는 Format이 존재하지 않습니다. 하드웨어 사양을 확인하거나 candidates 옵션을 확인하세요.");
+        return VK_FORMAT_MAX_ENUM;
+    }
+
     uint32_t VkHelper::AlignedSize(uint32_t value, uint32_t alignment)
     {
         return ((((value) + (alignment) - 1) / (alignment)) * (alignment));
@@ -53,6 +71,11 @@ namespace renderer
     {
         sGraphicsQueueFamilyIndex = graphics;
         sTransferQueueFamilyIndex = transfer;
+    }
+
+    void VkHelper::SetPhysicalDevice(VkPhysicalDevice physicalDevice)
+    {
+        sPhysicalDevice = physicalDevice;
     }
 
     void VkHelper::SetPhysicalDeviceMemoryProperties(const VkPhysicalDeviceMemoryProperties& properties)

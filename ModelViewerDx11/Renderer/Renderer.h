@@ -9,6 +9,7 @@ namespace renderer
     class FrameContext;
     class DescriptorSet;
     class Buffer;
+    class Image;
 
     class Renderer final
     {
@@ -71,6 +72,7 @@ namespace renderer
         bool createSyncObjects();
         bool createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flag, VkCommandPool& outCommandPool) const;
         bool createCommandBuffers(VkCommandPool commandPool, uint32_t bufferCount, VkCommandBufferLevel level, VkCommandBuffer& outBuffers) const;
+        bool createDepthStencil();
     private:
         int16_t mWindowHeight;
         int16_t mWindowWidth;
@@ -89,6 +91,9 @@ namespace renderer
         VkExtent2D mSwapChainExtent;
         std::vector<VkImage> mImages;
         std::vector<VkImageView> mImageViews;
+        Image* mDepthStencil;
+        VkImageView mDepthStencilView;
+        VkFormat mDepthStencilFormat;
 
         FrameContext* mFrameContext;
         std::vector<VkSemaphore> mRenderFinishedSemaphores;

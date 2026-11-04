@@ -8,11 +8,13 @@ namespace renderer
     public:
         static bool AllocateMemory(const VkDevice& device, uint32_t allocSize, uint32_t memoryType, VkDeviceMemory& outMemory);
         static void GetMemoryType(const VkMemoryRequirements& memoryRequirements, uint32_t flag, uint32_t& outMemoryType);
+        static VkFormat GetSupportImageFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags featureFlags);
 
         static uint32_t AlignedSize(uint32_t value, uint32_t alignment);
 
         static void SetFrameInFlightCount(uint32_t inFlightCount);
         static void SetQueueFamilyIndices(uint32_t graphics, uint32_t transfer);
+        static void SetPhysicalDevice(VkPhysicalDevice physicalDevice);
         static void SetPhysicalDeviceMemoryProperties(const VkPhysicalDeviceMemoryProperties& properties);
         static void SetSupportStagingUpload(bool bEnable);
 
@@ -30,5 +32,6 @@ namespace renderer
         static uint32_t sTransferQueueFamilyIndex;
         static VkPhysicalDeviceMemoryProperties sDeviceMemoryProperties;
         static bool sbSupportStagingUpload;
+        static VkPhysicalDevice sPhysicalDevice;
     };
 }
