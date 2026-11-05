@@ -2,27 +2,17 @@
 #include <memory>
 #include "../../Util/Macro.h"
 #include "../../Util/Util.h"
-#include "../Resources/BufferManager.h"
 #include "../Resources/Mesh.h"
 
 namespace renderer
 {
     const int8_t* const MeshGenerator::VIRTUAL_ROOT_PATH = reinterpret_cast<const int8_t*>("/AssetData/Generated/");
-    BufferManager* MeshGenerator::sBufferManager = nullptr;
-
-    void MeshGenerator::Initialize(BufferManager* const bufferManager)
-    {
-        ASSERT(bufferManager, "bufferManager is nullptr.");
-        ASSERT(!sBufferManager, "initialize has been invoked twice.");
-        sBufferManager = bufferManager;
-    }
 
 
     // from: https://www.braynzarsoft.net/viewtutorial/q16390-20-cube-mapping-skybox
     // fix: changed cap indices winding to CW for consistency.
     void MeshGenerator::CreateSphere(uint16_t latLines, uint16_t lonLines, Mesh& outMesh)
     {
-        ASSERT(sBufferManager, "MeshGenerator not initialized. (Call the Initialize)");
         ASSERT(latLines > 0, "latLines too small. (line > 0)");
         ASSERT(lonLines > 0, "lonLines too small. (line > 0)");
 
@@ -142,7 +132,6 @@ namespace renderer
 
     void MeshGenerator::CreateGrid(XMFLOAT2 startPoint, uint16_t horizontalLines, uint16_t verticalLines, float gapEachLine, Mesh& outMesh)
     {
-        ASSERT(sBufferManager, "MeshGenerator not initialized. (Call the Initialize)");
         ASSERT(horizontalLines >= 2, "horizontalLines must be 2 or greater. passed(%d)", horizontalLines);
         ASSERT(verticalLines >= 2, "verticalLines must be 2 or greater. passed(%d)", verticalLines);
         ASSERT(gapEachLine >= 1, "gapEachLine must be 1 or greater");
@@ -255,7 +244,6 @@ namespace renderer
 
     void MeshGenerator::CreatePlane(Mesh& outMesh)
     {
-        ASSERT(sBufferManager, "MeshGenerator not initialized. (Call the Initialize)");
 
         constexpr VertexPT vertices[] =
         {
@@ -300,7 +288,6 @@ namespace renderer
 
     void MeshGenerator::CreateScreenPlane(int16_t originX, int16_t originY, int16_t width, int16_t height, Mesh& outMesh)
     {
-        ASSERT(sBufferManager, "MeshGenerator not initialized. (Call the Initialize)");
         ASSERT(width > 0, "width must be > 0");
         ASSERT(height > 0, "height must be > 0");
         ASSERT(originX >= 0, "originX must be >= 0");
