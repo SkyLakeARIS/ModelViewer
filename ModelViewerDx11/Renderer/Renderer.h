@@ -8,7 +8,6 @@ namespace renderer
     class DescriptorAllocator;
     class FrameContext;
     class DescriptorSet;
-    class Buffer;
     class Image;
 
     class Renderer final
@@ -32,8 +31,6 @@ namespace renderer
         ~Renderer();
 
         bool initializeWithVulkan(HWND handleWindow, HINSTANCE handleInstance, int16_t width, int16_t height, const char* const appName);
-        // TODO: 모델 띄운 후, 구조 개선 작업에서 전부 분리할 것들.
-        void PrepareObjects();
         void UpdateScene(std::vector<std::pair<renderer::eCbType, void*>>& uniforms);
         void RenderScene();
         void DrawIndexed(uint32_t indexCount, uint32_t vertexOffset, uint32_t indexOffset);
@@ -54,9 +51,6 @@ namespace renderer
         void BindPipeline(HashID hash) const;
         // pipeline
         bool TryCreateGraphicsPipeline(HashID& outPipelineHash, eShader shader, eVertexFormat vertexFormat, ePrimitiveTopology topology, eRasterType rasterType, eBlendState blendState, eDepthStencilState depthStencilState, eRenderPass renderPass);
-
-        void AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
-        void AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange);
 
         ResourceManager* GetResourceManager() const;
         DescriptorAllocator* GetDescriptorAllocator() const;
@@ -102,9 +96,6 @@ namespace renderer
         ResourceManager* mResourceManager;
         // shader
         DescriptorAllocator* mDescriptorAllocator;
-        // buffer
-        Buffer* mVertexBuffer;
-        Buffer* mIndexBuffer;
         //
         VkCommandBuffer mCommandBufferTransfer;
         VkCommandPool mCommandPoolTransfer;

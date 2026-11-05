@@ -5,6 +5,7 @@
 
 namespace renderer
 {
+    class Buffer;
     class Sampler;
     enum class eSamplerType : uint8_t;
     enum class eShader : uint8_t;
@@ -20,7 +21,9 @@ namespace renderer
 
         bool CreateShaders();
         bool CreateSamplers();
+        bool CreateBuffers();
 
+        void AddBufferData(const void* const pData, uint32_t elementSize, uint32_t count, HashID hash, BufferRange& outRange, bool bVertexData);
         void AddTexture(HashID hash, Texture* const texture);
         void AddPipeline(HashID hash, VkPipeline pipeline);
 
@@ -28,6 +31,7 @@ namespace renderer
         Shader* GetShaderByType(eShader type) const;
         Sampler* GetSamplerByType(eSamplerType type) const;
         VkPipeline TryGetPipeline(HashID hash) const;
+        Buffer* GetBuffer(bool bVertexBuffer) const;
     private:
         VkDevice mDevice;
         // MEMO: 주요 리소스-- Texture, shader, sampler, shaderModule, image, buffer
@@ -38,5 +42,8 @@ namespace renderer
         std::vector<Shader*> mShaders;
         std::unordered_map<eSamplerType, Sampler*> mSamplers;
         std::unordered_map<HashID, VkPipeline> mPipelines;
+        // TODO: 고도화 작업 시 Vtx/Idx 통합 버퍼로 변경
+        Buffer* mVertexBuffer;
+        Buffer* mIndexBuffer;
     };
 }

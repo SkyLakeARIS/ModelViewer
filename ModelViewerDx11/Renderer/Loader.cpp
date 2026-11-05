@@ -55,8 +55,8 @@ namespace renderer
             renderer::SubMesh newSubMesh = {};
 
             newSubMesh.SubMeshHash = util::GetDjb2Hash(subMesh.MeshName, modelHash);
-            mRenderer->AddVertexData(subMesh.VertexBuffer.get(), sizeof(renderer::VertexPTN), subMesh.VertexCount, newSubMesh.SubMeshHash, newSubMesh.VertexRange);
-            mRenderer->AddIndexData(subMesh.IndexBuffer.get(), sizeof(uint32_t), subMesh.IndexCount, newSubMesh.SubMeshHash, newSubMesh.IndexRange);
+            mResourceManager->AddBufferData(subMesh.VertexBuffer.get(), sizeof(renderer::VertexPTN), subMesh.VertexCount, newSubMesh.SubMeshHash, newSubMesh.VertexRange, true);
+            mResourceManager->AddBufferData(subMesh.IndexBuffer.get(), sizeof(uint32_t), subMesh.IndexCount, newSubMesh.SubMeshHash, newSubMesh.IndexRange, false);
 
             for (EnumInt textureType = 0; textureType < static_cast<EnumInt>(renderer::eTextureType::TextureTypeCount); ++textureType)
             {

@@ -193,7 +193,6 @@ bool Application::initializeScene()
 bool Application::initializeManagers()
 {
     mLoader = new renderer::Loader(mImporter, mVkRenderer, mVkRenderer->GetDescriptorAllocator());
-    mVkRenderer->PrepareObjects();
     return true;
 }
 

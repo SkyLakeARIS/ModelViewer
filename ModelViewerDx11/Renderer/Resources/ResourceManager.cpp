@@ -1,6 +1,8 @@
+#include "Buffer.h"
 #include "ResourceManager.h"
 #include "Sampler.h"
 #include "Texture.h"
+#include "../VkHelper.h"
 #include "../../Util/Macro.h"
 #include "../Shader/Shader.h"
 #include "../Shader/ShaderModule.h"
@@ -10,6 +12,8 @@ namespace renderer
 {
     ResourceManager::ResourceManager(VkDevice device)
         : mDevice(device)
+        , mVertexBuffer(nullptr)
+        , mIndexBuffer(nullptr)
     {
     }
 
@@ -44,6 +48,9 @@ namespace renderer
             vkDestroyPipeline(mDevice, pipelineIt.second, nullptr);
         }
         mPipelines.clear();
+
+        delete mVertexBuffer;
+        delete mIndexBuffer;
     }
 
     bool ResourceManager::CreateShaders()
@@ -170,6 +177,34 @@ namespace renderer
         return true;
     }
 
+    bool ResourceManager::CreateBuffers()
+    {
+        const uint32_t graphicsQueueIndex = VkHelper::GetGraphicsQueueFamilyIndex();
+        mVertexBuffer = new Buffer(mDevice);
+        if (mVertexBuffer->Create(771336 * 2, Buffer::eBufferType::Vertex, (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), graphicsQueueIndex) == false)
+        {
+            return false;
+        }
+        mIndexBuffer = new Buffer(mDevice);
+        if (mIndexBuffer->Create(189792 * 2, Buffer::eBufferType::Index, (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), graphicsQueueIndex) == false)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    void ResourceManager::AddBufferData(const void* const pData, uint32_t elementSize, uint32_t count, HashID hash, BufferRange& outRange, bool bVertexData)
+    {
+        if(bVertexData)
+        {
+            mVertexBuffer->AddData(pData, count, elementSize, hash, outRange);
+        }
+        else
+        {
+            mIndexBuffer->AddData(pData, count, elementSize, hash, outRange);
+        }
+    }
+
     void ResourceManager::AddTexture(HashID hash, Texture* const texture)
     {
         ASSERT(mTextures.find(hash) == mTextures.end(), "texture 개체가 중복 삽입 되었습니다. 릭 가능성이 있습니다. hash(%u)", hash);
@@ -215,5 +250,10 @@ namespace renderer
             pipeline = pipelineIt->second;
         }
         return pipeline;
+    }
+
+    Buffer* ResourceManager::GetBuffer(bool bVertexBuffer) const
+    {
+        return bVertexBuffer ? mVertexBuffer : mIndexBuffer;
     }
 }

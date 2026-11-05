@@ -35,8 +35,6 @@ namespace renderer
         , mCurImageIndex(0)
         , mResourceManager(nullptr)
         , mDescriptorAllocator(nullptr)
-        , mVertexBuffer()
-        , mIndexBuffer()
         , mCommandBufferTransfer(nullptr)
         , mCommandPoolTransfer(nullptr)
     {
@@ -51,8 +49,6 @@ namespace renderer
 
         DescriptorLayout::Release();
 
-        delete mVertexBuffer;
-        delete mIndexBuffer;
 
         delete mFrameContext;
         mFrameContext = nullptr;
@@ -180,17 +176,17 @@ namespace renderer
             return false;
         }
 
-        Uploader::Initialize(mDevice, mCommandBufferTransfer, mCommandPoolTransfer, mQueue, mGraphicsQueueIndex);
-        mResourceManager->CreateBuffers();
-        return true;
-    }
+        if(Uploader::Initialize(mDevice, mCommandBufferTransfer, mCommandPoolTransfer, mQueue, mGraphicsQueueIndex) == false)
+        {
+            return false;
+        }
 
-    void Renderer::PrepareObjects()
-    {
-        mVertexBuffer = new Buffer(mDevice);
-        mVertexBuffer->Create(771336 * 2, Buffer::eBufferType::Vertex, (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), mGraphicsQueueIndex);
-        mIndexBuffer = new Buffer(mDevice);
-        mIndexBuffer->Create(189792 * 2, Buffer::eBufferType::Index, (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), mGraphicsQueueIndex);
+        if(mResourceManager->CreateBuffers() == false)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     void Renderer::UpdateScene(std::vector<std::pair<renderer::eCbType, void*>>& uniforms)
@@ -221,11 +217,13 @@ namespace renderer
 
 
         const VkDeviceSize offset = 0;
-        const VkBuffer vertexBuffer = mVertexBuffer->GetBuffer();
-        vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertexBuffer, &offset);
+        const Buffer* vertexBuffer = mResourceManager->GetBuffer(true);
+        const VkBuffer bufferVk = vertexBuffer->GetBuffer();
+        vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &bufferVk, &offset);
 
         const VkIndexType indexType = VK_INDEX_TYPE_UINT32;
-        vkCmdBindIndexBuffer(cmdBuffer, mIndexBuffer->GetBuffer(), 0, indexType);
+        const Buffer* indexBuffer = mResourceManager->GetBuffer(false);
+        vkCmdBindIndexBuffer(cmdBuffer, indexBuffer->GetBuffer(), 0, indexType);
 
         const VkDescriptorSet descriptorSet = mFrameContext->GetCommandDescriptorSetInFlight();
         vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DescriptorLayout::GetPipelineLayout(eLayoutType::Common), 0, 1, &descriptorSet, 0, nullptr);
@@ -426,16 +424,6 @@ namespace renderer
 
         mResourceManager->AddPipeline(outPipelineHash, pipeline);
         return true;
-    }
-
-    void Renderer::AddVertexData(const void* const pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
-    {
-        mVertexBuffer->AddData(pData, count, attribSize, hash, outRange);
-    }
-
-    void Renderer::AddIndexData(void* pData, uint32_t attribSize, uint32_t count, HashID hash, BufferRange& outRange)
-    {
-        mIndexBuffer->AddData(pData, count, attribSize, hash, outRange);
     }
 
     ResourceManager* Renderer::GetResourceManager() const
