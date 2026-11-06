@@ -96,6 +96,7 @@ namespace renderer
             {ePixelShader::PsShadow, "Renderer/Shader/Precompiled/PsShadow.spv"},
             {ePixelShader::PsTexture, "Renderer/Shader/Precompiled/PsTexture.spv"},
             {ePixelShader::PsSkybox, "Renderer/Shader/Precompiled/PsSkybox.spv"},
+            {ePixelShader::PsSkyboxMRT, "Renderer/Shader/Precompiled/PsSkyboxMRT.spv"},
             {ePixelShader::PsColor, "Renderer/Shader/Precompiled/PsColor.spv"},
             {ePixelShader::PsDeferred, "Renderer/Shader/Precompiled/PsDeferred.spv"},
             {ePixelShader::PsTextureMRT, "Renderer/Shader/Precompiled/PsTextureMRT.spv"},

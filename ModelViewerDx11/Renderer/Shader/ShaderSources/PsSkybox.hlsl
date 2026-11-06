@@ -25,23 +25,7 @@ struct PsInput
     float3 WorldPosition : TEXCOORD2;
 };
 
-struct PsOutput
+float4 main(PsInput psInput) : SV_TARGET
 {
-    float4 Color : SV_TARGET0;      // w - reserved
-    float4 Normal : SV_TARGET1;     // w - reserved
-    float4 Position : SV_TARGET2;    // w - Lit On/Off
-    float4 Specular : SV_TARGET3;   // w - Shininess
-    float4 Ambient : SV_TARGET4;     // w - reserved
-};
-
-PsOutput main(PsInput psInput)
-{
-    PsOutput psOutput;
-    psOutput.Color = cubeTexture.Sample(cubeSampler, psInput.TexCoord);
-    const float Reserved = 0.0f;
-    psOutput.Normal = float4(1.0f, 0.0f, 0.0f, Reserved);
-    psOutput.Position = float4(psInput.WorldPosition, IsLitOn);
-    psOutput.Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-    psOutput.Ambient = float4(0.0f, 0.0f, 0.0f, Reserved);
-    return psOutput;
+    return cubeTexture.Sample(cubeSampler, psInput.TexCoord);
 }

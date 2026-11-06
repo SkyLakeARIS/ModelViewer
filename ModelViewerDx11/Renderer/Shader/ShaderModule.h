@@ -30,6 +30,7 @@ namespace renderer
         PsOutline,
         PsShadow,
         PsSkybox,
+        PsSkyboxMRT,
         PsTexture,
         PsColor,
         PsDeferred,

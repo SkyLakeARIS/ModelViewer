@@ -29,6 +29,7 @@ for %%S in (
     PsShadow
     PsTexture
     PsSkybox
+    PsSkyboxMRT
     PsColor
     PsDeferred
     PsTextureMRT
