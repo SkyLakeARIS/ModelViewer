@@ -9,10 +9,12 @@
     b5 : Orthographic Matrix (for screen)
  */
 
-cbuffer CbMatWorld : register(b0)
+struct CbMatrix
 {
-    matrix MatWorld;
-}
+    matrix Matrix;
+};
+
+[[vk::push_constant]] CbMatrix MatWorld;
 
 cbuffer CbMatViewProj : register(b1)
 {
@@ -36,8 +38,8 @@ PsInput main(VsInput vsInput)
     PsInput psInput;
 
     // 깊이 값이 가장 뒤어야 하기 때문에 따로 다시 지정하기 보다 1인 w값을 대신 쓰는 것. w = 1, using w instead of z
-    //output.Position = mul(float4(input.Position.xyz, 1), MatWorld).xyww;
-    psInput.Position = mul(vsInput.Position, MatWorld);
+    //output.Position = mul(float4(input.Position.xyz, 1), MatWorld.Matrix).xyww;
+    psInput.Position = mul(vsInput.Position, MatWorld.Matrix);
     psInput.WorldPosition = psInput.Position.xyz;
     psInput.Position = mul(float4(psInput.Position.xyz, 1.0f), MatViewProj).xyww;
 

@@ -9,10 +9,12 @@
     b5 : Orthographic Matrix (for screen)
  */
 
-cbuffer CbMatWorld : register(b0)
+struct CbMatrix
 {
-    matrix MatWorld;
-}
+    matrix Matrix;
+};
+
+[[vk::push_constant]] CbMatrix MatWorld;
 
 cbuffer CbMatViewProj : register(b1)
 {
@@ -35,7 +37,7 @@ struct PsInput
 PsInput main(VsInput vsInput)
 {
     PsInput psInput;
-    psInput.Position = mul(vsInput.Position, MatWorld);
+    psInput.Position = mul(vsInput.Position, MatWorld.Matrix);
     psInput.WorldNormal = float3(0.0f, 1.0f, 0.0f);
     psInput.WorldPosition = psInput.Position.xyz;
     psInput.Position = mul(psInput.Position, MatViewProj);
