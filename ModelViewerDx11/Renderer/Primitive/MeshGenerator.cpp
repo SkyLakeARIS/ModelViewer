@@ -239,7 +239,7 @@ namespace renderer
         //outMesh.SubMeshes.push_back(std::move(newSubMesh));
     }
 
-    void MeshGenerator::CreatePlane(Mesh& outMesh)
+    void MeshGenerator::CreatePlane(Mesh& outMesh, std::vector<VertexPT>& outVertices, std::vector<uint32_t>& outIndices)
     {
 
         constexpr VertexPT vertices[] =
@@ -271,16 +271,15 @@ namespace renderer
         outMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
         newSubMesh.SubMeshHash = outMesh.MeshHash;
 
-        //const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexFormat);
-        //const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
+        ASSERT(outVertices.empty(), "outVertices 배열은 비어있어야 합니다. size(%d)", outVertices.size());
+        ASSERT(outIndices.empty(), "outIndices 배열은 비어있어야 합니다. size(%d)", outIndices.size());
+        outVertices.resize(std::size(vertices));
+        outIndices.resize(std::size(indices));
 
-        //sBufferManager->AddVertex(reinterpret_cast<const int8_t*>(vertices), sizeof(vertices), newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
-        //sBufferManager->AddIndex(reinterpret_cast<const int8_t*>(indices), sizeof(indices), newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
+        (void)memcpy(outVertices.data(), vertices, sizeof(vertices));
+        (void)memcpy(outIndices.data(), indices, sizeof(indices));
 
-        //outMesh.VertexRange = newSubMesh.VertexRange;
-        //outMesh.IndexRange = newSubMesh.IndexRange;
-
-        //outMesh.SubMeshes.push_back(std::move(newSubMesh));
+        outMesh.SubMeshes.push_back(std::move(newSubMesh));
     }
 
     void MeshGenerator::CreateScreenPlane(int16_t originX, int16_t originY, int16_t width, int16_t height, Mesh& outMesh)

@@ -4,6 +4,7 @@
 
 namespace renderer
 {
+    struct VertexPT;
     struct VertexP;
     struct Mesh;
 
@@ -15,7 +16,7 @@ namespace renderer
 
         static void CreateSphere(uint16_t latLines, uint16_t lonLines, Mesh& outMesh, std::vector<VertexP>& outVertices, std::vector<uint32_t>& outIndices);
         static void CreateGrid(XMFLOAT2 startPoint, uint16_t horizontalLines, uint16_t verticalLines, float gapEachLine, Mesh& outMesh);
-        static void CreatePlane(Mesh& outMesh);
+        static void CreatePlane(Mesh& outMesh, std::vector<VertexPT>& outVertices, std::vector<uint32_t>& outIndices);
         // MEMO: origin is LeftTop of Rect(Screen)
         static void CreateScreenPlane(int16_t originX, int16_t originY, int16_t width, int16_t height, Mesh& outMesh);
         static void CreateNdcPlane(Mesh& outMesh);
