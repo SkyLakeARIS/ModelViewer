@@ -207,7 +207,10 @@ namespace renderer
         }
         case eShader::Skybox:
         {
-            // TODO: eTextureType 정비 후 큐브맵 자리 지정
+            textureSlots =
+            {
+                {7, eTextureType::Cube},
+            };
             break;
         }
         case eShader::BasicWithShadow:

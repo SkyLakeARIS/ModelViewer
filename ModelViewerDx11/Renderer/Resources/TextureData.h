@@ -14,6 +14,7 @@ namespace renderer
         GBufferSpecular,
         GBufferAmbient,
         Default,
+        Cube,
         TextureTypeCount,
     };
 }

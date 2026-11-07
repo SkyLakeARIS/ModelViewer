@@ -1,5 +1,7 @@
 #include "Sky.h"
 #include "../Renderer/Primitive/MeshGenerator.h"
+#include "../Renderer/Renderer.h"
+#include "../Util/Macro.h"
 
 namespace scene
 {
@@ -14,15 +16,24 @@ namespace scene
 
     bool Sky::Initialize(uint32_t latLines, uint32_t lonLines, renderer::TextureManager* const texManager)
     {
-        renderer::MeshGenerator::CreateSphere(latLines, lonLines, mMesh);
-        mMesh.SubMeshes.front().Material.Factors.IsLitOn = static_cast<float>(false);
 
         return true;
     }
 
-    void Sky::SubmitCommand()
+    void Sky::SubmitCommand(renderer::Renderer& renderer)
     {
-
+        renderer::PushConstantBlock pushConstantBlock{ mWorld };
+        renderer.UploadPushConstant(pushConstantBlock, renderer::eShader::Skybox);
+        const auto& descriptorSetIt = mDescriptorSets.find(renderer::eShader::Skybox);
+        auto descriptorSet = descriptorSetIt->second.begin();
+        for (const auto& subMesh : mMesh.SubMeshes)
+        {
+            const auto& pipelineIt = subMesh.Pipelines.find(renderer::eRenderPass::Main);
+            renderer.BindPipeline(pipelineIt->second);
+            renderer.BindDescriptorSet(*descriptorSet);
+            renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);
+            ++descriptorSet;
+        }
     }
 
     void Sky::Update(const XMFLOAT3& cameraPosition)
@@ -34,5 +45,24 @@ namespace scene
 
         mWorld = XMMatrixTranspose(matScale * matTranslate);
 
+    }
+
+    void Sky::SetMesh(const renderer::Mesh& mesh)
+    {
+        mMesh = std::move(mesh);
+    }
+
+    void Sky::SetDescriptorSets(renderer::eShader shaderType, std::vector<renderer::DescriptorSet*>& descriptorSets)
+    {
+        ASSERT(mDescriptorSets.empty(), "Descriptors를 여러 번 초기화 하는 것 같습니다.");
+        auto descriptorSetIt = mDescriptorSets.find(shaderType);
+        if (descriptorSetIt == mDescriptorSets.end())
+        {
+            mDescriptorSets.insert({ shaderType, std::move(descriptorSets) });
+        }
+        else
+        {
+            descriptorSetIt->second.insert(descriptorSetIt->second.end(), descriptorSets.begin(), descriptorSets.end());
+        }
     }
 }

@@ -1,9 +1,11 @@
 #include "Loader.h"
 #include "Renderer.h"
+#include "../Scene/Sky.h"
 #include "../Util/Macro.h"
 #include "../Util/Util.h"
 #include "Importer/ImportedModelData.h"
 #include "Importer/ModelImporter.h"
+#include "Primitive/MeshGenerator.h"
 #include "Resources/Mesh.h"
 #include "Resources/Model.h"
 #include "Resources/ResourceManager.h"
@@ -133,6 +135,79 @@ namespace renderer
         (*outModel)->SetDescriptorSets(eShader::Simple, descriptorSets);
 
 
+        return true;
+    }
+
+    bool Loader::LoadSkybox(scene::Sky* const sky)
+    {
+        std::vector<VertexP> vertices;
+        std::vector<uint32_t> indices;
+        Mesh mesh;
+        renderer::MeshGenerator::CreateSphere(10, 10, mesh, vertices, indices);
+
+        ASSERT(mesh.SubMeshes.empty() == false, "skybox의 subMesh가 비어 있습니다. CreateSphere가 실패한 것 같습니다.");
+        SubMesh& subMesh = mesh.SubMeshes.front();
+        subMesh.Material.Factors.IsLitOn = static_cast<float>(false);
+        mResourceManager->AddBufferData(vertices.data(), sizeof(VertexP), vertices.size(), mesh.MeshHash, subMesh.VertexRange, true);
+        mResourceManager->AddBufferData(indices.data(), sizeof(uint32_t), indices.size(), mesh.MeshHash, subMesh.IndexRange, false);
+
+        const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/skybox.dds");
+        const HashID texHash = util::GetDjb2Hash(filePath);
+        if (mResourceManager->TryGetTexture(texHash) == nullptr)
+        {
+            Texture* texture = new Texture(mRenderer->GetDevice());
+            if (texture->Create(filePath, true) == false)
+            {
+                delete texture;
+                return false;
+            }
+            mResourceManager->AddTexture(texHash, texture);
+            subMesh.Material.TextureHashes[static_cast<EnumInt>(eTextureType::Cube)] = texHash;
+            texture = nullptr;
+        }
+        else
+        {
+            ASSERT(false, "skybox가 두번 생성된 것 같습니다. 한번만 호출되어야 합니다.");
+            subMesh.Material.TextureHashes[static_cast<EnumInt>(eTextureType::Cube)] = texHash;
+        }
+
+        HashID pipelineHash;
+        if (mRenderer->TryCreateGraphicsPipeline(pipelineHash, eShader::Skybox, mesh.VertexFormat, ePrimitiveTopology::Triangles, eRasterType::Skybox, eBlendState::Opaque, eDepthStencilState::DepthOnMaskAllCompLessEqual, eRenderPass::Main) == false)
+        {
+            ASSERT(false, "Skybox 로드 중 pipeline 구성 실패. filePath(%s)", filePath);
+            return false;
+        }
+
+        subMesh.Pipelines.insert({eRenderPass::Main, pipelineHash});
+
+        // MEMO: configure DescriptorSet
+        const eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(eShader::Skybox);
+        std::vector<DescriptorSet*> descriptorSets;
+        DescriptorSet* descriptorSet = nullptr;
+        if (mDescriptorAllocator->AllocateSet(layoutType, &descriptorSet) == false)
+        {
+            ASSERT(false, "Skybox 로드 중 DescriptorSet 구성 실패. filePath(%s)", filePath);
+            return false;
+        }
+        std::vector<DescriptorWriteInfo> writeInfos;
+        DescriptorLayout::GetLayoutWriteInfosByShader(layoutType, eShader::Skybox, writeInfos);
+        for (auto& writeInfo : writeInfos)
+        {
+            // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
+            if (writeInfo.bTexture && writeInfo.TextureType != eTextureType::TextureTypeCount)
+            {
+                writeInfo.Texture = mResourceManager->TryGetTexture(subMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+            }
+            else if (writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
+            {
+                writeInfo.Sampler = mResourceManager->GetSamplerByType(eSamplerType::Linear);
+            }
+        }
+
+        descriptorSet->UpdateDescriptorSet(writeInfos);
+        descriptorSets.push_back(descriptorSet);
+        sky->SetDescriptorSets(eShader::Skybox, descriptorSets);
+        sky->SetMesh(mesh);
         return true;
     }
 }

@@ -187,6 +187,11 @@ bool Application::initializeScene()
     {
         return false;
     }
+    mSkybox = new scene::Sky();
+    if(mLoader->LoadSkybox(mSkybox) == false)
+    {
+        return false;
+    }
     return true;
 }
 
@@ -287,6 +292,7 @@ void Application::updateScene()
     cbViewProj.Matrix = XMMatrixTranspose(mCamera->GetViewProjectionMatrix());
 
     mCharacter->Update();
+    mSkybox->Update(mCamera->GetCameraPositionFloat());
     std::vector<std::pair<renderer::eCbType, void*>> uniforms =
     {
         {renderer::eCbType::CbViewProj, static_cast<void*>(&cbViewProj)},
@@ -298,4 +304,5 @@ void Application::renderScene()
 {
     mVkRenderer->RenderScene();
     mCharacter->Draw(*mVkRenderer);
+    mSkybox->SubmitCommand(*mVkRenderer);
 }
