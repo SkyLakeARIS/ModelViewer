@@ -359,10 +359,13 @@ namespace renderer
         ASSERT(result == VK_SUCCESS, "vkDeviceWaitIdle 실패. result(%u)", result);
     }
 
-    void Renderer::UpdateUniformData(renderer::DescriptorSet* const descriptorSet, const void* const pData, uint32_t count, uint32_t elementSize) const
+    void Renderer::UpdateUniformData(const std::vector<renderer::UniformWriteInfo>& uniformWriteInfos) const
     {
         const uint32_t nowInFlightIndex = mFrameContext->GetNowInFlightIndex();
-        descriptorSet->UpdateUniformData(pData, count, elementSize, nowInFlightIndex);
+        for(const auto& writeInfo : uniformWriteInfos)
+        {
+            writeInfo.TargetSet->UpdateUniformData(writeInfo.Data, 1, writeInfo.Range.Count, nowInFlightIndex);
+        }
     }
 
     void Renderer::UploadPushConstant(const PushConstantBlock& dataBlock, eShader shaderType) const

@@ -4,6 +4,7 @@
 
 namespace renderer
 {
+    struct UniformWriteInfo;
     class ResourceManager;
     class DescriptorAllocator;
     class FrameContext;
@@ -46,7 +47,7 @@ namespace renderer
 
         void WaitForDevice() const;
 
-        void UpdateUniformData(renderer::DescriptorSet* const descriptorSet, const void* const pData, uint32_t count, uint32_t elementSize) const;
+        void UpdateUniformData(const std::vector<renderer::UniformWriteInfo>& uniformWriteInfos) const;
         void UploadPushConstant(const PushConstantBlock& dataBlock, eShader shaderType) const;
         void BindDescriptorSet(const DescriptorSet* const descriptorSet);
         void BindPipeline(HashID hash) const;

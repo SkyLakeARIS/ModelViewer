@@ -2,14 +2,12 @@
 #include "../GfxPrerequisites.h"
 #include "ShaderType.h"
 #include "../../Util/Type.h"
+#include "../Resources/VertexType.h"
 
 namespace renderer
 {
     struct DescriptorWriteInfo;
-}
-
-namespace renderer
-{
+    class DescriptorSet;
     enum class eTextureType : uint8_t;
     enum class eLayoutType : uint8_t;
     class Sampler;
@@ -28,6 +26,13 @@ namespace renderer
         eTextureType TextureType;
         Texture* Texture;
         Sampler* Sampler;
+    };
+
+    struct UniformWriteInfo
+    {
+        DescriptorSet* TargetSet;
+        void* Data;
+        BufferRange Range;
     };
 
     class DescriptorSet
