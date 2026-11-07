@@ -127,7 +127,7 @@ namespace renderer
         outMesh.SubMeshes.push_back(std::move(newSubMesh));
     }
 
-    void MeshGenerator::CreateGrid(XMFLOAT2 startPoint, uint16_t horizontalLines, uint16_t verticalLines, float gapEachLine, Mesh& outMesh)
+    void MeshGenerator::CreateGrid(XMFLOAT2 startPoint, uint16_t horizontalLines, uint16_t verticalLines, float gapEachLine, Mesh& outMesh, std::vector<VertexPTN>& outVertices, std::vector<uint32_t>& outIndices)
     {
         ASSERT(horizontalLines >= 2, "horizontalLines must be 2 or greater. passed(%d)", horizontalLines);
         ASSERT(verticalLines >= 2, "verticalLines must be 2 or greater. passed(%d)", verticalLines);
@@ -226,17 +226,22 @@ namespace renderer
         newSubMesh.SubMeshHash = outMesh.MeshHash;
 
 
-        //sBufferManager->AddVertex(reinterpret_cast<int8_t*>(vertices.get()), strideVertex * numVertices, newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
+        (void)memcpy(outMesh.MeshName, virtualFilePath, pathLength + 1);
+        (void)memcpy(newSubMesh.SubMeshName, virtualFilePath, pathLength + 1);
+        outMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
+        newSubMesh.SubMeshHash = outMesh.MeshHash;
 
-        //const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
-        //sBufferManager->AddIndex(reinterpret_cast<int8_t*>(indices.get()), strideIndex * numIndices, newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
 
-        //outMesh.VertexRange = newSubMesh.VertexRange;
-        //outMesh.IndexRange = newSubMesh.IndexRange;
+        ASSERT(outVertices.empty(), "outVertices 배열은 비어있어야 합니다. size(%d)", outVertices.size());
+        ASSERT(outIndices.empty(), "outIndices 배열은 비어있어야 합니다. size(%d)", outIndices.size());
 
-        //newSubMesh.Material.Factors.IsLitOn = static_cast<float>(true);
+        outVertices.resize(numVertices);
+        (void)memcpy(outVertices.data(), vertices.get(), GetVertexStrideSize(outMesh.VertexFormat) * numVertices);
 
-        //outMesh.SubMeshes.push_back(std::move(newSubMesh));
+        outIndices.resize(numIndices);
+        (void)memcpy(outIndices.data(), indices.get(), sizeof(uint32_t) * numIndices);
+
+        outMesh.SubMeshes.push_back(std::move(newSubMesh));
     }
 
     void MeshGenerator::CreatePlane(Mesh& outMesh, std::vector<VertexPT>& outVertices, std::vector<uint32_t>& outIndices)
