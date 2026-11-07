@@ -9,8 +9,6 @@ namespace renderer
 
 namespace scene
 {
-    class Camera;
-
     class Billboard
     {
     public:
@@ -21,7 +19,6 @@ namespace scene
 
         void UpdateScaleMatrix(const XMMATRIX& viewMatrix);
 
-        void SetTexture(HashID texHash, int16_t texSerial);
         void SetPosition(const XMFLOAT3& position);
 
         void SetMesh(const renderer::Mesh& mesh);

@@ -1,6 +1,5 @@
 #include "Billboard.h"
 #include "../Renderer/Renderer.h"
-#include "../Renderer/Primitive/MeshGenerator.h"
 #include "../Util/Macro.h"
 
 
@@ -45,12 +44,6 @@ namespace scene
 
         XMVECTOR determinant;
         mMatWorld = XMMatrixInverse(&determinant, mMatWorld);
-    }
-
-    void Billboard::SetTexture(HashID texHash, int16_t texSerial)
-    {
-        mMesh.SubMeshes.front().Material.TextureHashes[static_cast<int8_t>(renderer::eTextureType::Diffuse)] = texHash;
-        mMesh.SubMeshes.front().Material.TextureSerials[static_cast<int8_t>(renderer::eTextureType::Diffuse)] = texSerial;
     }
 
     void Billboard::SetPosition(const XMFLOAT3& position)

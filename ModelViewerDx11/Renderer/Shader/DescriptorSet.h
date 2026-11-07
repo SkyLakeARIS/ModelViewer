@@ -40,7 +40,6 @@ namespace renderer
         void UpdateDescriptorSet(const std::vector<DescriptorWriteInfo>& writeInfos);
         void UpdateUniformData(const void* const pData, uint32_t count, uint32_t elementSize, uint32_t inFlightIndex);
         VkDescriptorSet GetDescriptorSet(uint32_t inFlightIndex) const;
-        void GetLayoutWriteInfos(eShader shaderType, std::vector<TextureWriteInfo>& outTextureWriteInfos);
         eLayoutType GetLayoutType() const;
     private:
         VkDevice mDevice;
