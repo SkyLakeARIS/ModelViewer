@@ -19,23 +19,7 @@ struct PsInput
     float3 WorldPosition : TEXCOORD2;
 };
 
-struct PsOutput
+float4 main(PsInput psInput) : SV_TARGET
 {
-    float4 Color : SV_TARGET0;      // w - reserved
-    float4 Normal : SV_TARGET1;     // w - reserved
-    float4 Position : SV_TARGET2;    // w - Lit On/Off
-    float4 Specular : SV_TARGET3;   // w - Shininess
-    float4 Ambient : SV_TARGET4;     // w - reserved
-};
-
-PsOutput main(PsInput psInput)
-{
-    PsOutput psOutput;
-    const float Reserved = 0.0f;
-    psOutput.Color = float4(Diffuse, Reserved);
-    psOutput.Normal = float4(psInput.WorldNormal, Reserved);
-    psOutput.Position = float4(psInput.WorldPosition, IsLitOn);
-    psOutput.Specular = float4(Specular, Shininess);
-    psOutput.Ambient = float4(Ambient, Reserved);
-    return psOutput;
+    return float4(Diffuse, Opacity);
 }

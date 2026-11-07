@@ -33,6 +33,7 @@ namespace renderer
         PsSkyboxMRT,
         PsTexture,
         PsColor,
+        PsColorMRT,
         PsDeferred,
         PsTextureMRT,
         PsSimple,
