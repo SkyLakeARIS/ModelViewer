@@ -187,6 +187,8 @@ bool Application::initializeScene()
     {
         return false;
     }
+    mCamera->ChangeFocus(mCharacter->GetCenterPoint(0));
+
     mSkybox = new scene::Sky();
     if(mLoader->LoadSkybox(mSkybox) == false)
     {
