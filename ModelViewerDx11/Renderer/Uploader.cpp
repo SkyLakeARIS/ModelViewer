@@ -55,10 +55,6 @@ namespace renderer
         }
     }
 
-    void Uploader::UploadImage(const void* const pData, uint32_t sizeInBytes, uint32_t offset, VkDeviceMemory memory, uint32_t memProperties)
-    {
-    }
-
     void Uploader::CopyBufferToBuffer(VkBuffer srcBuf, VkBuffer dstBuf, uint32_t copySize)
     {
         VkCommandBufferBeginInfo commandBufferBeginInfo{};

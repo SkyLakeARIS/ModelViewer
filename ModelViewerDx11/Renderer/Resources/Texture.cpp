@@ -1,5 +1,4 @@
 #include <memory>
-
 #include "Buffer.h"
 #include "Image.h"
 #include "Texture.h"
@@ -7,11 +6,9 @@
 #include "../VkHelper.h"
 #include "../../Util/Define.h"
 #include "../../Util/Macro.h"
-#include "../../Util/Util.h"
 
 namespace renderer
 {
-    class VkHelper;
 
     Texture::Texture(const VkDevice& device)
         : mDevice(device)
@@ -47,7 +44,6 @@ namespace renderer
             return false;
         }
 
-        const uint32_t elementSize = rawImage.GetPixelsSize() / (rawImage.GetMetadata().height * rawImage.GetMetadata().width);
         stagingBuffer->AddDataOffset(rawImage.GetPixels(), rawImage.GetPixelsSize(), 1, 0);
         //
         // MEMO: 이미지 및 메모리 생성

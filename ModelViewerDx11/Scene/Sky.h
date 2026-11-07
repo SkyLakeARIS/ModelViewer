@@ -5,7 +5,6 @@ namespace renderer
 {
     class Renderer;
     class DescriptorSet;
-    class TextureManager;
 }
 
 namespace scene
@@ -17,8 +16,6 @@ namespace scene
 
         Sky();
         ~Sky();
-
-        bool Initialize(uint32_t latLines, uint32_t lonLines, renderer::TextureManager* const texManager);
 
         void SubmitCommand(renderer::Renderer& renderer);
         void Update(const XMFLOAT3& cameraPosition);

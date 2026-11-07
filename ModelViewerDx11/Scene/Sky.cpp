@@ -1,5 +1,4 @@
 #include "Sky.h"
-#include "../Renderer/Primitive/MeshGenerator.h"
 #include "../Renderer/Renderer.h"
 #include "../Util/Macro.h"
 
@@ -13,12 +12,6 @@ namespace scene
 
     Sky::~Sky()
     {}
-
-    bool Sky::Initialize(uint32_t latLines, uint32_t lonLines, renderer::TextureManager* const texManager)
-    {
-
-        return true;
-    }
 
     void Sky::SubmitCommand(renderer::Renderer& renderer)
     {

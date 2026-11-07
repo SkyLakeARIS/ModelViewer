@@ -11,7 +11,6 @@ namespace renderer
 
         // memProperties에 따라서 변경.
         static void UploadBuffer(const void* const pData, uint32_t sizeInBytes, uint32_t offset, uint32_t memProperties, VkDeviceMemory dstMemory, VkBuffer dstBuffer);
-        static void UploadImage(const void* const pData, uint32_t sizeInBytes, uint32_t offset, VkDeviceMemory memory, uint32_t memProperties);
 
         static void CopyBufferToBuffer(VkBuffer srcBuf, VkBuffer dstBuf, uint32_t copySize);
         static void CopyBufferToImage(VkBuffer srcBuf, VkImage dstImage, const std::vector<VkBufferImageCopy2>& regions);
