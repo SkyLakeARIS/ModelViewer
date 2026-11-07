@@ -137,7 +137,7 @@ namespace renderer
             {eShader::Skybox, vsHashes[static_cast<uint8_t>(eVertexShader::VsSkybox)], psHashes[static_cast<uint8_t>(ePixelShader::PsSkybox)]},
             { eShader::Shadow, vsHashes[static_cast<uint8_t>(eVertexShader::VsShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsShadow)]},
             {eShader::BasicWithShadow,  vsHashes[static_cast<uint8_t>(eVertexShader::VsBasicWithShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsBasicWithShadow)]},
-            {eShader::Texture,  vsHashes[static_cast<uint8_t>(eVertexShader::VsTexture)], psHashes[static_cast<uint8_t>(ePixelShader::PsTextureMRT)]},
+            {eShader::Texture,  vsHashes[static_cast<uint8_t>(eVertexShader::VsTexture)], psHashes[static_cast<uint8_t>(ePixelShader::PsTexture)]},
             {eShader::Color,  vsHashes[static_cast<uint8_t>(eVertexShader::VsSimple)], psHashes[static_cast<uint8_t>(ePixelShader::PsColor)]},
             {eShader::DebugHUD,  vsHashes[static_cast<uint8_t>(eVertexShader::VsScreen)], psHashes[static_cast<uint8_t>(ePixelShader::PsTexture)]},
             {eShader::Deferred,  vsHashes[static_cast<uint8_t>(eVertexShader::VsDeferred)], psHashes[static_cast<uint8_t>(ePixelShader::PsDeferred)]},

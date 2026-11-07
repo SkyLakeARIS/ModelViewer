@@ -1,5 +1,6 @@
 #include "Loader.h"
 #include "Renderer.h"
+#include "../Scene/Billboard.h"
 #include "../Scene/Sky.h"
 #include "../Util/Macro.h"
 #include "../Util/Util.h"
@@ -153,23 +154,12 @@ namespace renderer
 
         const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/skybox.dds");
         const HashID texHash = util::GetDjb2Hash(filePath);
-        if (mResourceManager->TryGetTexture(texHash) == nullptr)
+        if (loadTexture(filePath, texHash, true) == false)
         {
-            Texture* texture = new Texture(mRenderer->GetDevice());
-            if (texture->Create(filePath, true) == false)
-            {
-                delete texture;
-                return false;
-            }
-            mResourceManager->AddTexture(texHash, texture);
-            subMesh.Material.TextureHashes[static_cast<EnumInt>(eTextureType::Cube)] = texHash;
-            texture = nullptr;
+            ASSERT(false, "Skybox 로드 중 텍스처 생성 실패. filePath(%s)", filePath);
+            return false;
         }
-        else
-        {
-            ASSERT(false, "skybox가 두번 생성된 것 같습니다. 한번만 호출되어야 합니다.");
-            subMesh.Material.TextureHashes[static_cast<EnumInt>(eTextureType::Cube)] = texHash;
-        }
+        subMesh.Material.TextureHashes[static_cast<EnumInt>(eTextureType::Cube)] = texHash;
 
         HashID pipelineHash;
         if (mRenderer->TryCreateGraphicsPipeline(pipelineHash, eShader::Skybox, mesh.VertexFormat, ePrimitiveTopology::Triangles, eRasterType::Skybox, eBlendState::Opaque, eDepthStencilState::DepthOnMaskAllCompLessEqual, eRenderPass::Main) == false)
@@ -208,6 +198,91 @@ namespace renderer
         descriptorSets.push_back(descriptorSet);
         sky->SetDescriptorSets(eShader::Skybox, descriptorSets);
         sky->SetMesh(mesh);
+        return true;
+    }
+
+    bool Loader::LoadBillboard(scene::Billboard* const billboard)
+    {
+        std::vector<VertexPT> vertices;
+        std::vector<uint32_t> indices;
+        Mesh mesh;
+        renderer::MeshGenerator::CreatePlane(mesh, vertices, indices);
+
+        ASSERT(mesh.SubMeshes.empty() == false, "billboard의 subMesh가 비어 있습니다. CreateSphere가 실패한 것 같습니다.");
+        SubMesh& subMesh = mesh.SubMeshes.front();
+        subMesh.Material.Factors.IsLitOn = static_cast<float>(false);
+        mResourceManager->AddBufferData(vertices.data(), sizeof(VertexPT), vertices.size(), mesh.MeshHash, subMesh.VertexRange, true);
+        mResourceManager->AddBufferData(indices.data(), sizeof(uint32_t), indices.size(), mesh.MeshHash, subMesh.IndexRange, false);
+
+        const int8_t* const filePath = reinterpret_cast<const int8_t*>("./AssetData/textures/lightIcon.png");
+        const HashID texHash = util::GetDjb2Hash(filePath);
+        if (loadTexture(filePath, texHash, false) == false)
+        {
+            ASSERT(false, "billboard 로드 중 텍스처 생성 실패. filePath(%s)", filePath);
+            return false;
+        }
+        subMesh.Material.TextureHashes[static_cast<EnumInt>(eTextureType::Diffuse)] = texHash;
+
+
+        HashID pipelineHash;
+        if (mRenderer->TryCreateGraphicsPipeline(pipelineHash, eShader::Texture, mesh.VertexFormat, ePrimitiveTopology::TriangleStrip, eRasterType::Basic, eBlendState::AlphaBlend, eDepthStencilState::DepthOnMaskAllCompLessEqual, eRenderPass::Main) == false)
+        {
+            ASSERT(false, "billboard 로드 중 pipeline 구성 실패. filePath(%s)", filePath);
+            return false;
+        }
+
+        subMesh.Pipelines.insert({ eRenderPass::Main, pipelineHash });
+
+
+        // MEMO: configure DescriptorSet
+        const eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(eShader::Texture);
+        std::vector<DescriptorSet*> descriptorSets;
+        DescriptorSet* descriptorSet = nullptr;
+        if (mDescriptorAllocator->AllocateSet(layoutType, &descriptorSet) == false)
+        {
+            ASSERT(false, "billboard 로드 중 DescriptorSet 구성 실패. filePath(%s)", filePath);
+            return false;
+        }
+        std::vector<DescriptorWriteInfo> writeInfos;
+        DescriptorLayout::GetLayoutWriteInfosByShader(layoutType, eShader::Texture, writeInfos);
+        for (auto& writeInfo : writeInfos)
+        {
+            // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
+            if (writeInfo.bTexture && writeInfo.TextureType != eTextureType::TextureTypeCount)
+            {
+                writeInfo.Texture = mResourceManager->TryGetTexture(subMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+            }
+            else if (writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
+            {
+                writeInfo.Sampler = mResourceManager->GetSamplerByType(eSamplerType::Linear);
+            }
+        }
+
+        descriptorSet->UpdateDescriptorSet(writeInfos);
+        descriptorSets.push_back(descriptorSet);
+        billboard->SetDescriptorSets(eShader::Texture, descriptorSets);
+        billboard->SetMesh(mesh);
+        return true;
+    }
+
+    bool Loader::loadTexture(const int8_t* const filePath, HashID texHash, bool bIsDDS) const
+    {
+        if (mResourceManager->TryGetTexture(texHash) == nullptr)
+        {
+            Texture* texture = new Texture(mRenderer->GetDevice());
+            if (texture->Create(filePath, bIsDDS) == false)
+            {
+                delete texture;
+                return false;
+            }
+            mResourceManager->AddTexture(texHash, texture);
+            texture = nullptr;
+        }
+        else
+        {
+            // TODO: 이 assert는 굳이 유지할 필요 없으므로 고도화 작업에서 제거 예정
+            ASSERT(false, "텍스처가 두번 생성된 것 같습니다. 한번만 호출되어야 합니다. texHash(%u), filePath(%s)", texHash, filePath);
+        }
         return true;
     }
 }

@@ -192,6 +192,12 @@ bool Application::initializeScene()
     {
         return false;
     }
+
+    mLightIcon = new scene::Billboard();
+    if (mLoader->LoadBillboard(mLightIcon) == false)
+    {
+        return false;
+    }
     return true;
 }
 
@@ -298,6 +304,7 @@ void Application::updateScene()
         {renderer::eCbType::CbViewProj, static_cast<void*>(&cbViewProj)},
     };
     mVkRenderer->UpdateScene(uniforms);
+    mLightIcon->UpdateScaleMatrix(mCamera->GetViewMatrix());
 }
 
 void Application::renderScene()
@@ -305,4 +312,5 @@ void Application::renderScene()
     mVkRenderer->RenderScene();
     mCharacter->Draw(*mVkRenderer);
     mSkybox->SubmitCommand(*mVkRenderer);
+    mLightIcon->SubmitCommand(*mVkRenderer);
 }
