@@ -195,11 +195,22 @@ bool Application::initializeScene()
         return false;
     }
 
+    const XMFLOAT3 lightPosition = XMFLOAT3(30.0f, 20.0f, 50.0f);
+    const XMFLOAT3 lightLookAt = mCharacter->GetCenterPoint(0);
+    const XMVECTOR vLightPosition = XMLoadFloat3(&lightPosition);
+    const XMVECTOR vLightLookAt = XMLoadFloat3(&lightLookAt);
+    XMFLOAT3 lightDir;
+    XMStoreFloat3(&lightDir, vLightLookAt - vLightPosition);
+    mLight = new scene::Light(lightPosition, lightDir, XMFLOAT3(1.0f, 1.0f, 1.0f), 0.1f, 500.0f);
+    mLight->Update();
+
     mLightIcon = new scene::Billboard();
     if (mLoader->LoadBillboard(mLightIcon) == false)
     {
         return false;
     }
+
+    mLightIcon->SetPosition(lightPosition);
     return true;
 }
 
