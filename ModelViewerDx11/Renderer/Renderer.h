@@ -46,6 +46,7 @@ namespace renderer
 
         void WaitForDevice() const;
 
+        void UpdateUniformData(renderer::DescriptorSet* const descriptorSet, const void* const pData, uint32_t count, uint32_t elementSize) const;
         void UploadPushConstant(const PushConstantBlock& dataBlock, eShader shaderType) const;
         void BindDescriptorSet(const DescriptorSet* const descriptorSet);
         void BindPipeline(HashID hash) const;

@@ -359,6 +359,12 @@ namespace renderer
         ASSERT(result == VK_SUCCESS, "vkDeviceWaitIdle 실패. result(%u)", result);
     }
 
+    void Renderer::UpdateUniformData(renderer::DescriptorSet* const descriptorSet, const void* const pData, uint32_t count, uint32_t elementSize) const
+    {
+        const uint32_t nowInFlightIndex = mFrameContext->GetNowInFlightIndex();
+        descriptorSet->UpdateUniformData(pData, count, elementSize, nowInFlightIndex);
+    }
+
     void Renderer::UploadPushConstant(const PushConstantBlock& dataBlock, eShader shaderType) const
     {
         VkCommandBuffer cmdBuf = mFrameContext->GetCommandBufferInFlight();
