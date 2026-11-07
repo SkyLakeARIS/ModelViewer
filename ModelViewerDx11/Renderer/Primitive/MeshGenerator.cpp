@@ -11,7 +11,7 @@ namespace renderer
 
     // from: https://www.braynzarsoft.net/viewtutorial/q16390-20-cube-mapping-skybox
     // fix: changed cap indices winding to CW for consistency.
-    void MeshGenerator::CreateSphere(uint16_t latLines, uint16_t lonLines, Mesh& outMesh)
+    void MeshGenerator::CreateSphere(uint16_t latLines, uint16_t lonLines, Mesh& outMesh, std::vector<VertexP>& outVertices, std::vector<uint32_t>& outIndices)
     {
         ASSERT(latLines > 0, "latLines too small. (line > 0)");
         ASSERT(lonLines > 0, "lonLines too small. (line > 0)");
@@ -118,16 +118,13 @@ namespace renderer
         outMesh.MeshHash = util::GetDjb2Hash(virtualFilePath);
         newSubMesh.SubMeshHash = outMesh.MeshHash;
 
-        //const int16_t strideVertex = GetVertexStrideSize(outMesh.VertexFormat);
-        //const int16_t strideIndex = sBufferManager->GetIndexStrideSize();
+        outVertices.resize(vertices.size());
+        (void)memcpy(outVertices.data(), vertices.data(), GetVertexStrideSize(outMesh.VertexFormat) * vertices.size());
 
-        //sBufferManager->AddVertex(reinterpret_cast<int8_t*>(vertices.data()), strideVertex * vertices.size(), newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
-        //sBufferManager->AddIndex(reinterpret_cast<int8_t*>(indices.data()), strideIndex * indices.size(), newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
+        outIndices.resize(indices.size());
+        (void)memcpy(outIndices.data(), indices.data(), sizeof(uint32_t) * indices.size());
 
-        //outMesh.VertexRange = newSubMesh.VertexRange;
-        //outMesh.IndexRange = newSubMesh.IndexRange;
-
-        //outMesh.SubMeshes.push_back(std::move(newSubMesh));
+        outMesh.SubMeshes.push_back(std::move(newSubMesh));
     }
 
     void MeshGenerator::CreateGrid(XMFLOAT2 startPoint, uint16_t horizontalLines, uint16_t verticalLines, float gapEachLine, Mesh& outMesh)

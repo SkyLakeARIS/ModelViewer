@@ -1,8 +1,10 @@
 #pragma once
+#include <vector>
 #include "../../Core/MathPrerequisites.h"
 
 namespace renderer
 {
+    struct VertexP;
     struct Mesh;
 
     class MeshGenerator
@@ -11,7 +13,7 @@ namespace renderer
         MeshGenerator() = delete;
         ~MeshGenerator() = delete;
 
-        static void CreateSphere(uint16_t latLines, uint16_t lonLines, Mesh& outMesh);
+        static void CreateSphere(uint16_t latLines, uint16_t lonLines, Mesh& outMesh, std::vector<VertexP>& outVertices, std::vector<uint32_t>& outIndices);
         static void CreateGrid(XMFLOAT2 startPoint, uint16_t horizontalLines, uint16_t verticalLines, float gapEachLine, Mesh& outMesh);
         static void CreatePlane(Mesh& outMesh);
         // MEMO: origin is LeftTop of Rect(Screen)
