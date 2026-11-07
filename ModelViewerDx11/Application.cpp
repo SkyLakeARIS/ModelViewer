@@ -211,6 +211,12 @@ bool Application::initializeScene()
     }
 
     mLightIcon->SetPosition(lightPosition);
+
+    mFloor = new scene::Floor();
+    if (mLoader->LoadFloor(mFloor) == false)
+    {
+        return false;
+    }
     return true;
 }
 
@@ -326,4 +332,5 @@ void Application::renderScene()
     mCharacter->Draw(*mVkRenderer);
     mSkybox->SubmitCommand(*mVkRenderer);
     mLightIcon->SubmitCommand(*mVkRenderer);
+    mFloor->SubmitCommand(*mVkRenderer);
 }

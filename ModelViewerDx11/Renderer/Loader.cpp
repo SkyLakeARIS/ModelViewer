@@ -1,6 +1,7 @@
 #include "Loader.h"
 #include "Renderer.h"
 #include "../Scene/Billboard.h"
+#include "../Scene/Floor.h"
 #include "../Scene/Sky.h"
 #include "../Util/Macro.h"
 #include "../Util/Util.h"
@@ -262,6 +263,65 @@ namespace renderer
         descriptorSets.push_back(descriptorSet);
         billboard->SetDescriptorSets(eShader::Texture, descriptorSets);
         billboard->SetMesh(mesh);
+        return true;
+    }
+
+    bool Loader::LoadFloor(scene::Floor* floor)
+    {
+        std::vector<VertexPTN> vertices;
+        std::vector<uint32_t> indices;
+        Mesh mesh;
+        renderer::MeshGenerator::CreateGrid(XMFLOAT2(0.0f, 0.0f), 10, 10, 2, mesh, vertices, indices);
+
+        ASSERT(mesh.SubMeshes.empty() == false, "floor의 subMesh가 비어 있습니다. CreateSphere가 실패한 것 같습니다.");
+        SubMesh& subMesh = mesh.SubMeshes.front();
+        subMesh.Material.Factors.Diffuse = XMFLOAT3(0.80f, 0.72f, 0.56f);
+        subMesh.Material.Factors.Opacity = 1.0f;
+        subMesh.Material.Factors.IsLitOn = static_cast<float>(true);
+        subMesh.Material.Factors.Ambient = XMFLOAT3(0.2f, 0.2f, 0.2f);
+        subMesh.Material.Factors.Shininess = 8;
+        subMesh.Material.Factors.Specular = XMFLOAT3(0.16f, 0.144f, 0.112f);
+
+        mResourceManager->AddBufferData(vertices.data(), sizeof(VertexPTN), vertices.size(), mesh.MeshHash, subMesh.VertexRange, true);
+        mResourceManager->AddBufferData(indices.data(), sizeof(uint32_t), indices.size(), mesh.MeshHash, subMesh.IndexRange, false);
+
+        HashID pipelineHash;
+        if (mRenderer->TryCreateGraphicsPipeline(pipelineHash, eShader::Color, mesh.VertexFormat, ePrimitiveTopology::Triangles, eRasterType::Basic, eBlendState::Opaque, eDepthStencilState::DepthOnMaskAllCompLessEqual, eRenderPass::Main) == false)
+        {
+            ASSERT(false, "floor 로드 중 pipeline 구성 실패.");
+            return false;
+        }
+
+        subMesh.Pipelines.insert({ eRenderPass::Main, pipelineHash });
+
+        // MEMO: configure DescriptorSet
+        const eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(eShader::Color);
+        std::vector<DescriptorSet*> descriptorSets;
+        DescriptorSet* descriptorSet = nullptr;
+        if (mDescriptorAllocator->AllocateSet(layoutType, &descriptorSet) == false)
+        {
+            ASSERT(false, "billboard 로드 중 DescriptorSet 구성 실패.", );
+            return false;
+        }
+        std::vector<DescriptorWriteInfo> writeInfos;
+        DescriptorLayout::GetLayoutWriteInfosByShader(layoutType, eShader::Color, writeInfos);
+        for (auto& writeInfo : writeInfos)
+        {
+            // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
+            if (writeInfo.bTexture && writeInfo.TextureType != eTextureType::TextureTypeCount)
+            {
+                writeInfo.Texture = mResourceManager->TryGetTexture(subMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+            }
+            else if (writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
+            {
+                writeInfo.Sampler = mResourceManager->GetSamplerByType(eSamplerType::Linear);
+            }
+        }
+
+        descriptorSet->UpdateDescriptorSet(writeInfos);
+        descriptorSets.push_back(descriptorSet);
+        floor->SetDescriptorSets(eShader::Color, descriptorSets);
+        floor->SetMesh(mesh);
         return true;
     }
 
