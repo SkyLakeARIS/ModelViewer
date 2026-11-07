@@ -7,6 +7,7 @@ namespace renderer
         : mDevice(device)
         , mImage(nullptr)
         , mDeviceMemory(nullptr)
+        , mImageCount(0)
     {
     }
 
@@ -16,14 +17,17 @@ namespace renderer
         vkDestroyImage(mDevice, mImage, nullptr);
     }
 
-    void Image::Create(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, VkImageType type, VkFormat format, VkMemoryPropertyFlagBits memoryProperty)
+    void Image::Create(VkImageLayout layout, uint32_t queueFamilyIndex, VkImageUsageFlags usage, VkExtent3D imageExtent, uint32_t imageCount, VkImageType type, VkFormat format, VkImageCreateFlags createFlags, VkMemoryPropertyFlagBits memoryProperty)
     {
+        mImageCount = imageCount;
+
         VkImageCreateInfo imageCreateInfo{};
         imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageCreateInfo.flags = createFlags;
         imageCreateInfo.extent = imageExtent;
         imageCreateInfo.format = format;
         imageCreateInfo.mipLevels = 1;
-        imageCreateInfo.arrayLayers = 1;
+        imageCreateInfo.arrayLayers = imageCount;
         imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageCreateInfo.imageType = type;
         imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;

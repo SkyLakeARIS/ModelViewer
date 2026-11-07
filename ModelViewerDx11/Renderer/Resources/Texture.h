@@ -18,7 +18,7 @@ namespace renderer
 
         VkImageView GetImageView() const;
     private:
-        bool loadImage(const int8_t* const filePath, DirectX::ScratchImage& outImage);
+        bool loadImage(const int8_t* const filePath, DirectX::ScratchImage& outImage, bool bIsDDS);
     private:
         VkDevice mDevice;
         Image* mImage;

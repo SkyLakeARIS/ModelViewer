@@ -97,7 +97,7 @@ namespace renderer
         ASSERT(result == VK_SUCCESS, "Uploader Fence 대기 실패");
     }
 
-    void Uploader::CopyBufferToImage(VkBuffer srcBuf, VkImage dstImage, VkBufferImageCopy2& region)
+    void Uploader::CopyBufferToImage(VkBuffer srcBuf, VkImage dstImage, const std::vector<VkBufferImageCopy2>& regions)
     {
         VkCommandBufferBeginInfo commandBufferBeginInfo{};
         commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -110,8 +110,8 @@ namespace renderer
         copyBufferToImageInfo2.srcBuffer = srcBuf;
         copyBufferToImageInfo2.dstImage = dstImage;
         copyBufferToImageInfo2.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        copyBufferToImageInfo2.pRegions = &region;
-        copyBufferToImageInfo2.regionCount = 1;
+        copyBufferToImageInfo2.pRegions = regions.data();
+        copyBufferToImageInfo2.regionCount = regions.size();
 
         vkCmdCopyBufferToImage2(sCommandBuffer, &copyBufferToImageInfo2);
 
@@ -151,7 +151,7 @@ namespace renderer
         imageBarrier.oldLayout = oldLayout;
         imageBarrier.newLayout = newLayout;
 
-        imageBarrier.subresourceRange = VkImageSubresourceRange{ aspectMask, 0, 1, 0, 1 };
+        imageBarrier.subresourceRange = VkImageSubresourceRange{ aspectMask, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS };
 
 
         VkDependencyInfo dependencyInfo{};

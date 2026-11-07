@@ -965,7 +965,7 @@ namespace renderer
             return false;
         }
         mDepthStencil = new Image(mDevice);
-        mDepthStencil->Create(VK_IMAGE_LAYOUT_UNDEFINED, mGraphicsQueueIndex, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { mSwapChainExtent.width, mSwapChainExtent.height, 1 }, VK_IMAGE_TYPE_2D, depthStencilFormat, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        mDepthStencil->Create(VK_IMAGE_LAYOUT_UNDEFINED, mGraphicsQueueIndex, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { mSwapChainExtent.width, mSwapChainExtent.height, 1 }, 1, VK_IMAGE_TYPE_2D, depthStencilFormat, {}, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         VkImageViewCreateInfo imageViewCreateInfo{};
         imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
