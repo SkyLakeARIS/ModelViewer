@@ -191,6 +191,7 @@ namespace renderer
 
     void PipelineBuilder::SetColorBlendState(eBlendState blendState)
     {
+        ASSERT(mValidation.bRenderPassValid, "SetRenderPass 함수에 의존성이 있으므로 먼저 호출되어 RenderPass 정보가 설정되어야 합니다.");
         constexpr VkColorComponentFlags COLOR_COMPONENT_ALL = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         constexpr VkPipelineColorBlendAttachmentState BlendStateTable[] =
         {
@@ -214,7 +215,7 @@ namespace renderer
         
         mColorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         mColorBlendState.pAttachments = &mBlendAttachmentState;
-        mColorBlendState.attachmentCount = 1;
+        mColorBlendState.attachmentCount = mHashComponents.RenderPass == eRenderPass::Shadow ? 0 : 1;
 
         mHashComponents.BlendState = blendState;
         mValidation.bColorBlendValid = true;
@@ -251,8 +252,11 @@ namespace renderer
     {
         ASSERT(mColorAttachmentFormats.empty(), "SetColorAttachInfo가 두 번 호출되었습니다. 기존 내용을 버립니다.");
         mColorAttachmentFormats.clear();
-        mColorAttachmentFormats.resize(formats.size());
-        (void)memcpy(mColorAttachmentFormats.data(), formats.data(), sizeof(VkFormat) * formats.size());
+        if (formats.size())
+        {
+            mColorAttachmentFormats.resize(formats.size());
+            (void)memcpy(mColorAttachmentFormats.data(), formats.data(), sizeof(VkFormat) * formats.size());
+        }
 
         mRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
         mRenderingCreateInfo.colorAttachmentCount = mColorAttachmentFormats.size();

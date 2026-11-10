@@ -198,18 +198,6 @@ namespace renderer
     {
         // Scene Update
         const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
-        VkViewport viewport{};
-        viewport.x = 0;
-        viewport.y = 0;
-        viewport.width = mSwapChainExtent.width;
-        viewport.height = mSwapChainExtent.height;
-        viewport.maxDepth = 1.0f;
-        viewport.minDepth = 0.0f;
-
-        vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
-
-        VkRect2D scissor{ {0, 0}, mSwapChainExtent };
-        vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
 
 
@@ -254,11 +242,76 @@ namespace renderer
             ASSERT(false, "vkBeginCommandBuffer 실패 resultCode(%d)", result);
         }
 
-        Uploader::TransitionImageLayout(cmdBuffer, mImages[mCurImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_2_NONE, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT , VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+    }
+
+    void Renderer::EndRender()
+    {
+        const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
+
+        Uploader::TransitionImageLayout(cmdBuffer, mImages[mCurImageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        vkEndCommandBuffer(cmdBuffer);
+    }
+
+    void Renderer::BeginShadowPass()
+    {
+        const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
+        const VkImage shadowImage = mFrameContext->GetShadowImageInFlight();
+        const VkImageView shadowImageView = mFrameContext->GetShadowImageViewInFlight();
+        const VkExtent2D shadowMapResolution = mFrameContext->GetShadowMapResolution();
+
+        Uploader::TransitionImageLayout(cmdBuffer, shadowImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ACCESS_2_NONE, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+        VkClearValue ClearDepthStencilValue;
+        ClearDepthStencilValue.depthStencil = VkClearDepthStencilValue{ 1.0f, 0 };
+
+        VkRenderingAttachmentInfo renderingAttachmentInfoDepth{};
+        renderingAttachmentInfoDepth.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        renderingAttachmentInfoDepth.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        renderingAttachmentInfoDepth.imageView = shadowImageView;
+        renderingAttachmentInfoDepth.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+        renderingAttachmentInfoDepth.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+        renderingAttachmentInfoDepth.clearValue = ClearDepthStencilValue;
+
+        VkRenderingInfo renderingInfo{};
+        renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        renderingInfo.pDepthAttachment = &renderingAttachmentInfoDepth;
+        renderingInfo.layerCount = 1;
+        renderingInfo.renderArea = { {0, 0}, shadowMapResolution };
+        vkCmdBeginRendering(cmdBuffer, &renderingInfo);
+
+        VkViewport viewport{};
+        viewport.x = 0;
+        viewport.y = 0;
+        viewport.width = (float)shadowMapResolution.width;
+        viewport.height = (float)shadowMapResolution.height;
+        viewport.maxDepth = 1.0f;
+        viewport.minDepth = 0.0f;
+
+        vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor{ {0, 0}, shadowMapResolution };
+        vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+    }
+
+    void Renderer::EndShadowPass()
+    {
+        const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
+        const VkImage shadowImage = mFrameContext->GetShadowImageInFlight();
+
+        vkCmdEndRendering(cmdBuffer);
+
+        Uploader::TransitionImageLayout(cmdBuffer, shadowImage, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_ACCESS_2_SHADER_SAMPLED_READ_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+    }
+
+    void Renderer::BeginMainPass()
+    {
+        const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
+
+        Uploader::TransitionImageLayout(cmdBuffer, mImages[mCurImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_2_NONE, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
 
         Uploader::TransitionImageLayout(cmdBuffer, mDepthStencil->GetImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
-        constexpr VkClearValue ClearColorValue{0.4f, 0.8f, 0.6f, 1.0f};
+        constexpr VkClearValue ClearColorValue{ 0.4f, 0.8f, 0.6f, 1.0f };
         VkClearValue ClearDepthStencilValue;
 
         VkRenderingAttachmentInfo renderingAttachmentInfo{};
@@ -288,16 +341,25 @@ namespace renderer
         renderingInfo.layerCount = 1;
         renderingInfo.renderArea = { {0, 0}, mSwapChainExtent };
         vkCmdBeginRendering(cmdBuffer, &renderingInfo);
+
+        VkViewport viewport{};
+        viewport.x = 0;
+        viewport.y = 0;
+        viewport.width = mSwapChainExtent.width;
+        viewport.height = mSwapChainExtent.height;
+        viewport.maxDepth = 1.0f;
+        viewport.minDepth = 0.0f;
+
+        vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor{ {0, 0}, mSwapChainExtent };
+        vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
     }
 
-    void Renderer::EndRender()
+    void Renderer::EndMainPass()
     {
         const VkCommandBuffer cmdBuffer = mFrameContext->GetCommandBufferInFlight();
-
         vkCmdEndRendering(cmdBuffer);
-
-        Uploader::TransitionImageLayout(cmdBuffer, mImages[mCurImageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-        vkEndCommandBuffer(cmdBuffer);
     }
 
     void Renderer::SubmitCommands() const
@@ -407,21 +469,31 @@ namespace renderer
             outPipelineHash = peekHash;
             return true;
         }
+        pipelineBuilder.SetRenderPass(renderPass);
         pipelineBuilder.SetColorBlendState(blendState);
         pipelineBuilder.SetDynamicState(true, true);
         pipelineBuilder.SetDepthStencilState(depthStencilState);
         pipelineBuilder.SetInputAssemblyState(topology);
         pipelineBuilder.SetMultiSamplerState(false);
         pipelineBuilder.SetRasterizationState(rasterType);
-        pipelineBuilder.SetRenderPass(renderPass);
         pipelineBuilder.SetVertexInputState(vertexFormat);
         pipelineBuilder.SetShaderStage(*mResourceManager->GetShaderByType(shader));
-        pipelineBuilder.SetViewportState(mSwapChainExtent.width, mSwapChainExtent.height);
+        const VkExtent2D resolution = renderPass == eRenderPass::Shadow ? mFrameContext->GetShadowMapResolution() : mSwapChainExtent;
+        pipelineBuilder.SetViewportState(resolution.width, resolution.height);
         const eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(shader);
         pipelineBuilder.SetPipelineLayout(DescriptorLayout::GetPipelineLayout(layoutType));
 
-        std::vector<VkFormat> formats(1, mSurfaceFormat.format);
-        pipelineBuilder.SetColorAttachInfo(formats, mDepthStencilFormat);
+        if(renderPass == eRenderPass::Shadow)
+        {
+            std::vector<VkFormat> formats;
+            pipelineBuilder.SetColorAttachInfo(formats, mFrameContext->GetShadowImageFormat());
+        }
+        else
+        {
+            std::vector<VkFormat> formats(1, mSurfaceFormat.format);
+            pipelineBuilder.SetColorAttachInfo(formats, mDepthStencilFormat);
+        }
+
         VkPipeline pipeline;
         if(pipelineBuilder.Create(pipeline, outPipelineHash) == false)
         {

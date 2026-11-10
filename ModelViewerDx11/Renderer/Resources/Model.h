@@ -24,6 +24,7 @@ namespace renderer
 
         void SubmitCommand();
         void Draw(Renderer& renderer);
+        void DrawShadow(Renderer& renderer);
         void Update();
 
         void SetMesh(const Mesh& mesh);

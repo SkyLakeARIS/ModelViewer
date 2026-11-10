@@ -39,6 +39,10 @@ namespace renderer
         void WaitForLastFrame() const;
         void BeginRender();
         void EndRender();
+        void BeginShadowPass();
+        void EndShadowPass();
+        void BeginMainPass();
+        void EndMainPass();
 
         void SubmitCommands() const;
         void Present() const;

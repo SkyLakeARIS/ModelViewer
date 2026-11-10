@@ -54,6 +54,7 @@ namespace renderer
         int32_t totalVertexCount = 0;
         int32_t totalIndexCount = 0;
         std::vector<DescriptorSet*> descriptorSets;
+        std::vector<DescriptorSet*> shadowDescriptorSets;
         for (auto& subMesh : modelContainer.SubMeshes)
         {
             renderer::SubMesh newSubMesh = {};
@@ -91,7 +92,7 @@ namespace renderer
             newSubMesh.Material.Factors.IsLitOn = static_cast<float>(true);
 
             // MEMO: configure DescriptorSet
-            const eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(eShader::Simple);
+            eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(eShader::Simple);
             DescriptorSet* descriptorSet = nullptr;
             if (mDescriptorAllocator->AllocateSet(layoutType, &descriptorSet) == false)
             {
@@ -112,17 +113,49 @@ namespace renderer
                     writeInfo.Sampler = mResourceManager->GetSamplerByType(eSamplerType::Linear);
                 }
             }
-
             descriptorSet->UpdateDescriptorSet(writeInfos);
             descriptorSets.push_back(descriptorSet);
 
-            HashID pipelineHash;
-            if (mRenderer->TryCreateGraphicsPipeline(pipelineHash, renderer::eShader::Simple, renderer::eVertexFormat::PTN, renderer::ePrimitiveTopology::Triangles, renderer::eRasterType::Basic, renderer::Opaque, renderer::eDepthStencilState::DepthOnMaskAllCompLessEqual, renderer::eRenderPass::Main) == false)
+            layoutType = DescriptorLayout::GetLayoutTypeByShaderType(eShader::Shadow);
+            DescriptorSet* shadowDescriptorSet = nullptr;
+            if (mDescriptorAllocator->AllocateSet(layoutType, &shadowDescriptorSet) == false)
             {
-                ASSERT(false, "Model 로드 중 파이프라인 구성 실패. filePath(%s)", filePath);
+                ASSERT(false, "Model 로드 중 DescriptorSet 구성 실패. filePath(%s)", filePath);
                 return false;
             }
-            newSubMesh.Pipelines.insert({ renderer::eRenderPass::Main, pipelineHash });
+            writeInfos.clear();
+            DescriptorLayout::GetLayoutWriteInfosByShader(layoutType, eShader::Shadow, writeInfos);
+            for(auto& writeInfo : writeInfos)
+            {
+                // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
+                if(writeInfo.bTexture && writeInfo.TextureType != eTextureType::TextureTypeCount)
+                {
+                    writeInfo.Texture = mResourceManager->TryGetTexture(newSubMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                }
+                else if(writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
+                {
+                    writeInfo.Sampler = mResourceManager->GetSamplerByType(eSamplerType::Linear);
+                }
+            }
+
+            shadowDescriptorSet->UpdateDescriptorSet(writeInfos);
+            shadowDescriptorSets.push_back(shadowDescriptorSet);
+
+            HashID mainPassPipelineHash;
+            if (mRenderer->TryCreateGraphicsPipeline(mainPassPipelineHash, renderer::eShader::Simple, renderer::eVertexFormat::PTN, renderer::ePrimitiveTopology::Triangles, renderer::eRasterType::Basic, renderer::Opaque, renderer::eDepthStencilState::DepthOnMaskAllCompLessEqual, renderer::eRenderPass::Main) == false)
+            {
+                ASSERT(false, "Model 로드 중 파이프라인 구성 실패(main). filePath(%s)", filePath);
+                return false;
+            }
+            newSubMesh.Pipelines.insert({ renderer::eRenderPass::Main, mainPassPipelineHash });
+
+            HashID shadowPassPipelineHash;
+            if (mRenderer->TryCreateGraphicsPipeline(shadowPassPipelineHash, renderer::eShader::Shadow, renderer::eVertexFormat::PTN, renderer::ePrimitiveTopology::Triangles, renderer::eRasterType::Basic, renderer::Opaque, renderer::eDepthStencilState::DepthOnMaskAllCompLessEqual, renderer::eRenderPass::Shadow) == false)
+            {
+                ASSERT(false, "Model 로드 중 파이프라인 구성 실패(shadow). filePath(%s)", filePath);
+                return false;
+            }
+            newSubMesh.Pipelines.insert({ renderer::eRenderPass::Shadow, shadowPassPipelineHash });
             newMesh.SubMeshes.push_back(std::move(newSubMesh));
         }
 
@@ -135,6 +168,7 @@ namespace renderer
         *outModel = new Model();
         (*outModel)->SetMesh(newMesh);
         (*outModel)->SetDescriptorSets(eShader::Simple, descriptorSets);
+        (*outModel)->SetDescriptorSets(eShader::Shadow, shadowDescriptorSets);
 
 
         return true;

@@ -40,6 +40,21 @@ namespace renderer
         }
     }
 
+    void Model::DrawShadow(Renderer& renderer)
+    {
+        PushConstantBlock pushConstantBlock{ mMatWorld };
+        renderer.UploadPushConstant(pushConstantBlock, eShader::Shadow);
+        const auto& descriptorSetIt = mDescriptorSets.find(eShader::Shadow);
+        auto descriptorSet = descriptorSetIt->second.begin();
+        for (const auto& subMesh : mMesh.SubMeshes)
+        {
+            const auto& pipelineIt = subMesh.Pipelines.find(eRenderPass::Shadow);
+            renderer.BindPipeline(pipelineIt->second);
+            renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);
+            ++descriptorSet;
+        }
+    }
+
     void Model::Update()
     {
         // MEMO: 전치 안 해도 되지만, 나중에 필요해질 테니 까먹지 않도록 미리 구성해둠.
@@ -58,7 +73,6 @@ namespace renderer
 
     void Model::SetDescriptorSets(renderer::eShader shaderType, std::vector<DescriptorSet*>& descriptorSets)
     {
-        ASSERT(mDescriptorSets.empty(), "Descriptors를 여러 번 초기화 하는 것 같습니다.");
         auto descriptorSetIt = mDescriptorSets.find(shaderType);
         if (descriptorSetIt == mDescriptorSets.end())
         {

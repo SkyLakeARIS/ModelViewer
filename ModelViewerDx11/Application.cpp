@@ -327,8 +327,14 @@ void Application::updateScene()
 void Application::renderScene()
 {
     mVkRenderer->RenderScene();
+    mVkRenderer->BeginShadowPass();
+    mCharacter->DrawShadow(*mVkRenderer);
+    mVkRenderer->EndShadowPass();
+
+    mVkRenderer->BeginMainPass();
     mCharacter->Draw(*mVkRenderer);
     mSkybox->SubmitCommand(*mVkRenderer);
     mLightIcon->SubmitCommand(*mVkRenderer);
     mFloor->SubmitCommand(*mVkRenderer);
+    mVkRenderer->EndMainPass();
 }

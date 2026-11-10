@@ -7,6 +7,7 @@ namespace renderer
 {
     class Shader;
     class DescriptorSet;
+    class Image;
 
     struct FrameData
     {
@@ -37,11 +38,22 @@ namespace renderer
         VkFence GetRenderFinishedSemaphoreInFlight() const;
         VkCommandBuffer GetCommandBufferInFlight() const;
         VkDescriptorSet GetCommandDescriptorSetInFlight() const;
+        VkImage GetShadowImageInFlight() const;
+        VkImageView GetShadowImageViewInFlight() const;
+        VkExtent2D GetShadowMapResolution() const;
+        VkFormat GetShadowImageFormat() const;
+    private:
+        bool createShadowMapResources();
+    private:
+        static const uint32_t sShadowMapResolution;
     private:
         VkDevice mDevice;
         uint32_t mInFlightCount;
         std::vector<FrameData> mInFlights;
         uint32_t mNowInFlightIndex;
         DescriptorSet* mCommonDescriptorSet;
+        std::vector<Image*> mShadowImages;
+        std::vector<VkImageView> mShadowImageViews;
+        VkFormat mShadowImageFormat;
     };
 }

@@ -2,22 +2,41 @@
 #include "../Util/Macro.h"
 #include "Shader/DescriptorSet.h"
 #include "VkHelper.h"
+#include "Resources/Image.h"
 #include "Shader/DescriptorLayout.h"
 #include "Shader/Shader.h"
 
 namespace renderer
 {
+    const uint32_t FrameContext::sShadowMapResolution = 2048;
+
     FrameContext::FrameContext(const VkDevice& device)
         : mDevice(device)
         , mInFlightCount(0)
         , mNowInFlightIndex(0)
         , mCommonDescriptorSet(nullptr)
+        , mShadowImageFormat()
     {
     }
 
     FrameContext::~FrameContext()
     {
         mCommonDescriptorSet = nullptr;
+
+        for(auto& shadowImage : mShadowImages)
+        {
+            delete shadowImage;
+            shadowImage = nullptr;
+        }
+        mShadowImages.clear();
+        std::vector<Image*>().swap(mShadowImages);
+
+        for (auto& shadowImageView : mShadowImageViews)
+        {
+            vkDestroyImageView(mDevice, shadowImageView, nullptr);
+        }
+        mShadowImageViews.clear();
+        std::vector<VkImageView>().swap(mShadowImageViews);
 
         for (const auto& frame : mInFlights)
         {
@@ -87,7 +106,8 @@ namespace renderer
         DescriptorLayout::GetLayoutWriteInfos(layoutType, writeInfos);
         commonDescriptorSet->UpdateDescriptorSet(writeInfos);
         mCommonDescriptorSet = commonDescriptorSet;
-        return true;
+
+        return createShadowMapResources();
     }
 
     uint32_t FrameContext::AcquireSwapchainImage(const VkSwapchainKHR& swapchain) const
@@ -157,5 +177,60 @@ namespace renderer
     VkDescriptorSet FrameContext::GetCommandDescriptorSetInFlight() const
     {
         return mCommonDescriptorSet->GetDescriptorSet(mNowInFlightIndex);
+    }
+
+    VkImage FrameContext::GetShadowImageInFlight() const
+    {
+        return mShadowImages[mNowInFlightIndex]->GetImage();
+    }
+
+    VkImageView FrameContext::GetShadowImageViewInFlight() const
+    {
+        return mShadowImageViews[mNowInFlightIndex];
+    }
+
+    VkExtent2D FrameContext::GetShadowMapResolution() const
+    {
+        return { sShadowMapResolution, sShadowMapResolution };
+    }
+
+    VkFormat FrameContext::GetShadowImageFormat() const
+    {
+        return mShadowImageFormat;
+    }
+
+    bool FrameContext::createShadowMapResources()
+    {
+        mShadowImages.reserve(mInFlightCount);
+        mShadowImageViews.reserve(mInFlightCount);
+        const uint32_t graphicsQueueFamilyIndex = VkHelper::GetGraphicsQueueFamilyIndex();
+        mShadowImageFormat = VkHelper::GetSupportImageFormat({ VK_FORMAT_D32_SFLOAT , VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+        constexpr VkExtent3D SHADOW_IMAGE_EXTENT{ sShadowMapResolution, sShadowMapResolution, 1 };
+        for (uint32_t frame = 0; frame < mInFlightCount; ++frame)
+        {
+            Image* shadowImage = new Image(mDevice);
+
+            shadowImage->Create({}, graphicsQueueFamilyIndex, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, SHADOW_IMAGE_EXTENT, 1, VK_IMAGE_TYPE_2D, mShadowImageFormat, {}, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+            mShadowImages.push_back(shadowImage);
+
+            VkImageViewCreateInfo imageCreateInfo{};
+            imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            imageCreateInfo.format = mShadowImageFormat;
+            imageCreateInfo.components = {};
+            imageCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            imageCreateInfo.subresourceRange = { VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 };
+            imageCreateInfo.image = shadowImage->GetImage();
+
+            VkImageView shadowImageView;
+            const VkResult result = vkCreateImageView(mDevice, &imageCreateInfo, nullptr, &shadowImageView);
+            if(result != VK_SUCCESS)
+            {
+                ASSERT(false, "ShadowImageView 생성 실패 resultCode(%d)", result);
+                return false;
+            }
+            mShadowImageViews.push_back(shadowImageView);
+        }
+        return true;
     }
 }
