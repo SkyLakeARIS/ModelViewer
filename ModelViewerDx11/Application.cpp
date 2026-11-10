@@ -311,18 +311,16 @@ void Application::processInput(double deltaTime)
 void Application::updateScene()
 {
     mCamera->Update();
-
-    // MEMO: Renderer가 예약한 CB들 업로드
-    renderer::CbViewProj cbViewProj;
-    cbViewProj.Matrix = XMMatrixTranspose(mCamera->GetViewProjectionMatrix());
+    renderer::PerFrameUniformBlock perFrameUniformBlock{};
+    perFrameUniformBlock.MatViewProj = XMMatrixTranspose(mCamera->GetViewProjectionMatrix());
+    perFrameUniformBlock.MatLightViewProj = XMMatrixTranspose(mLight->GetViewProjMatrix());
+    perFrameUniformBlock.CameraPosition = mCamera->GetCameraPositionFloat();
+    const XMMATRIX uiProjMat = XMMatrixOrthographicOffCenterLH(0.0, mWindowWidth, mWindowHeight, 0.0, 0.1f, 100.0f);
+    perFrameUniformBlock.MatOrthographic = XMMatrixTranspose(uiProjMat);
 
     mCharacter->Update();
     mSkybox->Update(mCamera->GetCameraPositionFloat());
-    std::vector<std::pair<renderer::eCbType, void*>> uniforms =
-    {
-        {renderer::eCbType::CbViewProj, static_cast<void*>(&cbViewProj)},
-    };
-    mVkRenderer->UpdateScene(uniforms);
+    mVkRenderer->UpdateScene(perFrameUniformBlock);
     mLightIcon->UpdateScaleMatrix(mCamera->GetViewMatrix());
 }
 

@@ -189,12 +189,9 @@ namespace renderer
         return true;
     }
 
-    void Renderer::UpdateScene(std::vector<std::pair<renderer::eCbType, void*>>& uniforms)
+    void Renderer::UpdateScene(const PerFrameUniformBlock& uniformBlock)
     {
-        for(const auto& uniform : uniforms)
-        {
-            mFrameContext->UpdateUniformData(uniform.second, 1, sizeof(CbViewProj));
-        }
+        mFrameContext->UpdateUniformData(&uniformBlock, 1, sizeof(PerFrameUniformBlock));
     }
 
     void Renderer::RenderScene()

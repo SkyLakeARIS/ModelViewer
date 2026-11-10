@@ -32,7 +32,7 @@ namespace renderer
         ~Renderer();
 
         bool initializeWithVulkan(HWND handleWindow, HINSTANCE handleInstance, int16_t width, int16_t height, const char* const appName);
-        void UpdateScene(std::vector<std::pair<renderer::eCbType, void*>>& uniforms);
+        void UpdateScene(const PerFrameUniformBlock& uniformBlock);
         void RenderScene();
         void DrawIndexed(uint32_t indexCount, uint32_t vertexOffset, uint32_t indexOffset);
         //

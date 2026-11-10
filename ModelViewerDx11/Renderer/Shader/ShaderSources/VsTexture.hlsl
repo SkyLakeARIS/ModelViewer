@@ -1,12 +1,6 @@
 /*
-    b0 ~ b5 는 렌더러에서 예약 (reserved slots by renderer)
-
-    b0 : World Matrix
-    b1 : View + Projection Matrix (mainly Perspective)
-    b2 : View + Projection Matrix of Light
-    b3 : Light Attributes (for lighting)
-    b4 : Camera Attribute (for lighting)
-    b5 : Orthographic Matrix (for screen)
+    set 0, binding 1 : 프레임 단위 통합 상수 (PerFrameUniformBlock과 순서·크기 일치)
+    World Matrix는 push constant
  */
 
 struct CbMatrix
@@ -16,9 +10,17 @@ struct CbMatrix
 
 [[vk::push_constant]] CbMatrix MatWorld;
 
-cbuffer CbMatViewProj : register(b1)
+[[vk::binding(1, 0)]]
+cbuffer CbPerFrame : register(b1)
 {
     matrix MatViewProj;
+    matrix MatLightViewProj;
+    float4 vLightColor;
+    float4 vLightDir;
+    float3 CameraPosition;
+    float  Reserve;
+    float4 Reserve2;
+    matrix MatOrthographic;
 }
 
 

@@ -7,6 +7,18 @@
 
 namespace renderer
 {
+    struct PerFrameUniformBlock
+    {
+        XMMATRIX MatViewProj;
+        XMMATRIX MatLightViewProj;
+        XMFLOAT4 vLightColor;
+        XMFLOAT4 vLightDir;
+        XMFLOAT3 CameraPosition;
+        float Reserve;
+        XMFLOAT4 Reserve2;
+        XMMATRIX MatOrthographic;
+    };
+
     typedef struct CbMatrix
     {
         XMMATRIX Matrix;
