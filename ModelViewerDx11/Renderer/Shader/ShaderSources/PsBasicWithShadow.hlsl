@@ -15,9 +15,9 @@ Texture2D texModel : register(t0);
 SamplerState texSampler : register(s0);
 
 
-[[vk::binding(15, 1)]]
-cbuffer cbMaterialFactors : register(b0)
+struct PerObject
 {
+    matrix WorldMatrix;
     float3 Diffuse;
     float Opacity;   // 알파값으로 사용
     float3 Ambient;
@@ -26,7 +26,8 @@ cbuffer cbMaterialFactors : register(b0)
     float Shininess;
     float3 Emissive;
     float IsLitOn;
-}
+};
+[[vk::push_constant]] PerObject pcPerObject;
 
 struct PsInput
 {
@@ -47,7 +48,7 @@ float4 main(PsInput psInput) : SV_TARGET
     float3 outColor = texColor.rgb;
 
     // MEMO: Lit On인 픽셀만
-    if (IsLitOn > 0.0f)
+    if (pcPerObject.IsLitOn > 0.0f)
     {
         const float3 lightNdc = psInput.LightClipPosition.xyz / psInput.LightClipPosition.w;
         const float2 shadowTexCoord = lightNdc.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
@@ -57,7 +58,7 @@ float4 main(PsInput psInput) : SV_TARGET
         if (lightNdc.z > depthInShadowMap + DEPTH_OFFSET)
         {
             // MEMO: ambient 색상을 그림자 색상으로 사용하는 것이 시도한 것 중 가장 자연스러움
-            outColor *= Ambient * psInput.LightColor.rgb;
+            outColor *= pcPerObject.Ambient * psInput.LightColor.rgb;
         }
         else
         {
@@ -70,9 +71,9 @@ float4 main(PsInput psInput) : SV_TARGET
                 // MEMO: 미리 뒤집어서 사용
                 const float3 cameraDir = normalize(psInput.CameraPosition - psInput.WorldPosition);
                 specularIntensity = dot(reflectLight, cameraDir);
-                specularIntensity = pow(saturate(specularIntensity), Shininess);
+                specularIntensity = pow(saturate(specularIntensity), pcPerObject.Shininess);
             }
-            outColor *= (diffuseIntensity + Specular * specularIntensity + Ambient) * psInput.LightColor.rgb;
+            outColor *= (diffuseIntensity + pcPerObject.Specular * specularIntensity + pcPerObject.Ambient) * psInput.LightColor.rgb;
         }
     }
 

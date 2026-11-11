@@ -38,7 +38,6 @@ namespace renderer
                 {
                     {7, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
                     {13, VK_DESCRIPTOR_TYPE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
-                    {15, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
                 };
                 break;
             }
@@ -80,7 +79,7 @@ namespace renderer
             VkPushConstantRange pushConstantRange{};
             pushConstantRange.offset = 0;
             pushConstantRange.size = sizeof(PushConstantBlock);
-            pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
             // MEMO: set 1은 set 0과 결합
             std::vector<VkDescriptorSetLayout> setLayouts(1, sLayoutPairs[eLayoutType::Common].SetLayout);

@@ -21,12 +21,12 @@ namespace scene
         const XMMATRIX matTranslate = XMMatrixTranslation(mPosition.x, mPosition.y, mPosition.z);
         const XMMATRIX matWorld = XMMatrixTranspose(mMatWorld * matTranslate);
 
-        renderer::PushConstantBlock pushConstantBlock{ matWorld };
-        renderer.UploadPushConstant(pushConstantBlock, renderer::eShader::Texture);
         const auto& descriptorSetIt = mDescriptorSets.find(renderer::eShader::Texture);
         auto descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)
         {
+            renderer::PushConstantBlock pushConstantBlock{ matWorld, subMesh.Material.Factors};
+            renderer.UploadPushConstant(pushConstantBlock, renderer::eShader::Texture);
             const auto& pipelineIt = subMesh.Pipelines.find(renderer::eRenderPass::Main);
             renderer.BindPipeline(pipelineIt->second);
             renderer.BindDescriptorSet(*descriptorSet);

@@ -437,7 +437,7 @@ namespace renderer
         const eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(shaderType);
         pushConstantsInfo.layout = DescriptorLayout::GetPipelineLayout(layoutType);
         pushConstantsInfo.pValues = &dataBlock;
-        pushConstantsInfo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        pushConstantsInfo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         vkCmdPushConstants2(cmdBuf, &pushConstantsInfo);
     }
 

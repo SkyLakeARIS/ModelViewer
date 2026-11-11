@@ -26,12 +26,12 @@ namespace renderer
 
     void Model::Draw(Renderer& renderer)
     {
-        PushConstantBlock pushConstantBlock{ mMatWorld };
-        renderer.UploadPushConstant(pushConstantBlock, eShader::Simple);
         const auto& descriptorSetIt = mDescriptorSets.find(eShader::Simple);
         auto descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)
         {
+            PushConstantBlock pushConstantBlock{ mMatWorld, subMesh.Material.Factors };
+            renderer.UploadPushConstant(pushConstantBlock, eShader::Simple);
             const auto& pipelineIt = subMesh.Pipelines.find(eRenderPass::Main);
             renderer.BindPipeline(pipelineIt->second);
             renderer.BindDescriptorSet(*descriptorSet);
@@ -42,12 +42,12 @@ namespace renderer
 
     void Model::DrawShadow(Renderer& renderer)
     {
-        PushConstantBlock pushConstantBlock{ mMatWorld };
-        renderer.UploadPushConstant(pushConstantBlock, eShader::Shadow);
         const auto& descriptorSetIt = mDescriptorSets.find(eShader::Shadow);
         auto descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)
         {
+            PushConstantBlock pushConstantBlock{ mMatWorld, subMesh.Material.Factors };
+            renderer.UploadPushConstant(pushConstantBlock, eShader::Shadow);
             const auto& pipelineIt = subMesh.Pipelines.find(eRenderPass::Shadow);
             renderer.BindPipeline(pipelineIt->second);
             renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);

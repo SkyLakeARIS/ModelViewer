@@ -5,18 +5,19 @@ TextureCube cubeTexture : register(t0);
 [[vk::binding(13, 1)]]
 SamplerState cubeSampler : register(s0);
 
-[[vk::binding(15, 1)]]
-cbuffer cbMaterialFactors : register(b0)
+struct PerObject
 {
+    matrix WorldMatrix;
     float3 Diffuse;
-    float Opacity;
+    float Opacity;   // 알파값으로 사용
     float3 Ambient;
     float Reflectivity;
-    float3 Specular;
+    float3 Specular;  // 스페큘러 거듭제곱 값
     float Shininess;
     float3 Emissive;
     float IsLitOn;
-}
+};
+[[vk::push_constant]] PerObject pcPerObject;
 
 struct PsInput
 {

@@ -15,12 +15,12 @@ namespace scene
 
     void Sky::SubmitCommand(renderer::Renderer& renderer)
     {
-        renderer::PushConstantBlock pushConstantBlock{ mWorld };
-        renderer.UploadPushConstant(pushConstantBlock, renderer::eShader::Skybox);
         const auto& descriptorSetIt = mDescriptorSets.find(renderer::eShader::Skybox);
         auto descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)
         {
+            renderer::PushConstantBlock pushConstantBlock{ mWorld, subMesh.Material.Factors };
+            renderer.UploadPushConstant(pushConstantBlock, renderer::eShader::Skybox);
             const auto& pipelineIt = subMesh.Pipelines.find(renderer::eRenderPass::Main);
             renderer.BindPipeline(pipelineIt->second);
             renderer.BindDescriptorSet(*descriptorSet);

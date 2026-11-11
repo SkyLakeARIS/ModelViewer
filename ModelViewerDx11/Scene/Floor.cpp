@@ -17,19 +17,14 @@ namespace scene
     {
         const XMMATRIX matWorld = XMMatrixIdentity();
 
-        renderer::PushConstantBlock pushConstantBlock{ matWorld };
-        renderer.UploadPushConstant(pushConstantBlock, renderer::eShader::Color);
         const auto& descriptorSetIt = mDescriptorSets.find(renderer::eShader::Color);
         auto descriptorSet = descriptorSetIt->second.begin();
-        std::vector<renderer::UniformWriteInfo> uniformWriteInfos;
-        uniformWriteInfos.reserve(mMesh.SubMeshes.size());
         for (auto& subMesh : mMesh.SubMeshes)
         {
-            renderer::UniformWriteInfo uniformWriteInfo{ *descriptorSet, reinterpret_cast<void*>(&subMesh.Material.Factors), {0, static_cast<int32_t>(sizeof(renderer::MaterialFactors))} };
-            uniformWriteInfos.push_back(uniformWriteInfo);
+            renderer::PushConstantBlock pushConstantBlock{ matWorld, subMesh.Material.Factors };
+            renderer.UploadPushConstant(pushConstantBlock, renderer::eShader::Color);
             ++descriptorSet;
         }
-        renderer.UpdateUniformData(uniformWriteInfos);
 
         descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)

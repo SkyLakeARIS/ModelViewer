@@ -3,12 +3,20 @@
     World Matrix는 push constant
  */
 
-struct CbMatrix
+struct PerObject
 {
-    matrix Matrix;
+    matrix WorldMatrix;
+    float3 Diffuse;
+    float Opacity;   // 알파값으로 사용
+    float3 Ambient;
+    float Reflectivity;
+    float3 Specular;  // 스페큘러 거듭제곱 값
+    float Shininess;
+    float3 Emissive;
+    float IsLitOn;
 };
 
-[[vk::push_constant]] CbMatrix MatWorld;
+[[vk::push_constant]] PerObject pcPerObject;
 
 [[vk::binding(1, 0)]]
 cbuffer CbPerFrame : register(b1)
@@ -44,7 +52,7 @@ PsInput main(VsInput vsInput)
 {
     PsInput psInput;
 
-    psInput.Position = mul(vsInput.Position, MatWorld.Matrix);
+    psInput.Position = mul(vsInput.Position, pcPerObject.WorldMatrix);
     psInput.WorldPosition = psInput.Position.xyz;
     psInput.Position = mul(psInput.Position, MatViewProj);
 

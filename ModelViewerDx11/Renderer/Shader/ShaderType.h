@@ -1,11 +1,12 @@
 #pragma once
 #include "../../Core/MathPrerequisites.h"
-
+#include "../Resources/Material.h"
 namespace renderer
 {
     struct PushConstantBlock
     {
         XMMATRIX WorldMatrix;
+        MaterialFactors MaterialFactors;
     };
 
     enum class eCbType : uint8_t
