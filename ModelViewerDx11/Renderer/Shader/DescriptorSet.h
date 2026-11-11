@@ -43,6 +43,7 @@ namespace renderer
 
         bool Create();
         void UpdateDescriptorSet(const std::vector<DescriptorWriteInfo>& writeInfos);
+        void UpdateDescriptorSet(const std::vector<DescriptorWriteInfo>& writeInfos, uint32_t inFlightIndex);
         void UpdateUniformData(const void* const pData, uint32_t count, uint32_t elementSize, uint32_t inFlightIndex);
         VkDescriptorSet GetDescriptorSet(uint32_t inFlightIndex) const;
         eLayoutType GetLayoutType() const;

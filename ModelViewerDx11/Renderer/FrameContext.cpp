@@ -48,7 +48,7 @@ namespace renderer
         std::vector<FrameData>().swap(mInFlights);
     }
 
-    bool FrameContext::Initialize(DescriptorSet* const commonDescriptorSet)
+    bool FrameContext::Initialize(DescriptorSet* const commonDescriptorSet, Sampler* const shadowMapSampler)
     {
         mInFlightCount = VkHelper::GetFrameInFlightCount();
 
@@ -101,13 +101,33 @@ namespace renderer
                 return false;
             }
         }
-        const eLayoutType layoutType = commonDescriptorSet->GetLayoutType();
+
+        if(createShadowMapResources() == false)
+        {
+            ASSERT(false, "셰도우 이미지 리소스 생성 실패");
+            return false;
+        }
+
         std::vector<DescriptorWriteInfo> writeInfos;
-        DescriptorLayout::GetLayoutWriteInfos(layoutType, writeInfos);
-        commonDescriptorSet->UpdateDescriptorSet(writeInfos);
+        DescriptorLayout::GetLayoutWriteInfos(eLayoutType::Common, writeInfos);
+        for (uint32_t inFlightIndex = 0; inFlightIndex < mInFlightCount; ++inFlightIndex)
+        {
+            for (auto& writeInfo : writeInfos)
+            {
+                if (writeInfo.bTexture)
+                {
+                    writeInfo.ImageView = mShadowImageViews[inFlightIndex];
+                }
+                else if (writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
+                {
+                    writeInfo.Sampler = shadowMapSampler;
+                }
+            }
+            commonDescriptorSet->UpdateDescriptorSet(writeInfos, inFlightIndex);
+        }
         mCommonDescriptorSet = commonDescriptorSet;
 
-        return createShadowMapResources();
+        return true;
     }
 
     uint32_t FrameContext::AcquireSwapchainImage(const VkSwapchainKHR& swapchain) const

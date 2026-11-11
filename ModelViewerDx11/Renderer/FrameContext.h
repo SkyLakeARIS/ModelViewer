@@ -5,6 +5,7 @@
 
 namespace renderer
 {
+    class Sampler;
     class Shader;
     class DescriptorSet;
     class Image;
@@ -23,7 +24,7 @@ namespace renderer
         FrameContext(const VkDevice& device);
         ~FrameContext();
 
-        bool Initialize(DescriptorSet* const commonDescriptorSet);
+        bool Initialize(DescriptorSet* const commonDescriptorSet, Sampler* const shadowMapSampler);
 
         uint32_t AcquireSwapchainImage(const VkSwapchainKHR& swapchain) const;
         void WaitForLastFrame() const;

@@ -29,7 +29,7 @@ namespace renderer
         DescriptorInfo Descriptor;
         bool bTexture;
         eTextureType TextureType; // MEMO: bTexture일 때만 유효. 아니면 TextureTypeCount
-        Texture* Texture;
+        VkImageView ImageView;
         Sampler* Sampler;
         Buffer* Buffer;
         VkDeviceSize Offset;

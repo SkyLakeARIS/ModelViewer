@@ -150,18 +150,18 @@ namespace renderer
             }
         }
 
+        if (mResourceManager->CreateSamplers() == false)
+        {
+            return false;
+        }
+
         DescriptorSet* commonDescriptorSet = nullptr;
         if(mDescriptorAllocator->AllocateSet(eLayoutType::Common, &commonDescriptorSet) == false)
         {
             return false;
         }
         mFrameContext = new FrameContext(mDevice);
-        if(mFrameContext->Initialize(commonDescriptorSet) == false)
-        {
-            return false;
-        }
-
-        if (mResourceManager->CreateSamplers() == false)
+        if(mFrameContext->Initialize(commonDescriptorSet, mResourceManager->GetSamplerByType(eSamplerType::Linear)) == false)
         {
             return false;
         }

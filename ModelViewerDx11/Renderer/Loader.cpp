@@ -106,7 +106,9 @@ namespace renderer
                 // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
                 if(writeInfo.bTexture && writeInfo.TextureType != eTextureType::TextureTypeCount)
                 {
-                    writeInfo.Texture = mResourceManager->TryGetTexture(newSubMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                    const Texture* const texture = mResourceManager->TryGetTexture(newSubMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                    ASSERT(texture != nullptr, "Model 로드 중 텍스처가 없습니다. textureType(%u), filePath(%s)", static_cast<EnumInt>(writeInfo.TextureType), filePath);
+                    writeInfo.ImageView = texture->GetImageView();
                 }
                 else if(writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
                 {
@@ -130,7 +132,9 @@ namespace renderer
                 // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
                 if(writeInfo.bTexture && writeInfo.TextureType != eTextureType::TextureTypeCount)
                 {
-                    writeInfo.Texture = mResourceManager->TryGetTexture(newSubMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                    const Texture* const texture = mResourceManager->TryGetTexture(newSubMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                    ASSERT(texture != nullptr, "Model 로드 중 텍스처가 없습니다. textureType(%u), filePath(%s)", static_cast<EnumInt>(writeInfo.TextureType), filePath);
+                    writeInfo.ImageView = texture->GetImageView();
                 }
                 else if(writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
                 {
@@ -221,7 +225,9 @@ namespace renderer
             // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
             if (writeInfo.bTexture && writeInfo.TextureType != eTextureType::TextureTypeCount)
             {
-                writeInfo.Texture = mResourceManager->TryGetTexture(subMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                const Texture* const texture = mResourceManager->TryGetTexture(subMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                ASSERT(texture != nullptr, "Skybox 로드 중 텍스처가 없습니다. textureType(%u), filePath(%s)", static_cast<EnumInt>(writeInfo.TextureType), filePath);
+                writeInfo.ImageView = texture->GetImageView();
             }
             else if (writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
             {
@@ -285,7 +291,9 @@ namespace renderer
             // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
             if (writeInfo.bTexture && writeInfo.TextureType != eTextureType::TextureTypeCount)
             {
-                writeInfo.Texture = mResourceManager->TryGetTexture(subMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                const Texture* const texture = mResourceManager->TryGetTexture(subMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                ASSERT(texture != nullptr, "billboard 로드 중 텍스처가 없습니다. textureType(%u), filePath(%s)", static_cast<EnumInt>(writeInfo.TextureType), filePath);
+                writeInfo.ImageView = texture->GetImageView();
             }
             else if (writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
             {
@@ -344,7 +352,9 @@ namespace renderer
             // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
             if (writeInfo.bTexture && writeInfo.TextureType != eTextureType::TextureTypeCount)
             {
-                writeInfo.Texture = mResourceManager->TryGetTexture(subMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                const Texture* const texture = mResourceManager->TryGetTexture(subMesh.Material.TextureHashes[static_cast<EnumInt>(writeInfo.TextureType)]);
+                ASSERT(texture != nullptr, "floor 로드 중 텍스처가 없습니다. textureType(%u)", static_cast<EnumInt>(writeInfo.TextureType));
+                writeInfo.ImageView = texture->GetImageView();
             }
             else if (writeInfo.Descriptor.Type == VK_DESCRIPTOR_TYPE_SAMPLER)
             {
