@@ -35,6 +35,7 @@ namespace renderer
         PsTexture,
         PsColor,
         PsColorMRT,
+        PsColorWithShadow,
         PsDeferred,
         PsTextureMRT,
         PsSimple,

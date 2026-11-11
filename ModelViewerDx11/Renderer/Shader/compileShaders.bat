@@ -33,6 +33,7 @@ for %%S in (
     PsSkyboxMRT
     PsColor
     PsColorMRT
+    PsColorWithShadow
     PsDeferred
     PsTextureMRT
     PsSimple
