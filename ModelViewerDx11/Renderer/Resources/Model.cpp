@@ -26,12 +26,12 @@ namespace renderer
 
     void Model::Draw(Renderer& renderer)
     {
-        const auto& descriptorSetIt = mDescriptorSets.find(eShader::Simple);
+        const auto& descriptorSetIt = mDescriptorSets.find(eShader::BasicWithShadow);
         auto descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)
         {
             PushConstantBlock pushConstantBlock{ mMatWorld, subMesh.Material.Factors };
-            renderer.UploadPushConstant(pushConstantBlock, eShader::Simple);
+            renderer.UploadPushConstant(pushConstantBlock, eShader::BasicWithShadow);
             const auto& pipelineIt = subMesh.Pipelines.find(eRenderPass::Main);
             renderer.BindPipeline(pipelineIt->second);
             renderer.BindDescriptorSet(*descriptorSet);

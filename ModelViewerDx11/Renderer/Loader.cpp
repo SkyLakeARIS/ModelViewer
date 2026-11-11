@@ -92,7 +92,7 @@ namespace renderer
             newSubMesh.Material.Factors.IsLitOn = static_cast<float>(true);
 
             // MEMO: configure DescriptorSet
-            eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(eShader::Simple);
+            eLayoutType layoutType = DescriptorLayout::GetLayoutTypeByShaderType(eShader::BasicWithShadow);
             DescriptorSet* descriptorSet = nullptr;
             if (mDescriptorAllocator->AllocateSet(layoutType, &descriptorSet) == false)
             {
@@ -100,7 +100,7 @@ namespace renderer
                 return false;
             }
             std::vector<DescriptorWriteInfo> writeInfos;
-            DescriptorLayout::GetLayoutWriteInfosByShader(layoutType, eShader::Simple, writeInfos);
+            DescriptorLayout::GetLayoutWriteInfosByShader(layoutType, eShader::BasicWithShadow, writeInfos);
             for(auto& writeInfo : writeInfos)
             {
                 // MEMO: 통합 버퍼 생성 전까지 자신의 버퍼를 연결한다.
@@ -146,7 +146,7 @@ namespace renderer
             shadowDescriptorSets.push_back(shadowDescriptorSet);
 
             HashID mainPassPipelineHash;
-            if (mRenderer->TryCreateGraphicsPipeline(mainPassPipelineHash, renderer::eShader::Simple, renderer::eVertexFormat::PTN, renderer::ePrimitiveTopology::Triangles, renderer::eRasterType::Basic, renderer::Opaque, renderer::eDepthStencilState::DepthOnMaskAllCompLessEqual, renderer::eRenderPass::Main) == false)
+            if (mRenderer->TryCreateGraphicsPipeline(mainPassPipelineHash, renderer::eShader::BasicWithShadow, renderer::eVertexFormat::PTN, renderer::ePrimitiveTopology::Triangles, renderer::eRasterType::Basic, renderer::Opaque, renderer::eDepthStencilState::DepthOnMaskAllCompLessEqual, renderer::eRenderPass::Main) == false)
             {
                 ASSERT(false, "Model 로드 중 파이프라인 구성 실패(main). filePath(%s)", filePath);
                 return false;
@@ -171,7 +171,7 @@ namespace renderer
 
         *outModel = new Model();
         (*outModel)->SetMesh(newMesh);
-        (*outModel)->SetDescriptorSets(eShader::Simple, descriptorSets);
+        (*outModel)->SetDescriptorSets(eShader::BasicWithShadow, descriptorSets);
         (*outModel)->SetDescriptorSets(eShader::Shadow, shadowDescriptorSets);
 
 
