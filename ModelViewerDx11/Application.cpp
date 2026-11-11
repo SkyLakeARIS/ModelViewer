@@ -315,6 +315,8 @@ void Application::updateScene()
     perFrameUniformBlock.MatViewProj = XMMatrixTranspose(mCamera->GetViewProjectionMatrix());
     perFrameUniformBlock.MatLightViewProj = XMMatrixTranspose(mLight->GetViewProjMatrix());
     perFrameUniformBlock.CameraPosition = mCamera->GetCameraPositionFloat();
+    perFrameUniformBlock.vLightColor = mLight->GetColor();
+    perFrameUniformBlock.vLightDir= mLight->GetDirection();
     const XMMATRIX uiProjMat = XMMatrixOrthographicOffCenterLH(0.0, mWindowWidth, mWindowHeight, 0.0, 0.1f, 100.0f);
     perFrameUniformBlock.MatOrthographic = XMMatrixTranspose(uiProjMat);
 

@@ -27,6 +27,7 @@ namespace renderer
     enum class ePixelShader : uint32_t
     {
         PsBasicWithShadow,
+        PsBasicWithShadowMRT,
         PsOutline,
         PsShadow,
         PsSkybox,

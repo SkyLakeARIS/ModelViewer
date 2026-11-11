@@ -35,6 +35,8 @@ struct PsInput
     float2 TexCoord : TEXCOORD0;
     float3 WorldNormal : TEXCOORD1;
     float3 WorldPosition : TEXCOORD2;
+    float4 LightClipPosition : TEXCOORD3;
+    nointerpolation float4 LightColor : TEXCOORD4;
 };
 
 PsInput main(VsInput vsInput)
@@ -43,8 +45,10 @@ PsInput main(VsInput vsInput)
     psInput.Position = mul(vsInput.Position, MatWorld.Matrix);
     psInput.WorldNormal = mul(float4(vsInput.Normal, 0.0f), MatWorld.Matrix).xyz;
     psInput.WorldPosition = psInput.Position.xyz;
+    psInput.LightClipPosition = mul(psInput.Position, MatLightViewProj);
     psInput.Position = mul(psInput.Position, MatViewProj);
 
     psInput.TexCoord = vsInput.TexCoord;
+    psInput.LightColor = vLightColor;
     return psInput;
 }

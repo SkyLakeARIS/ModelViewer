@@ -2,6 +2,12 @@
 // Pixel Shader
 // 여러개 만들어도 된다. 컴파일 할 때 함수명만 잘 지정해두면. (여러 셰이더 컴파일 해두고, blob만 바꿔서 런타임에 쓰도록 하는것?)
 //--------------------------------------------------------------------------------------
+[[vk::binding(2, 0)]]
+Texture2D shadowMap;
+
+[[vk::binding(3, 0)]]
+SamplerState shadowSampler;
+
 [[vk::binding(7, 1)]]
 Texture2D texModel : register(t0);
 
@@ -28,28 +34,47 @@ struct PsInput
     float2 TexCoord : TEXCOORD0;
     float3 WorldNormal : TEXCOORD1;
     float3 WorldPosition : TEXCOORD2;
-};
-
-struct PsOutput
-{
-    float4 Color : SV_TARGET0;      // w - reserved
-    float4 Normal : SV_TARGET1;     // w - reserved
-    float4 Position: SV_TARGET2;    // w - Lit On/Off
-    float4 Specular : SV_TARGET3;   // w - Shininess
-    float4 Ambient: SV_TARGET4;     // w - reserved
+    float4 LightClipPosition : TEXCOORD3;
+    nointerpolation float4 LightColor : TEXCOORD4;
+    nointerpolation float4 LightDir : TEXCOORD5;
+    nointerpolation float3 CameraPosition : TEXCOORD6;
 };
 
 
-PsOutput main(PsInput psInput)
+float4 main(PsInput psInput) : SV_TARGET
 {
-    PsOutput psOutput;
+    const float4 texColor = texModel.Sample(texSampler, psInput.TexCoord);
+    float3 outColor = texColor.rgb;
 
-    const float Reserved = 0.0f;
-    psOutput.Color = texModel.Sample(texSampler, psInput.TexCoord);
-    psOutput.Position = float4(psInput.WorldPosition, IsLitOn);
-    psOutput.Normal = float4(psInput.WorldNormal, Reserved);
-    psOutput.Specular = float4(Specular, Shininess);
-    psOutput.Ambient = float4(Ambient, Reserved);
+    // MEMO: Lit On인 픽셀만
+    if (IsLitOn > 0.0f)
+    {
+        const float3 lightNdc = psInput.LightClipPosition.xyz / psInput.LightClipPosition.w;
+        const float2 shadowTexCoord = lightNdc.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
+        const float depthInShadowMap = shadowMap.Sample(shadowSampler, shadowTexCoord).r;
 
-    return psOutput;
+        const float DEPTH_OFFSET = 0.00001f;
+        if (lightNdc.z > depthInShadowMap + DEPTH_OFFSET)
+        {
+            // MEMO: ambient 색상을 그림자 색상으로 사용하는 것이 시도한 것 중 가장 자연스러움
+            outColor *= Ambient * psInput.LightColor.rgb;
+        }
+        else
+        {
+            const float3 worldNormal = normalize(psInput.WorldNormal);
+            const float diffuseIntensity = saturate(dot(normalize(-psInput.LightDir.xyz), worldNormal));
+            float specularIntensity = 0.0f;
+            if (diffuseIntensity > 0.0f)
+            {
+                const float3 reflectLight = normalize(reflect(psInput.LightDir.xyz, worldNormal));
+                // MEMO: 미리 뒤집어서 사용
+                const float3 cameraDir = normalize(psInput.CameraPosition - psInput.WorldPosition);
+                specularIntensity = dot(reflectLight, cameraDir);
+                specularIntensity = pow(saturate(specularIntensity), Shininess);
+            }
+            outColor *= (diffuseIntensity + Specular * specularIntensity + Ambient) * psInput.LightColor.rgb;
+        }
+    }
+
+    return float4(outColor, texColor.a);
 }

@@ -93,6 +93,7 @@ namespace renderer
         {
             {ePixelShader::PsOutline, "Renderer/Shader/Precompiled/PsOutline.spv"},
             {ePixelShader::PsBasicWithShadow, "Renderer/Shader/Precompiled/PsBasicWithShadow.spv"},
+            {ePixelShader::PsBasicWithShadowMRT, "Renderer/Shader/Precompiled/PsBasicWithShadowMRT.spv"},
             {ePixelShader::PsShadow, "Renderer/Shader/Precompiled/PsShadow.spv"},
             {ePixelShader::PsTexture, "Renderer/Shader/Precompiled/PsTexture.spv"},
             {ePixelShader::PsSkybox, "Renderer/Shader/Precompiled/PsSkybox.spv"},

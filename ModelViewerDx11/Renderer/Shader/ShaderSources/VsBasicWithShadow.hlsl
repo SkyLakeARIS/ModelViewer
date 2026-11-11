@@ -1,12 +1,6 @@
 /*
-    b0 ~ b5 는 렌더러에서 예약 (reserved slots by renderer)
-
-    b0 : World Matrix
-    b1 : View + Projection Matrix (mainly Perspective)
-    b2 : View + Projection Matrix of Light
-    b3 : Light Attributes (for lighting)
-    b4 : Camera Attribute (for lighting)
-    b5 : Orthographic Matrix (for screen)
+    set 0, binding 1 : 프레임 단위 통합 상수 (PerFrameUniformBlock과 순서·크기 일치)
+    World Matrix는 push constant
  */
 
 struct CbMatrix
@@ -16,26 +10,17 @@ struct CbMatrix
 
 [[vk::push_constant]] CbMatrix MatWorld;
 
-cbuffer CbMatViewProj : register(b1)
+[[vk::binding(1, 0)]]
+cbuffer CbPerFrame
 {
     matrix MatViewProj;
-}
-
-cbuffer CbMatLightViewProj : register(b2)
-{
     matrix MatLightViewProj;
-}
-
-cbuffer CbLightProperty : register(b3)
-{
     float4 vLightColor;
     float4 vLightDir;
-}
-
-cbuffer CbCamera : register(b4)
-{
-    float3 Position;
-    float Reserve;
+    float3 CameraPosition;
+    float  Reserve;
+    float4 Reserve2;
+    matrix MatOrthographic;
 }
 
 
@@ -52,6 +37,10 @@ struct PsInput
     float2 TexCoord : TEXCOORD0;
     float3 WorldNormal : TEXCOORD1;
     float3 WorldPosition : TEXCOORD2;
+    float4 LightClipPosition : TEXCOORD3;
+    nointerpolation float4 LightColor : TEXCOORD4;
+    nointerpolation float4 LightDir : TEXCOORD5;
+    nointerpolation float3 CameraPosition : TEXCOORD6;
 };
 
 //--------------------------------------------------------------------------------------
@@ -64,9 +53,14 @@ PsInput main(VsInput vsInput)
     psInput.Position = mul(vsInput.Position, MatWorld.Matrix);
     psInput.WorldNormal = mul(float4(vsInput.Normal, 0.0f), MatWorld.Matrix).xyz;
     psInput.WorldPosition = psInput.Position.xyz;
+    psInput.LightClipPosition = mul(psInput.Position, MatLightViewProj);
     psInput.Position = mul(psInput.Position, MatViewProj);
 
     psInput.TexCoord = vsInput.TexCoord;
+
+    psInput.LightColor = vLightColor;
+    psInput.LightDir = vLightDir;
+    psInput.CameraPosition = CameraPosition;
 
     return psInput;
 }

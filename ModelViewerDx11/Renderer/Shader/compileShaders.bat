@@ -26,6 +26,7 @@ for %%S in (
 for %%S in (
     PsOutline
     PsBasicWithShadow
+    PsBasicWithShadowMRT
     PsShadow
     PsTexture
     PsSkybox
