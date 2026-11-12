@@ -5,7 +5,6 @@ namespace renderer
 {
     enum class eShader : uint8_t;
     enum class eTextureType : uint8_t;
-    class Texture;
     class Sampler;
     class Buffer;
 

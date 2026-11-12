@@ -9,20 +9,6 @@ namespace renderer
         MaterialFactors MaterialFactors;
     };
 
-    enum class eCbType : uint8_t
-    {
-        CbWorld,
-        CbViewProj,
-        CbLightViewProjMatrix,
-        CbCameraPosition,
-        CbOutlineProperty,
-        CbLightProperty,
-        CbMaterialFactors,
-        CbColor,
-        CbOrthoMatrix,
-        ConstantBufferCount
-    };
-
     enum class eShader : uint8_t
     {
         Outline,
@@ -34,7 +20,6 @@ namespace renderer
         DebugHUD,
         Deferred,
         DebugColor,
-        Simple,
         ShaderCount
     };
 }

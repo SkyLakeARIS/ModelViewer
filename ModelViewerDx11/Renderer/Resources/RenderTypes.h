@@ -1,6 +1,5 @@
 #pragma once
 #include "TextureData.h"
-#include "VertexType.h"
 #include "../Shader/ShaderType.h"
 
 
@@ -19,29 +18,6 @@ namespace renderer
         XMMATRIX MatOrthographic;
     };
 
-    typedef struct CbMatrix
-    {
-        XMMATRIX Matrix;
-    }CbWorld, CbViewProj, CbLightViewProjMatrix, CbScreenSpaceMatrix;
-
-    typedef struct CbFloat
-    {
-        float    Float;
-        XMFLOAT3 Reserve;
-    } CbOutlineProperty;
-
-    typedef struct CbFloat3
-    {
-        XMFLOAT3    Float3;
-        float       Reserve;
-    } CbCameraPosition, CbColor;
-
-    typedef struct CbTwoVec4
-    {
-        XMFLOAT4    First;
-        XMFLOAT4    Second;
-    }CbLightProperty;
-
     enum class eRasterType : uint8_t
     {
         Basic,
@@ -56,19 +32,6 @@ namespace renderer
         Linear,
         AnisotropicWrap,
         SamplerCount
-    };
-
-    // RenderTarget, DepthStencil 
-    enum class eRenderTarget : uint8_t
-    {
-        Default,
-        Shadow,
-        GBufferColor,
-        GBufferNormal,
-        GBufferPosition,
-        GBufferSpecular,
-        GBufferAmbient,
-        RenderTargetCount
     };
 
     enum class eRenderPass : uint8_t
@@ -89,13 +52,6 @@ namespace renderer
         StateCount
     };
 
-    enum class eShadowMapUsage
-    {
-        Off,
-        On,
-        UsageCount
-    };
-
     enum eBlendState : uint8_t
     {
         Opaque,
@@ -103,18 +59,4 @@ namespace renderer
         StateCount
     };
 
-    struct RenderState
-    {
-        // MEMO: 셰이더
-        eShader ShaderType;
-        int8_t TexBindingSlots[static_cast<uint8_t>(eTextureType::TextureTypeCount)];
-        int8_t SamplerBindingSlot;
-        // MEMO: 렌더 상태
-        eRasterType RasterType;
-        eSamplerType SamplerType;
-        ePrimitiveTopology TopologyType;
-        eBlendState BlendState;
-        eDepthStencilState DepthStencilState;
-        eShadowMapUsage UseShadowMapUsage;
-    };
 }

@@ -209,12 +209,10 @@ call "compileShaders.bat"</Command>
     <ClInclude Include="UI\DebugPanel.h" />
     <ClInclude Include="Renderer\Importer\ImportedModelData.h" />
     <ClInclude Include="Renderer\Primitive\MeshGenerator.h" />
-    <ClInclude Include="Renderer\Resources\BufferManager.h" />
     <ClInclude Include="Renderer\Resources\Mesh.h" />
     <ClInclude Include="Renderer\Resources\RenderTypes.h" />
     <ClInclude Include="Renderer\Resources\ResourceManager.h" />
     <ClInclude Include="Renderer\Resources\TextureData.h" />
-    <ClInclude Include="Renderer\Resources\TextureManager.h" />
     <ClInclude Include="Scene\Camera.h" />
     <ClInclude Include="Scene\Floor.h" />
     <ClInclude Include="framework.h" />
@@ -253,9 +251,7 @@ call "compileShaders.bat"</Command>
     <ClCompile Include="Scene\Billboard.cpp" />
     <ClCompile Include="UI\DebugPanel.cpp" />
     <ClCompile Include="Renderer\Primitive\MeshGenerator.cpp" />
-    <ClCompile Include="Renderer\Resources\BufferManager.cpp" />
     <ClCompile Include="Renderer\Resources\ResourceManager.cpp" />
-    <ClCompile Include="Renderer\Resources\TextureManager.cpp" />
     <ClCompile Include="Scene\Camera.cpp" />
     <ClCompile Include="Scene\Floor.cpp" />
     <ClCompile Include="Core\Input.cpp" />

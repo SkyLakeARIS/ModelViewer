@@ -4,7 +4,6 @@
 #include "VkHelper.h"
 #include "Resources/Image.h"
 #include "Shader/DescriptorLayout.h"
-#include "Shader/Shader.h"
 
 namespace renderer
 {

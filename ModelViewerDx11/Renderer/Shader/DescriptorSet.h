@@ -8,24 +8,13 @@ namespace renderer
 {
     struct DescriptorWriteInfo;
     class DescriptorSet;
-    enum class eTextureType : uint8_t;
     enum class eLayoutType : uint8_t;
-    class Sampler;
-    class Texture;
-    class Shader;
     class Buffer;
 
     struct PoolInfo
     {
         uint16_t PoolIndex;
         eLayoutType LayoutType;
-    };
-
-    struct TextureWriteInfo
-    {
-        eTextureType TextureType;
-        Texture* Texture;
-        Sampler* Sampler;
     };
 
     struct UniformWriteInfo

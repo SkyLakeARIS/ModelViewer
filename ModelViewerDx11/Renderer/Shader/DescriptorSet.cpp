@@ -5,8 +5,6 @@
 #include "../Resources/Buffer.h"
 #include "../Resources/RenderTypes.h"
 #include "../Resources/Sampler.h"
-#include "../Resources/Texture.h"
-#include "../Shader/Shader.h"
 
 namespace renderer
 {

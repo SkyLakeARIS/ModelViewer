@@ -6,7 +6,6 @@
 namespace renderer
 {
     class Sampler;
-    class Shader;
     class DescriptorSet;
     class Image;
 

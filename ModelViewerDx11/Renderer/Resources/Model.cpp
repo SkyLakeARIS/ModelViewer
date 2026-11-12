@@ -66,11 +66,6 @@ namespace renderer
         mMesh = std::move(mesh);
     }
 
-    void Model::SetHighlight(bool bSelection)
-    {
-        mbHighlight = bSelection;
-    }
-
     void Model::SetDescriptorSets(renderer::eShader shaderType, std::vector<DescriptorSet*>& descriptorSets)
     {
         auto descriptorSetIt = mDescriptorSets.find(shaderType);

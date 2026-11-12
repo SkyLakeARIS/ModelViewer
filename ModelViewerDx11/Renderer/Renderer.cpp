@@ -5,7 +5,6 @@
 #include "Uploader.h"
 #include "VkHelper.h"
 #include "../Util/Macro.h"
-#include "../Util/Util.h"
 #include "Resources/Buffer.h"
 #include "Resources/Image.h"
 #include "Resources/PipelineBuilder.h"

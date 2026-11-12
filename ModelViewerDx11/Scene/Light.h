@@ -3,7 +3,6 @@
 
 namespace scene
 {
-    class Camera;
 
     // MEMO: 만들어놓고 XMVECTOR 비율이 더 높으면 XMFLOAT3->XMVECTOR로
     class Light final // working like directional light

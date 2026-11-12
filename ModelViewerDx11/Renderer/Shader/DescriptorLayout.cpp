@@ -147,7 +147,6 @@ namespace renderer
         case eShader::Color:
         case eShader::DebugHUD:
         case eShader::DebugColor:
-        case eShader::Simple:
         {
             layoutType = eLayoutType::Material;
             break;
@@ -217,7 +216,6 @@ namespace renderer
         case eShader::BasicWithShadow:
         case eShader::Texture:
         case eShader::DebugHUD:
-        case eShader::Simple:
         {
             textureSlots =
             {

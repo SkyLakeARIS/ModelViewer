@@ -28,7 +28,6 @@ namespace renderer
         void Update();
 
         void SetMesh(const Mesh& mesh);
-        void SetHighlight(bool bSelection);
 
         void SetDescriptorSets(renderer::eShader shaderType, std::vector<DescriptorSet*>& descriptorSets);
 

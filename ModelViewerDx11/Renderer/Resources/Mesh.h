@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include "Material.h"
 #include "RenderTypes.h"
+#include "VertexType.h"
 #include "../../Util/Define.h"
 
 namespace renderer

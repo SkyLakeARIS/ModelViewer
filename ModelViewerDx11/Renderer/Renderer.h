@@ -4,6 +4,8 @@
 
 namespace renderer
 {
+    enum class ePrimitiveTopology : uint8_t;
+    enum class eVertexFormat : uint8_t;
     struct UniformWriteInfo;
     class ResourceManager;
     class DescriptorAllocator;

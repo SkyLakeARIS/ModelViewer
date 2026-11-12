@@ -38,7 +38,6 @@ namespace renderer
         PsColorWithShadow,
         PsDeferred,
         PsTextureMRT,
-        PsSimple,
         PixelShaderCount
     };
 

@@ -1,6 +1,6 @@
 #include "Light.h"
-#include "../Renderer/Renderer.h"
 #include "../Renderer/Primitive/MeshGenerator.h"
+#include "../Renderer/Resources/VertexType.h"
 #include "../Util/Util.h"
 
 namespace scene
