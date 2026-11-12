@@ -5,10 +5,10 @@ Texture2D shadowMap;
 SamplerState shadowSampler;
 
 [[vk::binding(7, 1)]]
-Texture2D texModel : register(t0);
+Texture2D texModel;
 
 [[vk::binding(13, 1)]]
-SamplerState texSampler : register(s0);
+SamplerState texSampler;
 
 
 struct PerObject

@@ -1,12 +1,12 @@
 
 [[vk::binding(7, 1)]]
-TextureCube cubeTexture : register(t0);
+TextureCube cubeTexture;
 
 [[vk::binding(13, 1)]]
-SamplerState cubeSampler : register(s0);
+SamplerState cubeSampler;
 
 [[vk::binding(15, 1)]]
-cbuffer cbMaterialFactors : register(b0)
+cbuffer cbMaterialFactors
 {
     float3 Diffuse;
     float Opacity;

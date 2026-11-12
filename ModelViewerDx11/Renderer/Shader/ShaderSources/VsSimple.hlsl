@@ -18,7 +18,7 @@ struct PerObject
 [[vk::push_constant]] PerObject pcPerObject;
 
 [[vk::binding(1, 0)]]
-cbuffer CbPerFrame : register(b1)
+cbuffer CbPerFrame
 {
     matrix MatViewProj;
     matrix MatLightViewProj;

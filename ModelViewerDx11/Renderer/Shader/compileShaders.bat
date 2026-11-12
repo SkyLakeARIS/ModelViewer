@@ -37,7 +37,7 @@ for %%S in (
     PsDeferred
     PsTextureMRT
 ) do (
-    "%DXC%" -spirv -O2 -T ps_5_1 -E main -fvk-use-dx-layout -fvk-t-shift 7 1 -fvk-s-shift 13 1 -fvk-b-shift 15 1 "%SHADER_DIR%\%%S.hlsl" -Fo "%OUTPUT_DIR%\%%S.spv" -Fc "%OUTPUT_DIR%\%%S.asm"
+    "%DXC%" -spirv -O2 -T ps_5_1 -E main -fvk-use-dx-layout "%SHADER_DIR%\%%S.hlsl" -Fo "%OUTPUT_DIR%\%%S.spv" -Fc "%OUTPUT_DIR%\%%S.asm"
     if not "!errorlevel!"=="0" exit /b 1
 )
 

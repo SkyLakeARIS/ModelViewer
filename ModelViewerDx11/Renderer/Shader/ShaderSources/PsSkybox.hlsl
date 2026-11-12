@@ -1,9 +1,9 @@
 
 [[vk::binding(7, 1)]]
-TextureCube cubeTexture : register(t0);
+TextureCube cubeTexture;
 
 [[vk::binding(13, 1)]]
-SamplerState cubeSampler : register(s0);
+SamplerState cubeSampler;
 
 struct PerObject
 {

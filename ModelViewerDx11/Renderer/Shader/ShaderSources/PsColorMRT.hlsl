@@ -1,5 +1,5 @@
 [[vk::binding(15, 1)]]
-cbuffer cbMaterialFactors : register(b0)
+cbuffer cbMaterialFactors
 {
     float3 Diffuse;
     float Opacity;

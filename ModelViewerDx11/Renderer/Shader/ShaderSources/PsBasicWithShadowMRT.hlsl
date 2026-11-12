@@ -1,12 +1,12 @@
 [[vk::binding(7, 1)]]
-Texture2D texModel : register(t0);
+Texture2D texModel;
 
 [[vk::binding(13, 1)]]
-SamplerState texSampler : register(s0);
+SamplerState texSampler;
 
 
 [[vk::binding(15, 1)]]
-cbuffer cbMaterialFactors : register(b0)
+cbuffer cbMaterialFactors
 {
     float3 Diffuse;
     float Opacity;   // 알파값으로 사용

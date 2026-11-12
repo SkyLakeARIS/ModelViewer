@@ -1,12 +1,12 @@
 
 [[vk::binding(7, 1)]]
-Texture2D txDiffuse : register(t0);
+Texture2D txDiffuse;
 
 [[vk::binding(13, 1)]]
-SamplerState texSampler : register(s0);
+SamplerState texSampler;
 
 [[vk::binding(15, 1)]]
-cbuffer cbMaterialFactors : register(b0)
+cbuffer cbMaterialFactors
 {
     float3 Diffuse;
     float Opacity;
