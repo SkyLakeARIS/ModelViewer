@@ -16,7 +16,7 @@ public:
     bool ProcessMessages();
 
     HWND GetHandle() const;
-
+    const char* GetAppNameA() const;
 public:
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -26,7 +26,8 @@ private:
     HWND mHandleWindow;
     HINSTANCE mHandleInstance;
 
-    WCHAR mAppTitleName[MAX_WINDOW_NAME_LENGTH];
+    WCHAR mAppTitleNameW[MAX_WINDOW_NAME_LENGTH];
+    char mAppTitleNameA[MAX_WINDOW_NAME_LENGTH * 2];
     WCHAR mWindowClassName[MAX_WINDOW_NAME_LENGTH];
 
 };

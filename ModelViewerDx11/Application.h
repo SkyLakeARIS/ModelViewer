@@ -1,7 +1,6 @@
 #pragma once
 #include "Renderer/Resources/Mesh.h"
-#include "Renderer/Resources/RenderPacket.h"
-
+#include "framework.h"
 
 namespace core
 {
@@ -26,13 +25,11 @@ namespace scene
 
 namespace renderer
 {
+    class ResourceManager;
+    class Loader;
+    class Renderer;
     class Model;
     class ModelImporter;
-    class TextureManager;
-    class BufferManager;
-    class ResourceManager;
-    class Renderer;
-    class ShaderManager;
 }
 
 class Application
@@ -43,7 +40,6 @@ public:
     ~Application();
 
     bool InitializeWithWindows(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int32_t nCmdShow);
-
     void Run();
 
 private:
@@ -63,11 +59,10 @@ private:
 
     Window* mWindow;
     renderer::Mesh mNdcMeshDeferred;
-
+    renderer::Loader* mLoader;
+    renderer::ResourceManager* mResourceManager;
     int32_t mCurSubMeshIndexFocusModel;
-    std::vector<renderer::RenderPacket> mCommandList;
-    renderer::RenderPacketCache mCommandCache;
-    renderer::Renderer* mRenderer;
+    renderer::Renderer* mVkRenderer;
     renderer::ModelImporter* mImporter;
     renderer::Model* mCharacter;
     scene::Camera* mCamera;
@@ -75,15 +70,5 @@ private:
     scene::Light* mLight;
     scene::Billboard* mLightIcon;
     scene::Floor* mFloor;
-    renderer::BufferManager* mBufferManager;
-    renderer::TextureManager* mTextureManager;
-    renderer::ResourceManager* mResourceManager;
-    renderer::ShaderManager* mShaderManager;
     core::DirectInput* mDirectInput;
-    ui::DebugPanel* mShadowDebugPanel;
-    ui::DebugPanel* mGBufferColorDebugPanel;
-    ui::DebugPanel* mGBufferNormalDebugPanel;
-    ui::DebugPanel* mGBufferPositionDebugPanel;
-    ui::DebugPanel* mGBufferSpecularDebugPanel;
-    ui::DebugPanel* mGBufferAmbientDebugPanel;
 };

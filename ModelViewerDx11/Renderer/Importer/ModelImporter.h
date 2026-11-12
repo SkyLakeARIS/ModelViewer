@@ -6,7 +6,6 @@
 namespace renderer
 {
     struct ImportedModelContainer;
-    class Renderer;
 
     class ModelImporter
     {

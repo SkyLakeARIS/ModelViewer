@@ -1,30 +1,59 @@
 # ModelViewerDx11
 
-"기반 구조를 먼저 잡고 그 위에 화려한 기능을 올리자"를 지향하며 진행 중인 프로젝트입니다.
-
-DirectX 11로 Deferred Shading 및 Render Command Queue 구조를 구현한 렌더러입니다.
-객체가 직접 그리지 않고 커맨드를 구성해 리스트에 담고,
-SortKey 기준으로 정렬한 뒤 직전 상태와 비교해 달라진 것만 바인딩합니다.
+D3D11로 만든 간단한 모델 뷰어를 Vulkan으로 포팅한 프로젝트입니다.
 
 ---
 
-## 코드 위치
+## 개발 환경
 
-| 내용 | 파일 |
+- Visual Studio 2022 (`ModelViewerDx11.sln`)
+- Vulkan SDK 1.4 이상 (`VULKAN_SDK` 환경변수 사용)
+- Vulkan 1.3 이상 지원 GPU (확인: RTX 5070, RTX 4060 Laptop)
+- DXC: HLSL 셰이더를 SPIR-V로 컴파일 (`Renderer/Shader/compileShaders.bat`)
+- FBX SDK
+- DirectXTex (NuGet)
+
+---
+
+## 아키텍처 구조
+
+```
+Application          메인 루프 · 씬 객체 소유
+├── Window           윈도우 생성 · 메시지 루프
+├── Core             DirectInput · Timer
+├── Scene            Camera · Light · Sky · Floor · Billboard
+├── Util             Define · Macro · Type
+└── Renderer         Renderer · FrameContext · Loader · Uploader · VkHelper
+    ├── Resources    ResourceManager · PipelineBuilder · Buffer · Image · Texture · Sampler
+    │                Model · Mesh · Material
+    ├── Shader       DescriptorLayout · DescriptorAllocator · DescriptorSet
+    │                Shader · ShaderModule · ShaderSources/*.hlsl
+    ├── Importer     ModelImporter (FBX)
+    └── Primitive    MeshGenerator
+```
+
+---
+
+## 주요 클래스
+
+| 클래스 | 역할 |
 |---|---|
-| RenderPacket 정의, SortKey 생성(팩토리) | `Renderer/Resources/RenderPacket.h` |
-| 상태 캐시 (RenderPacketCache) | `Renderer/Resources/RenderPacket.h` |
-| 커맨드 수집 · 정렬 · 소비 루프 | `Application.cpp` |
-| 렌더패스 ↔ 렌더타겟 매핑, MRT 바인딩 | `Renderer/Renderer.cpp` |
-| 셰이더 로드, 머티리얼 바인딩 테이블 | `Renderer/Shader/ShaderManager.h` |
-| 정점/인덱스 버퍼 청크 관리 | `Renderer/Resources/BufferManager.h` |
-| 정점 포맷, BufferRange | `Renderer/Resources/VertexType.h` |
-| 상수버퍼 구조체, 렌더 상태 열거형 | `Renderer/Resources/RenderTypes.h` |
-| 셰이더 · 상수버퍼 종류 열거형 | `Renderer/Shader/ShaderType.h` |
+| Renderer | 디바이스 · 스왑체인 · 렌더 루프, 패스 시작/종료, 파이프라인 생성 |
+| FrameContext | 프레임(in-flight)별 커맨드 버퍼 · 동기화 객체 · 섀도맵 관리 |
+| ResourceManager | 셰이더 · 샘플러 · 파이프라인 · 텍스처 · 정점/인덱스 버퍼 소유, 해시로 조회 |
+| Loader | 메시 데이터를 리소스로 등록하고 파이프라인 · 디스크립터 세트를 구성해 물체에 전달 |
+| DescriptorAllocator | 레이아웃별 디스크립터 풀 관리, 세트 할당 |
 
 ---
+## 이전 D3D11 모델 뷰어 구조
 
-## 구조 요약
+마지막 D3D11 구조: [5df8283](https://github.com/SkyLakeARIS/ModelViewer/tree/5df82839d8674f6902c193bcd29a093e6d5e9138) (2026-09-21)
+
+- Deferred Shading: G-Buffer 5장(MRT)에 기록한 뒤 라이팅 패스에서 합성
+- Render Command Queue: 물체가 직접 그리지 않고 커맨드를 리스트에 담은 뒤,
+  64bit SortKey(렌더패스 · 투명 여부 > 셰이더 · 텍스처 > 렌더 상태)로 정렬하고
+  직전 상태와 비교해 달라진 것만 바인딩
+- 버퍼 관리: 정점/인덱스 버퍼를 청크 단위로 관리하고, 빈 공간 재사용 · 병합 · 자동 확장 지원
 
 ```
 Application          메인 루프 · 커맨드 리스트 소유
@@ -40,56 +69,3 @@ Application          메인 루프 · 커맨드 리스트 소유
     ├── Importer     ModelImporter (FBX)
     └── Primitive    MeshGenerator
 ```
-
----
-
-## 렌더 패스
-
-`Shadow → Main(GPass) → Deferred → UI` 순으로 실행됩니다.
-Deferred는 렌더러 내부에서만 쓰는 패스입니다.
-
-| Pass | 렌더타겟 | 내용 |
-|---|---|---|
-| Shadow | Shadow | 라이트 시점 깊이 |
-| Main (GPass) | G-Buffer 5장 (MRT) | 아래 표 |
-| Deferred | 백버퍼 | G-Buffer와 셰도우맵을 합쳐 라이팅 |
-| UI | 백버퍼 | 디버그 HUD |
-
----
-
-## SortKey
-
-64bit. 값이 클수록 먼저 그려지도록 하고 내림차순 정렬합니다.
-순서가 중요하거나 교체 비용이 큰 상태일수록 상위 비트에 배치했습니다.
-
-| 구간 | 기준 |
-|---|---|
-| 상위 | 순서가 중요한 값. 렌더패스, 투명 여부 |
-| 중위 | 교체 비용이 커서 덜 바뀌어야 하는 값. 셰이더, 텍스처 |
-| 하위 | 자잘한 렌더 상태. 교체 비용이 상대적으로 작음 |
-
-정렬에 들어가는 요소 타입이 필요한 비트 수를 컴파일 타임에 계산되도록 했습니다.
-값과 자동으로 계산된 비트 수를 기반으로 레이아웃에 정의된 순서대로 SortKey를 구성합니다.
-
----
-
-### Deferred Shading G-Buffer 구성
-
-GPass에서 Lighting을 위해서 5장의 RenderTarget을 사용 중입니다.
-
-| 렌더타겟 | RGB | A |
-|---|---|---|
-| Color | Diffuse | 예약 |
-| Normal | 월드 노멀 | 예약 |
-| Position | 월드 좌표 | 라이팅 대상 여부 |
-| Specular | Specular | Shininess |
-| Ambient | Ambient | 예약 |
-
----
-
-## 빌드
-
-- Visual Studio 2022
-- `ModelViewerDx11.sln`
-- FBX SDK
-- DirectXTex (NuGet)

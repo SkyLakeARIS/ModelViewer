@@ -9,10 +9,12 @@
     b5 : Orthographic Matrix (for screen)
  */
 
-cbuffer CbMatWorld : register(b0)
+struct CbMatrix
 {
-    matrix MatWorld;
-}
+    matrix Matrix;
+};
+
+[[vk::push_constant]] CbMatrix MatWorld;
 
 cbuffer CbMatViewProj : register(b1)
 {
@@ -26,9 +28,9 @@ cbuffer CbOutline : register(b6)
 
 struct VsInput
 {
-    float4 Position : POSITION;
-    float2 TexCoord : TEXCOORD0;
-    float3 Normal : NORMAL;
+    [[vk::location(0)]] float4 Position : POSITION;
+    [[vk::location(1)]] float2 TexCoord : TEXCOORD0;
+    [[vk::location(2)]] float3 Normal : NORMAL;
 };
 
 struct PsInput
@@ -41,7 +43,7 @@ PsInput main(VsInput vsInput)
 {
     PsInput psInput;
     float outlineWidth = 0.01f;
-    psInput.Position = mul(float4(vsInput.Normal.xyz * outlineWidth + vsInput.Position.xyz, 1.0f), MatWorld);
+    psInput.Position = mul(float4(vsInput.Normal.xyz * OutlineWidth + vsInput.Position.xyz, 1.0f), MatWorld.Matrix);
     psInput.Position = mul(float4(psInput.Position.xyz, 1.0f), MatViewProj);
     psInput.TexCoord = vsInput.TexCoord;
 	return psInput;

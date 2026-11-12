@@ -1,12 +1,7 @@
 #include "Billboard.h"
 #include "../Renderer/Renderer.h"
-#include "../Renderer/Primitive/MeshGenerator.h"
-#include "../Renderer/Resources/RenderPacket.h"
+#include "../Util/Macro.h"
 
-namespace renderer
-{
-    struct RenderPacket;
-}
 
 namespace scene
 {
@@ -21,39 +16,22 @@ namespace scene
     {
     }
 
-    void Billboard::Initialize()
-    {
-
-        renderer::MeshGenerator::CreatePlane(mMesh);
-        mMesh.SubMeshes.front().Material.Factors.IsLitOn = static_cast<float>(false);
-    }
-
-    void Billboard::SubmitCommand(std::vector<renderer::RenderPacket>& commandList)
+    void Billboard::SubmitCommand(renderer::Renderer& renderer)
     {
         const XMMATRIX matTranslate = XMMatrixTranslation(mPosition.x, mPosition.y, mPosition.z);
-        const XMMATRIX matWorld = mMatWorld * matTranslate;
+        const XMMATRIX matWorld = XMMatrixTranspose(mMatWorld * matTranslate);
 
+        const auto& descriptorSetIt = mDescriptorSets.find(renderer::eShader::Texture);
+        auto descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)
         {
-            renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                mMesh.VertexFormat,
-                renderer::GetVertexStrideSize(mMesh.VertexFormat),
-                renderer::eBufferUsage::Static,
-                true,
-                subMesh.VertexRange,
-                subMesh.IndexRange,
-                subMesh.Material,
-                renderer::eRenderPass::Main,
-                XMMatrixTranspose(matWorld),
-                renderer::eShader::Texture,
-                renderer::eRasterType::Basic,
-                renderer::eSamplerType::AnisotropicWrap,
-                renderer::eBlendState::AlphaBlend,
-                renderer::ePrimitiveTopology::TriangleStrip,
-                false,
-                renderer::eDepthStencilState::DepthOffStencilOff
-            );
-            commandList.push_back(command);
+            renderer::PushConstantBlock pushConstantBlock{ matWorld, subMesh.Material.Factors};
+            renderer.UploadPushConstant(pushConstantBlock, renderer::eShader::Texture);
+            const auto& pipelineIt = subMesh.Pipelines.find(renderer::eRenderPass::Main);
+            renderer.BindPipeline(pipelineIt->second);
+            renderer.BindDescriptorSet(*descriptorSet);
+            renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);
+            ++descriptorSet;
         }
     }
 
@@ -68,14 +46,27 @@ namespace scene
         mMatWorld = XMMatrixInverse(&determinant, mMatWorld);
     }
 
-    void Billboard::SetTexture(HashID texHash, int16_t texSerial)
-    {
-        mMesh.SubMeshes.front().Material.TextureHashes[static_cast<int8_t>(renderer::eTextureType::Diffuse)] = texHash;
-        mMesh.SubMeshes.front().Material.TextureSerials[static_cast<int8_t>(renderer::eTextureType::Diffuse)] = texSerial;
-    }
-
     void Billboard::SetPosition(const XMFLOAT3& position)
     {
         mPosition = position;
+    }
+
+    void Billboard::SetMesh(const renderer::Mesh& mesh)
+    {
+        mMesh = std::move(mesh);
+    }
+
+    void Billboard::SetDescriptorSets(renderer::eShader shaderType, std::vector<renderer::DescriptorSet*>& descriptorSets)
+    {
+        ASSERT(mDescriptorSets.empty(), "Descriptors를 여러 번 초기화 하는 것 같습니다.");
+        auto descriptorSetIt = mDescriptorSets.find(shaderType);
+        if (descriptorSetIt == mDescriptorSets.end())
+        {
+            mDescriptorSets.insert({ shaderType, std::move(descriptorSets) });
+        }
+        else
+        {
+            descriptorSetIt->second.insert(descriptorSetIt->second.end(), descriptorSets.begin(), descriptorSets.end());
+        }
     }
 }

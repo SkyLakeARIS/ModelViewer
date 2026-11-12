@@ -1,8 +1,6 @@
 #include "Light.h"
-#include "../Renderer/Renderer.h"
 #include "../Renderer/Primitive/MeshGenerator.h"
-#include "../Renderer/Resources/BufferManager.h"
-#include "../Renderer/Resources/RenderPacket.h"
+#include "../Renderer/Resources/VertexType.h"
 #include "../Util/Util.h"
 
 namespace scene
@@ -25,34 +23,11 @@ namespace scene
     {
     }
 
-    void Light::SubmitDebugCommand(std::vector<renderer::RenderPacket>& commandList)
+    void Light::SubmitDebugCommand()
     {
-        for (const auto& subMesh : mMeshDebug.SubMeshes)
-        {
-            renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                mMeshDebug.VertexFormat,
-                renderer::GetVertexStrideSize(mMeshDebug.VertexFormat),
-                renderer::eBufferUsage::Dynamic,
-                false,
-                subMesh.VertexRange,
-                subMesh.IndexRange,
-                subMesh.Material,
-                renderer::eRenderPass::Main,
-                XMMatrixIdentity(),
-                renderer::eShader::DebugColor,
-                renderer::eRasterType::Basic,
-                renderer::eSamplerType::SamplerCount,
-                renderer::eBlendState::Opaque,
-                renderer::ePrimitiveTopology::Lines,
-                false,
-                renderer::eDepthStencilState::DepthOffStencilOff
-            );
-
-            commandList.push_back(command);
-        }
     }
 
-    void Light::Update(renderer::Renderer& renderer)
+    void Light::Update()
     {
         XMVECTOR vPosition = XMLoadFloat3(&mPosition);
         XMVECTOR vDirection = XMLoadFloat3(&mDirection);
@@ -150,8 +125,8 @@ namespace scene
         renderer::SubMesh& subMesh = mMeshDebug.SubMeshes.front();
 
         const int16_t strideVertex = renderer::GetVertexStrideSize(mMeshDebug.VertexFormat);
-        renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
-        bufferManager->AddVertexDynamic(reinterpret_cast<int8_t*>(mLines.data()), static_cast<uint32_t>(strideVertex) * static_cast<uint32_t>(mLines.size()), subMesh.SubMeshHash, strideVertex, subMesh.VertexRange);
+        //renderer::BufferManager* const bufferManager = renderer.GetBufferManager();
+        //bufferManager->AddVertexDynamic(reinterpret_cast<int8_t*>(mLines.data()), static_cast<uint32_t>(strideVertex) * static_cast<uint32_t>(mLines.size()), subMesh.SubMeshHash, strideVertex, subMesh.VertexRange);
 
         mMeshDebug.VertexRange = subMesh.VertexRange;
     }

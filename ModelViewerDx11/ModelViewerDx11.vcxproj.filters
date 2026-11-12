@@ -66,13 +66,12 @@
     <ClInclude Include="Core\Timer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="Util\Macro.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Util\Type.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Resources\BufferManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Util\Util.h">
@@ -82,9 +81,6 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Window.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Resources\TextureManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\Resources\TextureData.h">
@@ -111,12 +107,6 @@
     <ClInclude Include="Renderer\Resources\Material.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\Resources\RenderPacket.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Shader\ShaderManager.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="Renderer\Importer\FbxPrerequisites.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -133,6 +123,48 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Core\MathPrerequisites.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Resources\Buffer.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\VkHelper.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Uploader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Resources\Image.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Resources\Texture.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Resources\Sampler.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Shader\Shader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Resources\PipelineBuilder.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\FrameContext.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Shader\ShaderModule.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Shader\DescriptorSet.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Shader\DescriptorAllocator.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Loader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Shader\DescriptorLayout.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -167,16 +199,12 @@
     <ClCompile Include="Core\Timer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\Resources\BufferManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Application.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Window.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\Resources\TextureManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\Resources\ResourceManager.cpp">
@@ -191,7 +219,46 @@
     <ClCompile Include="Scene\Billboard.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\Shader\ShaderManager.cpp">
+    <ClCompile Include="Renderer\Resources\Buffer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\VkHelper.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Uploader.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Resources\Image.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Resources\Texture.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Resources\Sampler.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Shader\Shader.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Resources\PipelineBuilder.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\FrameContext.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Shader\ShaderModule.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Shader\DescriptorSet.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Shader\DescriptorAllocator.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Loader.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Shader\DescriptorLayout.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -207,28 +274,6 @@
     <Image Include="ModelViewerDx11.ico">
       <Filter>리소스 파일</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Renderer\Shader\ShaderSources\LayoutP.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\LayoutPT.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\LayoutPTN.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsBasicWithShadow.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsColor.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsDeferred.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsOutline.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsShadow.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsSkybox.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsTexture.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\PsTextureMRT.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsBasicWithShadow.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsDebugColor.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsDeferred.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsOutline.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsScreen.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsShadow.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsSimple.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsSkybox.hlsl" />
-    <FxCompile Include="Renderer\Shader\ShaderSources\VsTexture.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

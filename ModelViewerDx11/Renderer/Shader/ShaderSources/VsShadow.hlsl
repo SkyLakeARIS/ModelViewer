@@ -1,27 +1,39 @@
 /*
-    b0 ~ b5 는 렌더러에서 예약 (reserved slots by renderer)
-
-    b0 : World Matrix
-    b1 : View + Projection Matrix (mainly Perspective)
-    b2 : View + Projection Matrix of Light
-    b3 : Light Attributes (for lighting)
-    b4 : Camera Attribute (for lighting)
-    b5 : Orthographic Matrix (for screen)
+    set 0, binding 1 : 프레임 단위 통합 상수 (PerFrameUniformBlock과 순서·크기 일치)
+    World Matrix는 push constant
  */
 
-cbuffer CbMatWorld : register(b0)
+struct PerObject
 {
-    matrix MatWorld;
-}
+    matrix WorldMatrix;
+    float3 Diffuse;
+    float Opacity;   // 알파값으로 사용
+    float3 Ambient;
+    float Reflectivity;
+    float3 Specular;  // 스페큘러 거듭제곱 값
+    float Shininess;
+    float3 Emissive;
+    float IsLitOn;
+};
 
-cbuffer CbMatLightViewProj : register(b2)
+[[vk::push_constant]] PerObject pcPerObject;
+
+[[vk::binding(1, 0)]]
+cbuffer CbPerFrame
 {
+    matrix MatViewProj;
     matrix MatLightViewProj;
+    float4 vLightColor;
+    float4 vLightDir;
+    float3 CameraPosition;
+    float  Reserve;
+    float4 Reserve2;
+    matrix MatOrthographic;
 }
 
 struct VsInput
 {
-    float4 Position : POSITION;
+    [[vk::location(0)]] float4 Position : POSITION;
 };
 
 struct PsInput
@@ -32,7 +44,7 @@ struct PsInput
 PsInput main(VsInput vsInput)
 {
     PsInput psInput;
-    psInput.Position = mul(vsInput.Position, MatWorld);
+    psInput.Position = mul(vsInput.Position, pcPerObject.WorldMatrix);
     psInput.Position = mul(psInput.Position, MatLightViewProj);
     return psInput;
 }

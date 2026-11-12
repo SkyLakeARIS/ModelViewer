@@ -1,100 +1,261 @@
+#include "Buffer.h"
 #include "ResourceManager.h"
-#include "BufferManager.h"
-#include "Model.h"
-#include "TextureManager.h"
+#include "Sampler.h"
+#include "Texture.h"
+#include "../VkHelper.h"
 #include "../../Util/Macro.h"
-#include "../../Util/Util.h"
-#include "../Importer/ImportedModelData.h"
-#include "../Importer/ModelImporter.h"
+#include "../Shader/Shader.h"
+#include "../Shader/ShaderModule.h"
+#include "../Shader/ShaderType.h"
 
 namespace renderer
 {
-    ResourceManager::ResourceManager(ID3D11Device* const device, TextureManager* const textureManager, ModelImporter* const importer, BufferManager* const bufferManager)
+    ResourceManager::ResourceManager(VkDevice device)
         : mDevice(device)
-        , mTextureManager(textureManager)
-        , mModelImporter(importer)
-        , mBufferManager(bufferManager)
+        , mVertexBuffer(nullptr)
+        , mIndexBuffer(nullptr)
     {
-        ASSERT(device != nullptr, "device is nullptr");
-        ASSERT(textureManager != nullptr, "textureManager is nullptr");
-        ASSERT(importer != nullptr, "importer is nullptr");
-        ASSERT(bufferManager != nullptr, "bufferManager is nullptr");
     }
 
     ResourceManager::~ResourceManager()
     {
-        mDevice = nullptr;
-        mTextureManager = nullptr;
-        mModelImporter = nullptr;
-        mBufferManager = nullptr;
-    }
-
-    void ResourceManager::LoadModel(const int8_t* const filePath, Model* const outModel)
-    {
-        ASSERT(filePath != nullptr, "invalid path. (filePath is nullptr) ");
-        ASSERT(*filePath != ' ', "invalid path. (filePath may empty string) ");
-        ASSERT(*filePath != '\0', "invalid path. (filePath may empty(null) string) ");
-
-        HashID modelHash = 0;
-        ImportedModelContainer modelContainer;
-        mModelImporter->LoadFbxModel(filePath, modelHash, modelContainer);
-
-        Mesh newMesh = {};
-        newMesh.SubMeshes.reserve(modelContainer.SubMeshes.size());
-        newMesh.VertexFormat = eVertexFormat::PTN;
-        const int16_t strideVertex = GetVertexStrideSize(newMesh.VertexFormat);
-        const int16_t strideIndex = mBufferManager->GetIndexStrideSize();
-        const int16_t filePathLength = static_cast<int16_t>(strlen(reinterpret_cast<char const*>(filePath)));
-        ASSERT(filePathLength + 1 <= util::MAX_NAME_LENGTH, "str이 버퍼 사이즈보다 큼. 입력 문자열을 검점하거나, util의 Length 상수 조정 필요. str(%d)", filePathLength + 1);
-        (void)memcpy(newMesh.MeshName, filePath, filePathLength + 1);
-        newMesh.MeshHash = modelHash;
-
-        int32_t totalVertexCount = 0;
-        int32_t totalIndexCount = 0;
-        for(auto& subMesh : modelContainer.SubMeshes)
+        for (const auto& samplerIt : mSamplers)
         {
-            SubMesh newSubMesh = {};
-
-            newSubMesh.SubMeshHash = util::GetDjb2Hash(subMesh.MeshName, modelHash);
-            mBufferManager->AddVertex(reinterpret_cast<int8_t*>(subMesh.VertexBuffer.get()), strideVertex * subMesh.VertexCount, newSubMesh.SubMeshHash, strideVertex, newSubMesh.VertexRange);
-
-            mBufferManager->AddIndex(reinterpret_cast<int8_t*>(subMesh.IndexBuffer.get()), strideIndex * subMesh.IndexCount, newSubMesh.SubMeshHash, strideIndex, newSubMesh.IndexRange);
-
-            totalVertexCount += newSubMesh.VertexRange.Count;
-            totalIndexCount += newSubMesh.IndexRange.Count;
-            (void)memcpy(newSubMesh.SubMeshName, subMesh.MeshName, util::MAX_NAME_LENGTH);
-
-            newSubMesh.MinBound = std::move(subMesh.MinBound);
-            newSubMesh.MaxBound = std::move(subMesh.MaxBound);
-
-            newSubMesh.Material.Factors = std::move(subMesh.MaterialParam);
-            newSubMesh.Material.Factors.IsLitOn = static_cast<float>(true);
-
-            for (int32_t tex = 0; tex < static_cast<int32_t>(eTextureType::TextureTypeCount); ++tex)
-            {
-                if(subMesh.Textures[tex].TextureHash)
-                {
-                    mTextureManager->AddTexture(subMesh.Textures[tex].FilePath, subMesh.Textures[tex].TextureHash);
-
-                    newSubMesh.Material.TextureHashes[tex] = subMesh.Textures[tex].TextureHash;
-                    newSubMesh.Material.TextureSerials[tex] = mTextureManager->GetTextureSerial(subMesh.Textures[tex].TextureHash);
-                }
-                else if(static_cast<eTextureType>(tex) == eTextureType::Shadow)
-                {
-                    newSubMesh.Material.TextureHashes[tex] = TextureManager::sShadowTexHash;
-                    newSubMesh.Material.TextureSerials[tex] = TextureManager::sShadowTexSerialID;
-                }
-            }
-            newMesh.SubMeshes.push_back(std::move(newSubMesh));
+            delete samplerIt.second;
         }
 
-        newMesh.VertexRange.StartIndex = newMesh.SubMeshes.front().VertexRange.StartIndex;
-        newMesh.VertexRange.Count = totalVertexCount;
+        for (const auto& shaderIt : mShaders)
+        {
+            delete shaderIt;
+        }
+        mShaders.clear();
 
-        newMesh.IndexRange.StartIndex = newMesh.SubMeshes.front().IndexRange.StartIndex;
-        newMesh.IndexRange.Count = totalIndexCount;
+        for (const auto& shaderModuleIt : mShaderModules)
+        {
+            delete shaderModuleIt.second;
+        }
+        mShaderModules.clear();
 
-        outModel->SetMesh(newMesh);
+        for(auto& texIt : mTextures)
+        {
+            delete texIt.second;
+            texIt.second = nullptr;
+        }
+        mTextures.clear();
+
+        for (auto& pipelineIt : mPipelines)
+        {
+            vkDestroyPipeline(mDevice, pipelineIt.second, nullptr);
+        }
+        mPipelines.clear();
+
+        delete mVertexBuffer;
+        delete mIndexBuffer;
     }
 
+    bool ResourceManager::CreateShaders()
+    {
+        struct ShaderStageHash
+        {
+            eShader Type;
+            HashID VertexShaderHash;
+            HashID PixelShaderHash;
+        };
+
+        struct VertexShaderSourceInfo
+        {
+            eVertexShader Type;
+            const char* SourcePath;
+        };
+
+        constexpr VertexShaderSourceInfo VertexShaderSourceList[] =
+        {
+            {eVertexShader::VsOutline, "Renderer/Shader/Precompiled/VsOutline.spv"},
+            {eVertexShader::VsBasicWithShadow, "Renderer/Shader/Precompiled/VsBasicWithShadow.spv"},
+            {eVertexShader::VsSimple, "Renderer/Shader/Precompiled/VsSimple.spv"},
+            {eVertexShader::VsSkybox, "Renderer/Shader/Precompiled/VsSkybox.spv"},
+            {eVertexShader::VsTexture, "Renderer/Shader/Precompiled/VsTexture.spv"},
+            {eVertexShader::VsScreen, "Renderer/Shader/Precompiled/VsScreen.spv"},
+            {eVertexShader::VsShadow, "Renderer/Shader/Precompiled/VsShadow.spv"},
+            {eVertexShader::VsDeferred, "Renderer/Shader/Precompiled/VsDeferred.spv"},
+            {eVertexShader::VsDebugColor, "Renderer/Shader/Precompiled/VsDebugColor.spv"},
+        };
+        static_assert(std::size(VertexShaderSourceList) == static_cast<uint8_t>(eVertexShader::VertexShaderCount), "열거형값과 List의 요소가 서로 일치해야 합니다.");
+
+
+        struct PixelShaderSourceInfo
+        {
+            ePixelShader Type;
+            const char* SourcePath;
+        };
+
+        constexpr PixelShaderSourceInfo PixelShaderSourceList[] =
+        {
+            {ePixelShader::PsOutline, "Renderer/Shader/Precompiled/PsOutline.spv"},
+            {ePixelShader::PsBasicWithShadow, "Renderer/Shader/Precompiled/PsBasicWithShadow.spv"},
+            {ePixelShader::PsBasicWithShadowMRT, "Renderer/Shader/Precompiled/PsBasicWithShadowMRT.spv"},
+            {ePixelShader::PsShadow, "Renderer/Shader/Precompiled/PsShadow.spv"},
+            {ePixelShader::PsTexture, "Renderer/Shader/Precompiled/PsTexture.spv"},
+            {ePixelShader::PsSkybox, "Renderer/Shader/Precompiled/PsSkybox.spv"},
+            {ePixelShader::PsSkyboxMRT, "Renderer/Shader/Precompiled/PsSkyboxMRT.spv"},
+            {ePixelShader::PsColor, "Renderer/Shader/Precompiled/PsColor.spv"},
+            {ePixelShader::PsColorMRT, "Renderer/Shader/Precompiled/PsColorMRT.spv"},
+            {ePixelShader::PsColorWithShadow, "Renderer/Shader/Precompiled/PsColorWithShadow.spv"},
+            {ePixelShader::PsDeferred, "Renderer/Shader/Precompiled/PsDeferred.spv"},
+            {ePixelShader::PsTextureMRT, "Renderer/Shader/Precompiled/PsTextureMRT.spv"},
+        };
+        static_assert(std::size(PixelShaderSourceList) == static_cast<uint8_t>(ePixelShader::PixelShaderCount), "열거형값과 List의 요소가 서로 일치해야 합니다.");
+
+        HashID vsHashes[static_cast<uint8_t>(eVertexShader::VertexShaderCount)];
+        for (const VertexShaderSourceInfo shaderInfo : VertexShaderSourceList)
+        {
+            ShaderModule* shaderModule = new ShaderModule(mDevice);
+            HashID shaderHash;
+            if (shaderModule->Create(shaderInfo.SourcePath, eShaderStageType::Vertex, shaderHash) == false)
+            {
+                return false;
+            }
+            mShaderModules.insert({ shaderHash, shaderModule });
+            vsHashes[static_cast<EnumInt>(shaderInfo.Type)] = shaderHash;
+        }
+
+        HashID psHashes[static_cast<uint8_t>(ePixelShader::PixelShaderCount)];
+        for (const PixelShaderSourceInfo shaderInfo : PixelShaderSourceList)
+        {
+            ShaderModule* shaderModule = new ShaderModule(mDevice);
+            HashID shaderHash;
+            if (shaderModule->Create(shaderInfo.SourcePath, eShaderStageType::Pixel, shaderHash) == false)
+            {
+                return false;
+            }
+            mShaderModules.insert({ shaderHash, shaderModule });
+            psHashes[static_cast<EnumInt>(shaderInfo.Type)] = shaderHash;
+        }
+
+        // construct shader mapping table
+        const ShaderStageHash ShaderMapTable[] =
+        {
+            {eShader::Outline, vsHashes[static_cast<uint8_t>(eVertexShader::VsOutline)], psHashes[static_cast<uint8_t>(ePixelShader::PsOutline)]},
+            {eShader::Skybox, vsHashes[static_cast<uint8_t>(eVertexShader::VsSkybox)], psHashes[static_cast<uint8_t>(ePixelShader::PsSkybox)]},
+            { eShader::Shadow, vsHashes[static_cast<uint8_t>(eVertexShader::VsShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsShadow)]},
+            {eShader::BasicWithShadow,  vsHashes[static_cast<uint8_t>(eVertexShader::VsBasicWithShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsBasicWithShadow)]},
+            {eShader::Texture,  vsHashes[static_cast<uint8_t>(eVertexShader::VsTexture)], psHashes[static_cast<uint8_t>(ePixelShader::PsTexture)]},
+            {eShader::Color,  vsHashes[static_cast<uint8_t>(eVertexShader::VsBasicWithShadow)], psHashes[static_cast<uint8_t>(ePixelShader::PsColorWithShadow)]},
+            {eShader::DebugHUD,  vsHashes[static_cast<uint8_t>(eVertexShader::VsScreen)], psHashes[static_cast<uint8_t>(ePixelShader::PsTexture)]},
+            {eShader::Deferred,  vsHashes[static_cast<uint8_t>(eVertexShader::VsDeferred)], psHashes[static_cast<uint8_t>(ePixelShader::PsDeferred)]},
+            {eShader::DebugColor,  vsHashes[static_cast<uint8_t>(eVertexShader::VsDebugColor)], psHashes[static_cast<uint8_t>(ePixelShader::PsColor)]},
+        };
+        static_assert(std::size(ShaderMapTable) == static_cast<uint8_t>(eShader::ShaderCount), "열거형값과 ShaderMapTable의 요소가 서로 일치해야 합니다.");
+
+        for (const auto& shaderEntryIt : ShaderMapTable)
+        {
+            const auto& vsModule = mShaderModules.find(shaderEntryIt.VertexShaderHash);
+            ASSERT(vsModule != mShaderModules.end(), "Vs Module이 제대로 초기화되지 않았습니다. type(%d)", static_cast<EnumInt>(shaderEntryIt.Type));
+            const auto& psModule = mShaderModules.find(shaderEntryIt.PixelShaderHash);
+            ASSERT(psModule != mShaderModules.end(), "Ps Module이 제대로 초기화되지 않았습니다. type(%d)", static_cast<EnumInt>(shaderEntryIt.Type));
+            Shader* shader = new Shader(mDevice);
+            if (shader->Create(shaderEntryIt.Type, vsModule->second, psModule->second) == false)
+            {
+                return false;
+            }
+            mShaders.push_back(shader);
+        }
+
+        return true;
+    }
+
+    bool ResourceManager::CreateSamplers()
+    {
+        for (uint32_t samplerType = 0; samplerType < static_cast<uint32_t>(eSamplerType::SamplerCount); ++samplerType)
+        {
+            Sampler* sampler = new Sampler(mDevice);
+            if (sampler->Create(static_cast<eSamplerType>(samplerType)) == false)
+            {
+                return false;
+            }
+
+            mSamplers.insert({ static_cast<eSamplerType>(samplerType), sampler });
+        }
+        return true;
+    }
+
+    bool ResourceManager::CreateBuffers()
+    {
+        const uint32_t graphicsQueueIndex = VkHelper::GetGraphicsQueueFamilyIndex();
+        mVertexBuffer = new Buffer(mDevice);
+        if (mVertexBuffer->Create(771336 * 2, Buffer::eBufferType::Vertex, (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), graphicsQueueIndex) == false)
+        {
+            return false;
+        }
+        mIndexBuffer = new Buffer(mDevice);
+        if (mIndexBuffer->Create(189792 * 2, Buffer::eBufferType::Index, (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), graphicsQueueIndex) == false)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    void ResourceManager::AddBufferData(const void* const pData, uint32_t elementSize, uint32_t count, HashID hash, BufferRange& outRange, bool bVertexData)
+    {
+        if(bVertexData)
+        {
+            mVertexBuffer->AddData(pData, count, elementSize, hash, outRange);
+        }
+        else
+        {
+            mIndexBuffer->AddData(pData, count, elementSize, hash, outRange);
+        }
+    }
+
+    void ResourceManager::AddTexture(HashID hash, Texture* const texture)
+    {
+        ASSERT(mTextures.find(hash) == mTextures.end(), "texture 개체가 중복 삽입 되었습니다. 릭 가능성이 있습니다. hash(%u)", hash);
+        mTextures.insert({ hash, texture });
+    }
+
+    void ResourceManager::AddPipeline(HashID hash, VkPipeline pipeline)
+    {
+        ASSERT(mPipelines.find(hash) == mPipelines.end(), "pipeline 개체가 중복 삽입 되었습니다. 릭 가능성이 있습니다. hash(%u)", hash);
+        mPipelines.insert({ hash, pipeline });
+    }
+
+    Texture* ResourceManager::TryGetTexture(HashID hash)
+    {
+        Texture* tex = nullptr;
+        const auto& texIt = mTextures.find(hash);
+        if (texIt != mTextures.end())
+        {
+            tex = texIt->second;
+        }
+        return tex;
+    }
+
+    Shader* ResourceManager::GetShaderByType(eShader type) const
+    {
+        return mShaders[static_cast<EnumInt>(type)];
+    }
+
+    Sampler* ResourceManager::GetSamplerByType(eSamplerType type) const
+    {
+        const auto& samplerIt = mSamplers.find(type);
+        ASSERT(samplerIt != mSamplers.end(), "Sampler가 생성되지 않았거나 잘못된 type입니다. type(%u)", static_cast<EnumInt>(type));
+        return samplerIt->second;
+    }
+
+    VkPipeline ResourceManager::TryGetPipeline(HashID hash) const
+    {
+        VkPipeline pipeline = nullptr;
+
+        const auto& pipelineIt = mPipelines.find(hash);
+        if(pipelineIt != mPipelines.end())
+        {
+            pipeline = pipelineIt->second;
+        }
+        return pipeline;
+    }
+
+    Buffer* ResourceManager::GetBuffer(bool bVertexBuffer) const
+    {
+        return bVertexBuffer ? mVertexBuffer : mIndexBuffer;
+    }
 }

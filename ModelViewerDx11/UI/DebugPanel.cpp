@@ -1,6 +1,5 @@
 #include "DebugPanel.h"
 #include "../Renderer/Primitive/MeshGenerator.h"
-#include "../Renderer/Resources/RenderPacket.h"
 
 namespace ui
 {
@@ -15,32 +14,9 @@ namespace ui
         
     }
 
-    void DebugPanel::SubmitCommand(std::vector<renderer::RenderPacket>& commandList)
+    void DebugPanel::SubmitCommand()
     {
-        for (const auto& subMesh : mMesh.SubMeshes)
-        {
-            renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                mMesh.VertexFormat,
-                renderer::GetVertexStrideSize(mMesh.VertexFormat),
-                renderer::eBufferUsage::Static,
-                false,
-                subMesh.VertexRange,
-                subMesh.IndexRange,
-                subMesh.Material,
-                renderer::eRenderPass::UI,
-                XMMatrixIdentity(),
-                renderer::eShader::DebugHUD,
-                renderer::eRasterType::Basic,
-                renderer::eSamplerType::AnisotropicWrap,
-                renderer::eBlendState::Opaque,
-                renderer::ePrimitiveTopology::TriangleStrip,
-                true,
-                renderer::eDepthStencilState::DepthOffStencilOff
-            );
 
-
-            commandList.push_back(command);
-        }
     }
 
     void DebugPanel::SetDebugType(HashID texHash, int16_t serialID)

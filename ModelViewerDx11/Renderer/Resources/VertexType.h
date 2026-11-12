@@ -1,6 +1,5 @@
 #pragma once
 #include "../../Core/MathPrerequisites.h"
-#include "../../Util/Type.h"
 
 namespace renderer
 {

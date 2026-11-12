@@ -9,10 +9,12 @@
     b5 : Orthographic Matrix (for screen)
  */
 
-cbuffer CbMatWorld : register(b0)
+struct CbMatrix
 {
-    matrix MatWorld;
-}
+    matrix Matrix;
+};
+
+[[vk::push_constant]] CbMatrix MatWorld;
 
 cbuffer CbMatViewProj : register(b1)
 {
@@ -38,8 +40,8 @@ cbuffer CbCamera : register(b4)
 
 struct VsInput
 {
-    float4 Position : POSITION;
-    float2 TexCoord : TEXCOORD0;
+    [[vk::location(0)]] float4 Position : POSITION;
+    [[vk::location(1)]] float2 TexCoord : TEXCOORD0;
 };
 
 struct PsInput
@@ -57,7 +59,7 @@ PsInput main(VsInput vsInput)
     PsInput psInput;
     psInput.Position = vsInput.Position;
     psInput.TexCoord = vsInput.TexCoord;
-    psInput.CameraPosition = Position;
+    psInput.CameraPosition = Position.xyz;
     psInput.LightColor = vLightColor;
     psInput.LightDir = vLightDir;
     psInput.MatLightViewProj = MatLightViewProj;

@@ -1,82 +1,52 @@
 #include "Floor.h"
 #include "../Renderer/Renderer.h"
-#include "../Renderer/Primitive/MeshGenerator.h"
-#include "../Renderer/Resources/RenderPacket.h"
+#include "../Renderer/Shader/DescriptorSet.h"
 #include "../Util/Macro.h"
 
 namespace scene
 {
-    Floor::Floor(XMFLOAT2 startPoint, uint32_t gapEachLine, uint32_t numLineX, uint32_t numLineY)
+    Floor::Floor()
     {
-        ASSERT(numLineX >= 2, "numLineX must be 2 or greater");
-        ASSERT(numLineY >= 2, "numLineY must be 2 or greater");
-        ASSERT(gapEachLine >= 1, "gapEachLine must be 1 or greater");
-
-        renderer::MeshGenerator::CreateGrid(startPoint, numLineX, numLineY, gapEachLine, mMesh);
-        for (auto& subMesh : mMesh.SubMeshes)
-        {
-            subMesh.Material.Factors.Diffuse = XMFLOAT3(0.80f, 0.72f, 0.56f);
-            subMesh.Material.Factors.IsLitOn = static_cast<float>(true);
-            subMesh.Material.Factors.Ambient = XMFLOAT3(0.2f, 0.2f, 0.2f);
-            subMesh.Material.Factors.Shininess = 8;
-            subMesh.Material.Factors.Specular = XMFLOAT3(0.16f, 0.144f, 0.112f);
-        }
     }
 
     Floor::~Floor()
     {
     }
 
-    void Floor::SubmitCommand(std::vector<renderer::RenderPacket>& commandList)
+    void Floor::SubmitCommand(renderer::Renderer& renderer)
     {
-        XMMATRIX mat = XMMatrixIdentity();
+        const XMMATRIX matWorld = XMMatrixIdentity();
 
+        const auto& descriptorSetIt = mDescriptorSets.find(renderer::eShader::Color);
+        auto descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)
         {
-            renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                renderer::eVertexFormat::P,
-                renderer::GetVertexStrideSize(mMesh.VertexFormat),
-                renderer::eBufferUsage::Static,
-                false,
-                subMesh.VertexRange,
-                subMesh.IndexRange,
-                subMesh.Material,
-                renderer::eRenderPass::Shadow,
-                mat,
-                renderer::eShader::Shadow,
-                renderer::eRasterType::Basic,
-                renderer::eSamplerType::SamplerCount,
-                renderer::eBlendState::Opaque,
-                renderer::ePrimitiveTopology::Triangles,
-                false,
-                renderer::eDepthStencilState::DepthOffStencilOff
-            );
-
-            commandList.push_back(command);
+            renderer::PushConstantBlock pushConstantBlock{ matWorld, subMesh.Material.Factors };
+            renderer.UploadPushConstant(pushConstantBlock, renderer::eShader::Color);
+            const auto& pipelineIt = subMesh.Pipelines.find(renderer::eRenderPass::Main);
+            renderer.BindPipeline(pipelineIt->second);
+            renderer.BindDescriptorSet(*descriptorSet);
+            renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);
+            ++descriptorSet;
         }
+    }
 
-        for (const auto& subMesh : mMesh.SubMeshes)
+    void Floor::SetMesh(const renderer::Mesh& mesh)
+    {
+        mMesh = std::move(mesh);
+    }
+
+    void Floor::SetDescriptorSets(renderer::eShader shaderType, std::vector<renderer::DescriptorSet*>& descriptorSets)
+    {
+        ASSERT(mDescriptorSets.empty(), "Descriptors를 여러 번 초기화 하는 것 같습니다.");
+        auto descriptorSetIt = mDescriptorSets.find(shaderType);
+        if (descriptorSetIt == mDescriptorSets.end())
         {
-            renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                mMesh.VertexFormat,
-                renderer::GetVertexStrideSize(mMesh.VertexFormat),
-                renderer::eBufferUsage::Static,
-                false,
-                subMesh.VertexRange,
-                subMesh.IndexRange,
-                subMesh.Material,
-                renderer::eRenderPass::Main,
-                mat,
-                renderer::eShader::Color,
-                renderer::eRasterType::Basic,
-                renderer::eSamplerType::SamplerCount,
-                renderer::eBlendState::Opaque,
-                renderer::ePrimitiveTopology::Triangles,
-                false,
-                renderer::eDepthStencilState::DepthOffStencilOff
-            );
-
-            commandList.push_back(command);
+            mDescriptorSets.insert({ shaderType, std::move(descriptorSets) });
+        }
+        else
+        {
+            descriptorSetIt->second.insert(descriptorSetIt->second.end(), descriptorSets.begin(), descriptorSets.end());
         }
     }
 }

@@ -1,124 +1,57 @@
 #include "Model.h"
-#include "BufferManager.h"
+#include "../Renderer.h"
 #include "../../Util/Macro.h"
-#include "../Resources/RenderPacket.h"
+#include "../Shader/Shader.h"
 
 namespace renderer
 {
-    Model::Model(scene::Camera* camera, BufferManager* bufferManager)
-        : mBufferManager(bufferManager)
-        , mMesh()
+    Model::Model()
+        : mMesh()
         , mMatRotation(XMMatrixIdentity())
         , mMatScale(XMMatrixIdentity())
         , mbHighlight(false)
         , mbActiveEmissive(false)
     {
-        ASSERT(camera != nullptr, "do not pass nullptr");
 
         mMatWorld  = XMMatrixIdentity();
     }
 
     Model::~Model()
     {
-        const int16_t stride = GetVertexStrideSize(mMesh.VertexFormat);
-        for(auto& subMesh : mMesh.SubMeshes)
-        {
-            const int16_t strideIndex = mBufferManager->GetIndexStrideSize();
-            mBufferManager->RemoveVertexData(stride, subMesh.SubMeshHash);
-            mBufferManager->RemoveIndexData(strideIndex, subMesh.SubMeshHash);
-        }
-        mBufferManager = nullptr;
     }
 
-    void Model::SubmitCommand(std::vector<renderer::RenderPacket>& commandList)
+    void Model::SubmitCommand()
     {
-        // Shadow pass
+    }
+
+    void Model::Draw(Renderer& renderer)
+    {
+        const auto& descriptorSetIt = mDescriptorSets.find(eShader::BasicWithShadow);
+        auto descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)
         {
-            renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                eVertexFormat::P,
-                renderer::GetVertexStrideSize(mMesh.VertexFormat),
-                renderer::eBufferUsage::Static,
-                false,
-                subMesh.VertexRange,
-                subMesh.IndexRange,
-                subMesh.Material,
-                renderer::eRenderPass::Shadow,
-                mMatWorld,
-                renderer::eShader::Shadow,
-                renderer::eRasterType::Outline,
-                renderer::eSamplerType::SamplerCount,
-                eBlendState::Opaque,
-                renderer::ePrimitiveTopology::Triangles,
-                false,
-                eDepthStencilState::DepthOffStencilOff
-            );
-
-            commandList.push_back(command);
+            PushConstantBlock pushConstantBlock{ mMatWorld, subMesh.Material.Factors };
+            renderer.UploadPushConstant(pushConstantBlock, eShader::BasicWithShadow);
+            const auto& pipelineIt = subMesh.Pipelines.find(eRenderPass::Main);
+            renderer.BindPipeline(pipelineIt->second);
+            renderer.BindDescriptorSet(*descriptorSet);
+            renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);
+            ++descriptorSet;
         }
+    }
 
-        // outline
-        if (mbHighlight)
-        {
-
-            for (const auto& subMesh : mMesh.SubMeshes)
-            {
-                renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                    mMesh.VertexFormat,
-                    renderer::GetVertexStrideSize(mMesh.VertexFormat),
-                    renderer::eBufferUsage::Static,
-                    false,
-                    subMesh.VertexRange,
-                    subMesh.IndexRange,
-                    subMesh.Material,
-                    renderer::eRenderPass::Main,
-                    mMatWorld,
-                    renderer::eShader::Outline,
-                    renderer::eRasterType::CullBack,
-                    renderer::eSamplerType::SamplerCount,
-                    eBlendState::Opaque,
-                    renderer::ePrimitiveTopology::Triangles,
-                    false,
-                    eDepthStencilState::DepthOnMaskAllCompLessEqual
-                );
-
-                if (!mbActiveEmissive)
-                {
-                    command.Material.Factors.Emissive = XMFLOAT3(0.0f, 0.0f, 0.0f);
-                }
-
-                commandList.push_back(command);
-            }
-        }
-
-        // Main pass
+    void Model::DrawShadow(Renderer& renderer)
+    {
+        const auto& descriptorSetIt = mDescriptorSets.find(eShader::Shadow);
+        auto descriptorSet = descriptorSetIt->second.begin();
         for (const auto& subMesh : mMesh.SubMeshes)
         {
-            renderer::RenderPacket command = renderer::RenderPacket::MakeCommand(
-                mMesh.VertexFormat,
-                renderer::GetVertexStrideSize(mMesh.VertexFormat),
-                renderer::eBufferUsage::Static,
-                false,
-                subMesh.VertexRange,
-                subMesh.IndexRange,
-                subMesh.Material,
-                renderer::eRenderPass::Main,
-                mMatWorld,
-                renderer::eShader::BasicWithShadow,
-                renderer::eRasterType::Basic,
-                renderer::eSamplerType::AnisotropicWrap,
-                eBlendState::Opaque,
-                renderer::ePrimitiveTopology::Triangles,
-                false,
-                eDepthStencilState::DepthOffStencilOff
-            );
-
-            if (!mbActiveEmissive)
-            {
-                command.Material.Factors.Emissive = XMFLOAT3(0.0f, 0.0f, 0.0f);
-            }
-
-            commandList.push_back(command);
+            PushConstantBlock pushConstantBlock{ mMatWorld, subMesh.Material.Factors };
+            renderer.UploadPushConstant(pushConstantBlock, eShader::Shadow);
+            const auto& pipelineIt = subMesh.Pipelines.find(eRenderPass::Shadow);
+            renderer.BindPipeline(pipelineIt->second);
+            renderer.DrawIndexed(subMesh.IndexRange.Count, subMesh.VertexRange.StartIndex, subMesh.IndexRange.StartIndex);
+            ++descriptorSet;
         }
     }
 
@@ -133,9 +66,17 @@ namespace renderer
         mMesh = std::move(mesh);
     }
 
-    void Model::SetHighlight(bool bSelection)
+    void Model::SetDescriptorSets(renderer::eShader shaderType, std::vector<DescriptorSet*>& descriptorSets)
     {
-        mbHighlight = bSelection;
+        auto descriptorSetIt = mDescriptorSets.find(shaderType);
+        if (descriptorSetIt == mDescriptorSets.end())
+        {
+            mDescriptorSets.insert({ shaderType, std::move(descriptorSets) });
+        }
+        else
+        {
+            descriptorSetIt->second.insert(descriptorSetIt->second.end(), descriptorSets.begin(), descriptorSets.end());
+        }
     }
 
     int32_t Model::GetSubMeshCount() const
