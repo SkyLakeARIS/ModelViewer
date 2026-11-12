@@ -44,16 +44,17 @@ namespace renderer
         const std::vector<DescriptorInfo>& descriptorInfos = DescriptorLayout::GetDescriptorInfos(layoutType);
         std::vector<VkDescriptorPoolSize> poolSizes;
         poolSizes.reserve(descriptorInfos.size());
+        const uint32_t frameInFlightCount = VkHelper::GetFrameInFlightCount();
         for (const auto& descriptorInfo : descriptorInfos)
         {
-            const VkDescriptorPoolSize poolSize{ descriptorInfo.Type, descriptorInfo.Count * VkHelper::GetFrameInFlightCount() * sMaxDescriptorSetCount };
+            const VkDescriptorPoolSize poolSize{ descriptorInfo.Type, descriptorInfo.Count * frameInFlightCount * sMaxDescriptorSetCount };
             poolSizes.push_back(poolSize);
         }
 
         VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
         descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        descriptorPoolCreateInfo.maxSets = sMaxDescriptorSetCount;
+        descriptorPoolCreateInfo.maxSets = sMaxDescriptorSetCount * frameInFlightCount;
         descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
         descriptorPoolCreateInfo.poolSizeCount = poolSizes.size();
         VkDescriptorPool pool;
